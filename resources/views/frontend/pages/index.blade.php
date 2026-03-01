@@ -373,8 +373,8 @@
             </div>
             <div class="row g-4">
                 @foreach($latestBlogPosts ?? [] as $index => $post)
-                <div class="col-lg-4 col-md-6">
-                    <a href="{{ route('frontend.blog.show', $post->slug) }}" class="glass-panel blog-card animate-on-scroll animate-delay-{{ ($index % 3) + 1 }}" style="text-decoration:none;color:inherit;display:block;height:100%;">
+                <div class="col-lg-3 col-md-6">
+                    <a href="{{ route('frontend.blog.show', $post->slug) }}" class="glass-panel blog-card animate-on-scroll animate-delay-{{ ($index % 4) + 1 }}" style="text-decoration:none;color:inherit;display:block;height:100%;">
                         <div class="blog-img-wrapper">
                             @if($post->featured_image && function_exists('blog_image_url'))
                                 <img src="{{ blog_image_url($post->featured_image) }}" alt="{{ $post->featured_image_alt ?? $post->title }}" width="400" height="180" loading="lazy">
