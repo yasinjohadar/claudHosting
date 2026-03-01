@@ -9,15 +9,22 @@
 @endsection
 
 @section('content')
-    <!-- ============ PAGE HERO ============ -->
-    <section class="section-padding" style="padding-top: 8rem;">
-        <div class="container">
-            <div class="section-header animate-on-scroll text-center">
-                <span class="section-badge">المدونة</span>
-                <h1>آخر التدوينات</h1>
-                <p class="mx-auto" style="max-width: 600px;">مقالات تقنية وتعليمية في عالم البرمجة، الاستضافة، والتكنولوجيا.</p>
+    <!-- ============ PAGE BANNER (نفس About) ============ -->
+    <section class="page-banner page-banner-about">
+        <div class="page-banner-overlay"></div>
+        <div class="container position-relative">
+            <div class="page-banner-content animate-on-scroll">
+                <div class="page-banner-icon"><i class="fas fa-newspaper"></i></div>
+                <h1 class="page-banner-title">المدونة <span>— آخر التدوينات</span></h1>
+                <p class="page-banner-desc">مقالات تقنية وتعليمية في عالم البرمجة، الاستضافة، والتكنولوجيا.</p>
+                <nav class="page-banner-breadcrumb" aria-label="breadcrumb">
+                    <a href="{{ url('/') }}">الرئيسية</a>
+                    <span class="page-banner-sep">/</span>
+                    <span>المدونة</span>
+                </nav>
             </div>
         </div>
+        <div class="page-banner-shape"></div>
     </section>
 
     <!-- ============ BLOG LIST ============ -->

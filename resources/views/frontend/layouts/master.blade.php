@@ -10,8 +10,8 @@
     <!-- Canonical URL -->
     <link rel="canonical" href="@yield('canonical', url()->current())">
 
-    <!-- Favicon -->
-    <link rel="icon" type="image/svg+xml" href="{{ asset('frontend/assets/images/favicon.svg') }}">
+    <!-- Favicon (نفس اللوغو: logo.png) -->
+    <link rel="icon" type="image/png" href="{{ asset('frontend/assets/images/logo.png') }}">
 
     @hasSection('meta-og')
         @yield('meta-og')

@@ -9,14 +9,26 @@
 @endsection
 
 @section('content')
-    <section class="section-padding" style="padding-top: 8rem;">
-        <div class="container">
-            <div class="section-header animate-on-scroll text-center">
-                <span class="section-badge">النطاقات</span>
-                <h1>ابحث عن نطاقك</h1>
-                <p class="mx-auto" style="max-width: 600px;">تحقق من توفر النطاق واطّلع على أسعار التسجيل والنقل والتجديد والخيارات الإضافية.</p>
+    <!-- ============ PAGE BANNER (نفس About) ============ -->
+    <section class="page-banner page-banner-about">
+        <div class="page-banner-overlay"></div>
+        <div class="container position-relative">
+            <div class="page-banner-content animate-on-scroll">
+                <div class="page-banner-icon"><i class="fas fa-globe"></i></div>
+                <h1 class="page-banner-title">بحث <span>النطاقات</span></h1>
+                <p class="page-banner-desc">تحقق من توفر النطاق واطّلع على أسعار التسجيل والنقل والتجديد والخيارات الإضافية.</p>
+                <nav class="page-banner-breadcrumb" aria-label="breadcrumb">
+                    <a href="{{ url('/') }}">الرئيسية</a>
+                    <span class="page-banner-sep">/</span>
+                    <span>بحث النطاقات</span>
+                </nav>
             </div>
+        </div>
+        <div class="page-banner-shape"></div>
+    </section>
 
+    <section class="section-padding">
+        <div class="container">
             <div class="row justify-content-center animate-on-scroll">
                 <div class="col-lg-8">
                     <form id="domain-search-form" action="{{ route('frontend.domain-search.post') }}" method="post" class="glass-panel p-4 rounded-3">

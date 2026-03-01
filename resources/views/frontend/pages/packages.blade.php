@@ -9,15 +9,22 @@
 @endsection
 
 @section('content')
-    <!-- ============ PAGE HERO ============ -->
-    <section class="section-padding" style="padding-top: 8rem;">
-        <div class="container">
-            <div class="section-header animate-on-scroll text-center">
-                <span class="section-badge">باقات الاستضافة</span>
-                <h1>اختر الباقة المناسبة لموقعك</h1>
-                <p class="mx-auto" style="max-width: 600px;">خطط استضافة مرنة وآمنة تناسب المواقع الشخصية والمتاجر الإلكترونية والشركات. ابدأ اليوم مع دعم فني متواصل.</p>
+    <!-- ============ PAGE BANNER (نفس About) ============ -->
+    <section class="page-banner page-banner-about">
+        <div class="page-banner-overlay"></div>
+        <div class="container position-relative">
+            <div class="page-banner-content animate-on-scroll">
+                <div class="page-banner-icon"><i class="fas fa-server"></i></div>
+                <h1 class="page-banner-title">الباقات <span>— اختر المناسبة لموقعك</span></h1>
+                <p class="page-banner-desc">خطط استضافة مرنة وآمنة تناسب المواقع الشخصية والمتاجر الإلكترونية والشركات. ابدأ اليوم مع دعم فني متواصل.</p>
+                <nav class="page-banner-breadcrumb" aria-label="breadcrumb">
+                    <a href="{{ url('/') }}">الرئيسية</a>
+                    <span class="page-banner-sep">/</span>
+                    <span>الباقات</span>
+                </nav>
             </div>
         </div>
+        <div class="page-banner-shape"></div>
     </section>
 
     <!-- ============ HOSTING PACKAGES ============ -->

@@ -9,15 +9,22 @@
 @endsection
 
 @section('content')
-    <!-- ============ PAGE HERO ============ -->
-    <section class="section-padding" style="padding-top: 8rem;">
-        <div class="container">
-            <div class="section-header animate-on-scroll text-center">
-                <span class="section-badge">المشاريع</span>
-                <h1>مشاريعنا وأعمالنا</h1>
-                <p class="mx-auto" style="max-width: 600px;">تعرف على أبرز المشاريع التي نفذناها في مجالات الاستضافة، تطوير المواقع، وإدارة الخوادم.</p>
+    <!-- ============ PAGE BANNER (نفس About) ============ -->
+    <section class="page-banner page-banner-about">
+        <div class="page-banner-overlay"></div>
+        <div class="container position-relative">
+            <div class="page-banner-content animate-on-scroll">
+                <div class="page-banner-icon"><i class="fas fa-folder-open"></i></div>
+                <h1 class="page-banner-title">المشاريع <span>وأعمالنا</span></h1>
+                <p class="page-banner-desc">تعرف على أبرز المشاريع التي نفذناها في مجالات الاستضافة، تطوير المواقع، وإدارة الخوادم.</p>
+                <nav class="page-banner-breadcrumb" aria-label="breadcrumb">
+                    <a href="{{ url('/') }}">الرئيسية</a>
+                    <span class="page-banner-sep">/</span>
+                    <span>المشاريع</span>
+                </nav>
             </div>
         </div>
+        <div class="page-banner-shape"></div>
     </section>
 
     <!-- ============ PROJECTS GRID ============ -->

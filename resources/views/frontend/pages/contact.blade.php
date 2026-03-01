@@ -10,7 +10,7 @@
 
 @section('content')
     <!-- ============ PAGE BANNER (تواصل معنا) ============ -->
-    <section class="page-banner page-banner-contact">
+    <section class="page-banner page-banner-about">
         <div class="page-banner-overlay"></div>
         <div class="container position-relative">
             <div class="page-banner-content animate-on-scroll">
