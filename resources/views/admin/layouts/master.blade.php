@@ -52,6 +52,7 @@
     @include('admin.layouts.footer-scripts')
 
     @yield('scripts')
+    @stack('scripts')
 
 </body>
 

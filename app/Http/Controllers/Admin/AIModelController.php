@@ -188,17 +188,35 @@ class AIModelController extends Controller
             'provider' => 'required|in:' . implode(',', array_keys(AIModel::PROVIDERS)),
             'model_key' => 'required|string|max:255',
             'api_key' => 'required|string',
-            'base_url' => 'nullable|url|max:500',
+            'base_url' => 'nullable|string|max:500',
             'api_endpoint' => 'nullable|string|max:500',
+        ], [
+            'provider.required' => 'يرجى اختيار المزود.',
+            'model_key.required' => 'يرجى إدخال معرف الموديل.',
+            'api_key.required' => 'يرجى إدخال مفتاح API.',
         ]);
 
+        // تطبيع base_url: إذا كان فارغاً أو غير صالح كـ URL للمزودات السحابية، استخدم null
+        $provider = $validated['provider'];
+        $baseUrl = isset($validated['base_url']) ? trim($validated['base_url']) : null;
+        if ($baseUrl !== null && $baseUrl !== '' && !filter_var($baseUrl, FILTER_VALIDATE_URL)) {
+            $baseUrl = null;
+        }
+        if ($baseUrl === '') {
+            $baseUrl = null;
+        }
+        $validated['base_url'] = $baseUrl;
+        $validated['api_endpoint'] = isset($validated['api_endpoint']) ? trim($validated['api_endpoint']) : null;
+        if ($validated['api_endpoint'] === '') {
+            $validated['api_endpoint'] = null;
+        }
+
         try {
-            // استخدام method جديد للاختبار المؤقت مع API Key مباشر
             $modelData = [
                 'provider' => $validated['provider'],
                 'model_key' => $validated['model_key'],
-                'base_url' => $validated['base_url'] ?? null,
-                'api_endpoint' => $validated['api_endpoint'] ?? null,
+                'base_url' => $validated['base_url'],
+                'api_endpoint' => $validated['api_endpoint'],
                 'max_tokens' => 100,
                 'temperature' => 0.7,
                 'is_active' => true,

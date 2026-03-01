@@ -74,7 +74,7 @@
                                 </label>
                                 <div class="input-group">
                                     <input type="password" class="form-control" id="api_key" name="api_key" value="{{ old('api_key') }}" placeholder="@if(old('provider') == 'google') AlzaSyBo-... (من Google AI Studio) @elseif(old('provider') == 'openrouter') sk-or-... (من OpenRouter) @elseif(old('provider') == 'openai') sk-... (من OpenAI Platform) @elseif(old('provider') == 'zai') zai-... (من Z.ai Platform) @else أدخل مفتاح API @endif">
-                                    <button type="button" class="btn btn-outline-primary" id="testApiKeyBtn" onclick="testApiKey()">
+                                    <button type="button" class="btn btn-outline-primary" id="testApiKeyBtn">
                                         <i class="fas fa-vial me-1"></i> اختبار الاتصال
                                     </button>
                                 </div>
@@ -405,18 +405,36 @@ window.testApiKey = function() {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
-            'X-CSRF-TOKEN': '{{ csrf_token() }}',
-            'Accept': 'application/json'
+            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || document.querySelector('input[name="_token"]')?.value || '{{ csrf_token() }}',
+            'Accept': 'application/json',
+            'X-Requested-With': 'XMLHttpRequest'
         },
         body: JSON.stringify({
             provider: provider,
             model_key: modelKey,
             api_key: apiKey,
-            base_url: document.getElementById('base_url')?.value || '',
-            api_endpoint: document.getElementById('api_endpoint')?.value || ''
+            base_url: (document.getElementById('base_url')?.value || '').trim() || null,
+            api_endpoint: (document.getElementById('api_endpoint')?.value || '').trim() || null
         })
     })
-    .then(response => response.json())
+    .then(response => {
+        const contentType = response.headers.get('content-type');
+        if (!contentType || !contentType.includes('application/json')) {
+            return response.text().then(text => {
+                throw new Error(response.status === 419 ? 'انتهت صلاحية الجلسة. يرجى تحديث الصفحة والمحاولة مرة أخرى.' : (response.status === 500 ? 'خطأ في الخادم. تحقق من سجل الأخطاء.' : 'استجابة غير متوقعة من الخادم.'));
+            });
+        }
+        return response.json().then(data => {
+            if (!response.ok && response.status === 422 && data.errors) {
+                const firstError = Object.values(data.errors).flat()[0];
+                return { success: false, message: firstError || data.message };
+            }
+            if (!response.ok && response.status >= 400) {
+                return { success: false, message: data.message || 'حدث خطأ أثناء الاختبار.' };
+            }
+            return data;
+        });
+    })
     .then(data => {
         btn.disabled = false;
         btn.innerHTML = originalText;
@@ -471,6 +489,12 @@ window.testApiKey = function() {
         `;
     });
 };
+
+// ربط زر اختبار الاتصال بالدالة (بدون الاعتماد على onclick في HTML)
+document.addEventListener('DOMContentLoaded', function() {
+    const testBtn = document.getElementById('testApiKeyBtn');
+    if (testBtn) testBtn.addEventListener('click', window.testApiKey);
+});
 
 // جلب موديلات Groq ديناميكياً
 window.fetchGroqModels = function() {
