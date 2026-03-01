@@ -29,7 +29,7 @@
             <div class="row align-items-center g-5">
                 <div class="col-lg-5">
                     <div class="about-img-wrapper animate-on-scroll">
-                        <img src="{{ asset('frontend/assets/images/trainer.svg') }}" alt="استضافة كلاودسوفت" class="w-100" width="400" height="400" loading="lazy">
+                        <img src="{{ asset('frontend/assets/images/hero-servers.svg') }}" alt="استضافة كلاودسوفت" class="w-100" width="400" height="400" loading="lazy">
                     </div>
                 </div>
                 <div class="col-lg-7">
