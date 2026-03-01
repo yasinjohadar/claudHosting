@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="45" height="45" viewBox="0 0 80 80" role="img" aria-label="Cloud hosting logo">
+  <!-- Left orange semi-circle -->
+  <path d="M20 10a20 20 0 0 0 0 60V10z" fill="#F39C12"/>
+
+  <!-- Middle dark-blue semi-circle -->
+  <path d="M40 5a25 25 0 0 1 0 70V5z" fill="#0057B8"/>
+
+  <!-- Right light-blue semi-circle -->
+  <path d="M60 10v60a20 20 0 0 0 0-60z" fill="#2E9AD0"/>
+
+  <!-- Download/hosting arrow -->
+  <path d="M40 55c-4 0-7 3-7 7v1h4v-1c0-1.6 1.4-3 3-3s3 1.4 3 3v1h4v-1c0-4-3-7-7-7z" fill="#0057B8"/>
+  <path d="M36 63l4 7 4-7h-8z" fill="#0057B8"/>
+</svg>
