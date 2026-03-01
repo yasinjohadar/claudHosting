@@ -4,6 +4,10 @@
 المشاريع | استضافة كلاودسوفت
 @endsection
 
+@section('meta-description')
+مشاريع استضافة كلاودسوفت — تعرف على أبرز الأعمال في الاستضافة، تطوير المواقع، وإدارة الخوادم. مشاريع حقيقية نفتخر بها.
+@endsection
+
 @section('content')
     <!-- ============ PAGE HERO ============ -->
     <section class="section-padding" style="padding-top: 8rem;">

@@ -4,6 +4,10 @@
 استضافة كلاودسوفت | CloudSoft Hosting
 @endsection
 
+@section('meta-description')
+استضافة كلاودسوفت تمنحك بنية سحابية مستقرة وسريعة وآمنة لموقعك أو متجرك. باقات مرنة من المواقع الشخصية حتى الشركات، لوحة تحكم سهلة ودعم فني مستمر. ابدأ خلال دقائق.
+@endsection
+
 @section('content')
     <!-- ============ HERO SECTION ============ -->
     <section class="hero-section" id="hero">

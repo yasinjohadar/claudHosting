@@ -4,6 +4,10 @@
 أمن المعلومات | استضافة كلاودسوفت
 @endsection
 
+@section('meta-description')
+أمن المعلومات — حماية الأنظمة والبيانات، تقييم الثغرات، إعداد SSL/HTTPS، وتطبيق أفضل ممارسات OWASP. تدقيق أمني وتوصيات عملية لتفادي الاختراقات.
+@endsection
+
 @section('content')
     <!-- ============ SERVICE BANNER ============ -->
     <section class="page-banner page-banner-service">

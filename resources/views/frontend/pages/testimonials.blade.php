@@ -4,6 +4,10 @@
 آراء العملاء | استضافة كلاودسوفت
 @endsection
 
+@section('meta-description')
+آراء عملاء استضافة كلاودسوفت — تجارب حقيقية وتقييمات من أصحاب مواقع ومتاجر اختاروا خدماتنا. اقرأ آراءهم واختر الباقة المناسبة.
+@endsection
+
 @section('content')
     <section class="page-banner page-banner-testimonials">
         <div class="page-banner-overlay"></div>

@@ -4,6 +4,10 @@
 الباقات | استضافة كلاودسوفت
 @endsection
 
+@section('meta-description')
+باقات استضافة كلاودسوفت — خطط مرنة للمواقع الشخصية والمتاجر والشركات. استضافة سريعة وآمنة مع دعم فني متواصل ولوحة تحكم عربية. اختر باقتك وابدأ اليوم.
+@endsection
+
 @section('content')
     <!-- ============ PAGE HERO ============ -->
     <section class="section-padding" style="padding-top: 8rem;">

@@ -4,6 +4,10 @@
 تطبيقات الجوال | Dart & Flutter | استضافة كلاودسوفت
 @endsection
 
+@section('meta-description')
+تطوير تطبيقات الجوال — بناء تطبيقات أندرويد و iOS بـ Dart و Flutter. كود واحد لمنصتين، واجهات Material و Cupertino، أداء قريب من الأصلي، ونشر على المتاجر.
+@endsection
+
 @section('content')
     <!-- ============ SERVICE BANNER ============ -->
     <section class="page-banner page-banner-service">

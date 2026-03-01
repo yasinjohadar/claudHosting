@@ -4,6 +4,10 @@
 تواصل معنا | استضافة كلاودسوفت
 @endsection
 
+@section('meta-description')
+تواصل مع فريق استضافة كلاودسوفت — للاستفسارات، التسجيل في الباقات، أو طلب استشارة تقنية. نحن هنا لمساعدتك على اختيار الحل المناسب لمشروعك.
+@endsection
+
 @section('content')
     <!-- ============ PAGE BANNER (تواصل معنا) ============ -->
     <section class="page-banner page-banner-contact">

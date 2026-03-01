@@ -4,6 +4,10 @@
 حول استضافة كلاودسوفت | CloudSoft Hosting
 @endsection
 
+@section('meta-description')
+من نحن — منصة استضافة كلاودسوفت: بيئة سحابية آمنة وسريعة للمشاريع العربية، بنية تحتية حديثة، تكرار ونسخ احتياطي مستمر، ودعم فني يهتم بكل تفاصيل مشروعك.
+@endsection
+
 @section('content')
     <!-- ============ PAGE BANNER (حول الاستضافة) ============ -->
     <section class="page-banner page-banner-about">

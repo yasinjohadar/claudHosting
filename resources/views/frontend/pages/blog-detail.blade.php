@@ -4,6 +4,62 @@
 {{ $post->meta_title ?? $post->title }} | استضافة كلاودسوفت
 @endsection
 
+@php
+    $seo = $post->getSeoMetaTags();
+    $articleUrl = $seo['canonical'] ?? route('frontend.blog.show', $post->slug);
+    $ogImage = !empty($post->og_image) ? (function_exists('blog_image_url') ? blog_image_url($post->og_image) : asset('storage/' . ltrim($post->og_image, '/'))) : (($post->featured_image && function_exists('blog_image_url')) ? blog_image_url($post->featured_image) : asset('frontend/assets/images/logo.png'));
+    $twImage = !empty($post->twitter_image) ? (function_exists('blog_image_url') ? blog_image_url($post->twitter_image) : asset('storage/' . ltrim($post->twitter_image, '/'))) : $ogImage;
+@endphp
+
+@section('meta-description')
+{{ Str::limit(strip_tags($seo['description'] ?? $post->excerpt ?? ''), 160) }}
+@endsection
+
+@section('canonical')
+{{ $articleUrl }}
+@endsection
+
+@section('meta-og')
+    <meta property="og:type" content="{{ $seo['og:type'] ?? 'article' }}">
+    <meta property="og:url" content="{{ $articleUrl }}">
+    <meta property="og:title" content="{{ $seo['og:title'] ?? $post->title }}">
+    <meta property="og:description" content="{{ Str::limit(strip_tags($seo['og:description'] ?? $post->excerpt ?? ''), 200) }}">
+    <meta property="og:image" content="{{ $ogImage }}">
+    <meta property="og:locale" content="{{ $seo['og:locale'] ?? 'ar_AR' }}">
+    @if($post->published_at)
+    <meta property="article:published_time" content="{{ $post->published_at->toIso8601String() }}">
+    @endif
+    @if($post->updated_at)
+    <meta property="article:modified_time" content="{{ $post->updated_at->toIso8601String() }}">
+    @endif
+@endsection
+
+@section('meta-twitter')
+    <meta name="twitter:card" content="{{ $seo['twitter:card'] ?? 'summary_large_image' }}">
+    <meta name="twitter:title" content="{{ $seo['twitter:title'] ?? $post->title }}">
+    <meta name="twitter:description" content="{{ Str::limit(strip_tags($seo['twitter:description'] ?? $post->excerpt ?? ''), 200) }}">
+    <meta name="twitter:image" content="{{ $twImage }}">
+@endsection
+
+@push('head')
+@php
+    $schema = $post->getSchemaJsonLd();
+    $schema['url'] = $articleUrl;
+    $schema['mainEntityOfPage'] = ['@type' => 'WebPage', '@id' => $articleUrl];
+    if (!empty($schema['image'])) {
+        $schema['image'] = ($post->featured_image && function_exists('blog_image_url')) ? blog_image_url($post->featured_image) : asset('frontend/assets/images/logo.png');
+    }
+    if (isset($schema['datePublished'])) {
+        $schema['datePublished'] = $schema['datePublished'] instanceof \DateTimeInterface ? $schema['datePublished']->format('c') : $schema['datePublished'];
+    }
+    if (isset($schema['dateModified'])) {
+        $schema['dateModified'] = $schema['dateModified'] instanceof \DateTimeInterface ? $schema['dateModified']->format('c') : $schema['dateModified'];
+    }
+    $schema['@type'] = $schema['@type'] ?? 'Article';
+@endphp
+    <script type="application/ld+json">{!! json_encode($schema, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) !!}</script>
+@endpush
+
 @section('content')
     <section class="blog-detail-hero">
         <div class="blog-detail-hero-img">

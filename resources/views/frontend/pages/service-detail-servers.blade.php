@@ -4,6 +4,10 @@
 إدارة السيرفرات | استضافة كلاودسوفت
 @endsection
 
+@section('meta-description')
+إدارة السيرفرات — إعداد وإدارة خوادم Linux، Nginx أو Apache، قواعد البيانات، SSL والنسخ الاحتياطي. استضافة سحابية و VPS مع مراقبة وصيانة دورية.
+@endsection
+
 @section('content')
     <!-- ============ SERVICE BANNER ============ -->
     <section class="page-banner page-banner-service">

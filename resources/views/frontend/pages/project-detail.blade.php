@@ -4,6 +4,10 @@
 تفاصيل المشروع | استضافة كلاودسوفت
 @endsection
 
+@section('meta-description')
+تفاصيل مشروع مستضاف على بنية كلاودسوفت السحابية — موقع شركة استشارات تقنية مع خدمات، مدونة ونماذج تواصل. استضافة موثوقة وأداء عالٍ.
+@endsection
+
 @section('content')
     <section class="page-banner page-banner-projects page-banner-project-detail">
         <div class="page-banner-overlay"></div>

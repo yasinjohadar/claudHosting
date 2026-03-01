@@ -4,6 +4,10 @@
 تطوير تطبيقات الويب | استضافة كلاودسوفت
 @endsection
 
+@section('meta-description')
+تطوير تطبيقات الويب — تصميم وتطوير مواقع وتطبيقات ويب حديثة ومتجاوبة بأحدث التقنيات: React، Node.js، TypeScript. واجهات احترافية، أداء عالٍ، ودعم SEO وأمان.
+@endsection
+
 @section('content')
     <!-- ============ SERVICE BANNER ============ -->
     <section class="page-banner page-banner-service">

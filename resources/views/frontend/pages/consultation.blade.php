@@ -4,6 +4,10 @@
 حجز موعد واستشارة تقنية | استضافة كلاودسوفت
 @endsection
 
+@section('meta-description')
+احجز جلستك الاستشارية مع فريق كلاودسوفت — نقاش مباشر حول مشروعك، الاستضافة، المسار المهني أو أي سؤال تقني. نرتب معك الموعد المناسب.
+@endsection
+
 @section('content')
     <section class="page-banner page-banner-contact">
         <div class="page-banner-overlay"></div>

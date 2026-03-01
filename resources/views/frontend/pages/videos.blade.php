@@ -4,6 +4,10 @@
 الفيديوهات | استضافة كلاودسوفت
 @endsection
 
+@section('meta-description')
+فيديوهات تعليمية من استضافة كلاودسوفت — تطوير الويب، البرمجة، الاستضافة وتطبيقات الموبايل. مقاطع عملية من قناتنا على يوتيوب.
+@endsection
+
 @section('content')
     <section class="page-banner page-banner-blog">
         <div class="page-banner-overlay"></div>

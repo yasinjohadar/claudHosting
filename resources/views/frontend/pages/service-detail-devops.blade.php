@@ -4,6 +4,10 @@
 DevOps وتشغيل المنصات | استضافة كلاودسوفت
 @endsection
 
+@section('meta-description')
+DevOps وتشغيل المنصات — CI/CD، حاويات Docker و Kubernetes، بنية كود IaC (Terraform، Ansible)، سحابة AWS/Azure/GCP، ومراقبة Prometheus و Grafana.
+@endsection
+
 @section('content')
     <!-- ============ SERVICE BANNER ============ -->
     <section class="page-banner page-banner-service">

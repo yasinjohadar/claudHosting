@@ -4,6 +4,10 @@
 بحث النطاقات | استضافة كلاودسوفت
 @endsection
 
+@section('meta-description')
+تحقق من توفر نطاقك — ابحث عن النطاق، اسعار التسجيل والنقل والتجديد، وخيارات الخصوصية. خدمة بحث النطاقات من استضافة كلاودسوفت.
+@endsection
+
 @section('content')
     <section class="section-padding" style="padding-top: 8rem;">
         <div class="container">

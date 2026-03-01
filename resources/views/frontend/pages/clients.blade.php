@@ -4,6 +4,10 @@
 الشركات والعملاء | استضافة كلاودسوفت
 @endsection
 
+@section('meta-description')
+الشركات والعملاء الذين وثقوا باستضافة كلاودسوفت — شركات وعملاء كرام نقدم لهم الاستضافة والدعم الفني. تعرف على شريحة عملائنا.
+@endsection
+
 @section('content')
     <section class="page-banner page-banner-clients">
         <div class="page-banner-overlay"></div>

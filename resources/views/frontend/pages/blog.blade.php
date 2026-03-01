@@ -4,6 +4,10 @@
 المدونة | استضافة كلاودسوفت
 @endsection
 
+@section('meta-description')
+المدونة — مقالات تقنية وتعليمية في الاستضافة، البرمجة، إدارة الخوادم، والأمان. نصائح ودروس من فريق استضافة كلاودسوفت لمساعدتك في مشاريعك.
+@endsection
+
 @section('content')
     <!-- ============ PAGE HERO ============ -->
     <section class="section-padding" style="padding-top: 8rem;">
