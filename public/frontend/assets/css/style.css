@@ -3680,6 +3680,12 @@ ul {
     border-radius: var(--radius-md);
     overflow: hidden; /* makes border-radius work with inner cells */
     border: 1px solid var(--clr-border);
+    background: transparent;
+}
+
+.bd-content-html table th,
+.bd-content-html table td {
+    border: 1px solid var(--clr-border);
 }
 
 .bd-content-html table th {
@@ -3706,6 +3712,20 @@ ul {
 
 .bd-content-html table tr:hover td {
     background: var(--clr-surface);
+}
+
+/* Handle editors that use <td> for the header row (first row) */
+.bd-content-html table thead td,
+.bd-content-html table thead th {
+    background: linear-gradient(135deg, var(--clr-primary), var(--clr-primary-dark));
+    color: #fff;
+    font-weight: 700;
+}
+
+.bd-content-html table > tbody > tr:first-child td {
+    background: linear-gradient(135deg, var(--clr-primary), var(--clr-primary-dark));
+    color: #fff;
+    font-weight: 700;
 }
 
 /* Tags */
