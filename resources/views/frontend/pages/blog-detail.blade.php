@@ -76,7 +76,7 @@
         <div class="container">
             <div class="row g-4">
                 <div class="col-lg-8">
-                    <div class="glass-panel blog-detail-content animate-on-scroll">
+                    <div class="glass-panel blog-detail-content">
                         <div class="breadcrumb-custom" style="justify-content: flex-start; margin-bottom: 20px;">
                             <a href="{{ url('/') }}">الرئيسية</a><span>/</span><a href="{{ route('frontend.blog') }}">المدونة</a><span>/</span><span>{{ $post->category?->name ?? 'مقال' }}</span>
                         </div>
