@@ -198,9 +198,10 @@
                                                         </form>
 
                                                         <button type="button"
-                                                                class="btn btn-sm btn-danger-light"
+                                                                class="btn btn-sm btn-danger-light js-delete-post"
                                                                 title="حذف"
-                                                                onclick="deletePost({{ $post->id }}, '{{ e(Str::limit($post->title, 40)) }}')">
+                                                                data-post-id="{{ $post->id }}"
+                                                                data-post-title="{{ e(Str::limit($post->title, 40)) }}">
                                                             <i class="bi bi-trash"></i>
                                                         </button>
                                                     </div>
@@ -286,7 +287,7 @@
     </div>
 @stop
 
-@section('script')
+@section('scripts')
 <script>
     let currentPostId = null;
 
@@ -335,6 +336,15 @@
     }
 
     document.addEventListener('DOMContentLoaded', function() {
+        // Bind delete buttons safely using data-* attributes (avoids JS string quoting issues)
+        document.querySelectorAll('.js-delete-post').forEach(function(btn) {
+            btn.addEventListener('click', function() {
+                const postId = btn.getAttribute('data-post-id');
+                const postTitle = btn.getAttribute('data-post-title') || '';
+                deletePost(postId, postTitle);
+            });
+        });
+
         const confirmBtn = document.getElementById('confirmDeletePost');
         if (!confirmBtn) {
             return;
@@ -353,6 +363,8 @@
                 }
             }
             
+            console.log('[BlogPost Delete] confirm clicked', { currentPostId });
+
             fetch(`{{ url('/admin/blog/posts') }}/${currentPostId}`, {
                 method: 'DELETE',
                 headers: {
@@ -363,12 +375,19 @@
                 }
             })
             .then(response => {
+                console.log('[BlogPost Delete] response status', response.status);
                 const contentType = response.headers.get('content-type');
                 if (contentType && contentType.includes('application/json')) {
                     return response.json();
                 } else {
-                    location.reload();
-                    return null;
+                    return response.text().then(text => {
+                        console.error('[BlogPost Delete] non-json response', {
+                            status: response.status,
+                            body: text?.slice(0, 300)
+                        });
+                        alert('Delete failed. HTTP ' + response.status);
+                        return null;
+                    });
                 }
             })
             .then(data => {

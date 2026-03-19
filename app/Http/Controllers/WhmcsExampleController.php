@@ -43,15 +43,23 @@ class WhmcsExampleController extends Controller
      */
     public function debug(Request $request): JsonResponse
     {
-        $url = config('services.whmcs.url');
+        $url = config('services.whmcs.url', '') ?? '';
         $body = [
-            'identifier' => config('services.whmcs.identifier'),
-            'secret' => config('services.whmcs.secret'),
+            'identifier' => config('services.whmcs.identifier', '') ?? '',
+            'secret' => config('services.whmcs.secret', '') ?? '',
             'action' => 'GetCurrencies',
             'responsetype' => 'json',
         ];
-        if (config('services.whmcs.access_key')) {
-            $body['accesskey'] = config('services.whmcs.access_key');
+        $accessKey = config('services.whmcs.access_key', '') ?? '';
+        if ($accessKey !== '') {
+            $body['accesskey'] = $accessKey;
+        }
+
+        if ($url === '') {
+            return response()->json([
+                'success' => false,
+                'message' => 'WHMCS API url is not configured (set WHMCS_API_URL in .env)',
+            ], 422);
         }
 
         $response = Http::asForm()->timeout(15)->post($url, $body);

@@ -41,11 +41,13 @@ return [
     |--------------------------------------------------------------------------
     */
     'whmcs' => [
-        'url' => env('WHMCS_API_URL'),
-        'identifier' => env('WHMCS_API_IDENTIFIER'),
-        'secret' => env('WHMCS_API_SECRET'),
+        // Keep these values as strings (never null) because some services
+        // use strict typed properties.
+        'url' => env('WHMCS_API_URL', ''),
+        'identifier' => env('WHMCS_API_IDENTIFIER', ''),
+        'secret' => env('WHMCS_API_SECRET', ''),
         // مفتاح تجاوز قيد الـ IP (اختياري): أضفه في WHMCS configuration.php كـ $api_access_key
-        'access_key' => env('WHMCS_API_ACCESS_KEY'),
+        'access_key' => env('WHMCS_API_ACCESS_KEY', ''),
     ],
 
     /*

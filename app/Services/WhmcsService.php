@@ -17,9 +17,11 @@ class WhmcsService
 
     public function __construct()
     {
-        $this->url = config('services.whmcs.url', '');
-        $this->identifier = config('services.whmcs.identifier', '');
-        $this->secret = config('services.whmcs.secret', '');
+        // Some Laravel config values can be explicitly set to `null` (e.g. from env),
+        // which breaks PHP 8+ strict typed properties. Ensure we always end up with strings.
+        $this->url = config('services.whmcs.url') ?? '';
+        $this->identifier = config('services.whmcs.identifier') ?? '';
+        $this->secret = config('services.whmcs.secret') ?? '';
         $this->accessKey = config('services.whmcs.access_key') ?: null;
     }
 
