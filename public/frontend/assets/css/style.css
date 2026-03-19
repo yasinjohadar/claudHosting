@@ -3672,6 +3672,42 @@ ul {
     background: var(--clr-surface);
 }
 
+/* Generic tables inside blog content (align with site theme) */
+.bd-content-html table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 20px 0;
+    border-radius: var(--radius-md);
+    overflow: hidden; /* makes border-radius work with inner cells */
+    border: 1px solid var(--clr-border);
+}
+
+.bd-content-html table th {
+    background: linear-gradient(135deg, var(--clr-primary), var(--clr-primary-dark));
+    color: #fff;
+    padding: 12px 18px;
+    font-weight: 700;
+    font-size: 0.9rem;
+    text-align: center;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.15);
+}
+
+.bd-content-html table td {
+    padding: 12px 18px;
+    font-size: 0.95rem;
+    color: var(--clr-text-secondary);
+    text-align: center;
+    border-bottom: 1px solid var(--clr-border);
+}
+
+.bd-content-html table tr:last-child td {
+    border-bottom: none;
+}
+
+.bd-content-html table tr:hover td {
+    background: var(--clr-surface);
+}
+
 /* Tags */
 .bd-tags {
     display: flex;
