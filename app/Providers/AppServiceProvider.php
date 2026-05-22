@@ -20,6 +20,9 @@ class AppServiceProvider extends ServiceProvider
         if (file_exists($helper = app_path('Helpers/StorageHelper.php'))) {
             require_once $helper;
         }
+        if (file_exists($helper = app_path('helpers.php'))) {
+            require_once $helper;
+        }
         // Register console commands (if any)
         if ($this->app->runningInConsole()) {
             $this->commands([

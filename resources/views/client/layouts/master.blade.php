@@ -1,39 +1,59 @@
 <!DOCTYPE html>
-<html lang="ar" dir="rtl" data-nav-layout="vertical" data-theme-mode="light" data-header-styles="light"
+<html lang="en" dir="ltr" data-nav-layout="vertical" data-theme-mode="light" data-header-styles="light"
     data-menu-styles="light" data-toggled="close">
 
 <head>
+
+    <!-- Meta Data -->
     <meta charset="UTF-8">
     <meta name='viewport' content='width=device-width, initial-scale=1.0'>
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="csrf-token" content="{{ csrf_token() }}">
-    <title>@yield('page-title') — {{ config('app.name', 'ClaudHosting') }}</title>
-    <meta name="Description" content="لوحة العميل">
-    @include('client.layouts.head')
-    @yield('css')
+    <title> @yield('page-title')</title>
+    <meta name="Description" content="أفضل موقع للاعلانات المبوبة">
+    <meta name="Author" content="claudSoft">
+    <meta name="keywords" content="إعلانات , لوحة التحكم">
+
+    @include('admin.layouts.head')
 </head>
 
 <body>
-    @include('client.layouts.switcher')
 
+
+    @include('admin.layouts.switcher')
+
+
+    <!-- Loader -->
     <div id="loader">
-        <img src="{{ asset('assets/images/media/loader.svg') }}" alt="">
+        <img src="{{asset('assets/images/media/loader.svg')}}" alt="">
     </div>
+    <!-- Loader -->
 
     <div class="page">
-        @include('client.partials.impersonation-banner')
-        @include('client.layouts.main-header')
-        @include('client.layouts.offcanvas-sidebar')
-        @include('client.layouts.main-sidebar')
+
+
+        @include('admin.layouts.main-header')
+
+
+
+        @include('admin.layouts.offcanvas-sidebar')
+
+
+
+        @include('admin.layouts.main-sidebar')
+
 
         @yield('content')
 
-        @include('client.layouts.footer')
-    </div>
 
-    @include('client.layouts.footer-scripts')
+        @include('admin.layouts.footer')
+
+    </div>
+    @include('admin.layouts.footer-scripts')
+
     @yield('scripts')
     @stack('scripts')
+
 </body>
 
 </html>
