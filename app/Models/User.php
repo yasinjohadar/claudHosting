@@ -80,12 +80,12 @@ class User extends Authenticatable
 
     public function isAdminPanelUser(): bool
     {
-        if ($this->hasRole('admin')) {
+        if ($this->hasAnyRole(['admin'], 'web')) {
             return true;
         }
 
         try {
-            return $this->can('user-list');
+            return $this->hasPermissionTo('user-list', 'web');
         } catch (\Throwable) {
             return false;
         }

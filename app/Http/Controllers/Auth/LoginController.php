@@ -54,12 +54,17 @@ class LoginController extends Controller
 
             $user = Auth::user();
             $intended = $request->session()->pull('url.intended');
-            if ($intended) {
-                return redirect()->to($intended);
-            }
 
             if ($user && $user->isAdminPanelUser()) {
-                return redirect()->to($this->redirectTo);
+                if ($intended && $this->isAdminUrl($intended)) {
+                    return redirect()->to($intended);
+                }
+
+                return redirect()->route('admin.dashboard');
+            }
+
+            if ($intended && ! $this->isAdminUrl($intended)) {
+                return redirect()->to($intended);
             }
 
             return redirect()->route('client.dashboard');
@@ -85,5 +90,14 @@ class LoginController extends Controller
         $request->session()->regenerateToken();
 
         return redirect('/');
+    }
+
+    protected function isAdminUrl(string $url): bool
+    {
+        $path = parse_url($url, PHP_URL_PATH) ?? '';
+
+        return str_starts_with($path, '/admin')
+            || str_starts_with($path, '/users')
+            || str_starts_with($path, '/roles');
     }
 }

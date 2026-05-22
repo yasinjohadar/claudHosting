@@ -15,10 +15,16 @@ class EnsureAdminPanelUser
     public function handle(Request $request, Closure $next): Response
     {
         if (! Auth::check()) {
-            return redirect()->route('register');
+            return redirect()->route('login');
         }
 
-        if (! Auth::user()->isAdminPanelUser()) {
+        $user = Auth::user();
+
+        if (! $user->isAdminPanelUser()) {
+            if ($user->hasRole('client')) {
+                return redirect()->route('client.dashboard');
+            }
+
             return redirect()->route('home');
         }
 
