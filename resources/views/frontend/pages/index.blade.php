@@ -145,27 +145,10 @@
                 <p>خطط استضافة مرنة وآمنة تناسب المواقع الشخصية والمتاجر الإلكترونية والشركات</p>
             </div>
             @if(isset($featuredPackages) && $featuredPackages->isNotEmpty())
-            <div class="row g-4">
+            <div class="row g-4 align-items-stretch">
                 @foreach($featuredPackages as $index => $product)
-                <div class="col-lg-4 col-md-6">
-                    <a href="{{ route('frontend.package-detail', $product->id) }}" class="glass-panel course-card animate-on-scroll animate-delay-{{ ($index % 3) + 1 }}"
-                        style="text-decoration:none;color:inherit;cursor:pointer;">
-                        <div class="course-img-wrapper">
-                            <i class="fas fa-server fa-3x text-white"></i>
-                            <span class="course-badge">{{ $product->group_name ?? 'باقة' }}</span>
-                        </div>
-                        <div class="course-body">
-                            <h5>{{ $product->name }}</h5>
-                            <p>{{ Str::limit(strip_tags($product->description ?? ''), 80) ?: 'باقة استضافة مناسبة لاحتياجاتك.' }}</p>
-                            <ul class="course-features">
-                                <li><i class="fas fa-check"></i> {{ $product->type_name ?? $product->type }}</li>
-                                <li><i class="fas fa-check"></i> {{ $product->price }} $</li>
-                            </ul>
-                        </div>
-                        <div class="course-footer">
-                            <span class="price">{{ $product->price }} $ / {{ $product->billingcycle ? 'شهرياً' : '' }}</span>
-                        </div>
-                    </a>
+                <div class="col-lg-4 col-md-6 d-flex">
+                    @include('frontend.partials.package-card', ['product' => $product, 'index' => $index, 'descriptionLimit' => 80])
                 </div>
                 @endforeach
             </div>
@@ -257,52 +240,9 @@
                 <h2>ماذا يقول عملاؤنا</h2>
                 <p>آراء وتجارب بعض العملاء الذين اختاروا استضافة كلاودسوفت لمواقعهم ومشاريعهم</p>
             </div>
-            <div class="row g-4">
-                <div class="col-lg-4 col-md-6">
-                    <div class="glass-panel testimonial-card animate-on-scroll animate-delay-1">
-                        <div class="stars">
-                            <i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i>
-                        </div>
-                        <p class="quote-text">"دورة تطوير الويب كانت نقطة تحول في مسيرتي المهنية. أسلوب الشرح ممتاز والتطبيقات العملية رائعة. أنصح الجميع بالتسجيل!"</p>
-                        <div class="student-info">
-                            <div>
-                                <div class="student-name">أحمد محمد</div>
-                                <div class="student-role">مطور ويب - سوريا</div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                <div class="col-lg-4 col-md-6">
-                    <div class="glass-panel testimonial-card animate-on-scroll animate-delay-2">
-                        <div class="stars">
-                            <i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i>
-                        </div>
-                        <p class="quote-text">"فريق كلاودسوفت من أفضل مزودي الاستضافة. الدعم سريع، الخوادم مستقرة، والمحتوى محدث بأحدث التقنيات. استفدت كثيراً من باقة VPS."</p>
-                        <div class="student-info">
-                            <div>
-                                <div class="student-name">سارة العلي</div>
-                                <div class="student-role">مهندسة برمجيات - الأردن</div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                <div class="col-lg-4 col-md-6">
-                    <div class="glass-panel testimonial-card animate-on-scroll animate-delay-3">
-                        <div class="stars">
-                            <i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star-half-alt"></i>
-                        </div>
-                        <p class="quote-text">"تعلمت إدارة الاستضافة من الدليل والفيديوهات وقمت بنقل موقعي خلال أيام فقط! الدعم الفني والمتابعة من الفريق كانت ممتازة."</p>
-                        <div class="student-info">
-                            <div>
-                                <div class="student-name">عمر حسان</div>
-                                <div class="student-role">مطور تطبيقات - العراق</div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
+            @include('frontend.partials.testimonials-list')
             <div class="text-center mt-5 animate-on-scroll">
-                <a href="/testimonials" class="btn-primary-custom">
+                <a href="{{ route('frontend.testimonials') }}" class="btn-primary-custom">
                     <i class="fas fa-comments"></i> عرض كل آراء العملاء
                 </a>
             </div>

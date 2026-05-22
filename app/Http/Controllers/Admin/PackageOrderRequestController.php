@@ -5,14 +5,17 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\PackageOrderRequest;
 use App\Models\Customer;
+use App\Services\Coolify\WhmcsHostProvisioningService;
 use App\Services\WhmcsApiService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 
 class PackageOrderRequestController extends Controller
 {
-    public function __construct(protected WhmcsApiService $whmcsApi)
-    {
+    public function __construct(
+        protected WhmcsApiService $whmcsApi,
+        protected WhmcsHostProvisioningService $hostProvisioning
+    ) {
         $this->middleware('auth');
     }
 
@@ -37,7 +40,9 @@ class PackageOrderRequestController extends Controller
      */
     public function show($id)
     {
-        $orderRequest = PackageOrderRequest::with(['product', 'user'])->findOrFail($id);
+        $orderRequest = PackageOrderRequest::with(['product', 'user', 'coolifyWordpressSite'])->findOrFail($id);
+        $this->hostProvisioning->syncOrderProvisionStatus($orderRequest);
+        $orderRequest->refresh();
 
         return view('admin.order-requests.show', compact('orderRequest'));
     }
@@ -153,5 +158,18 @@ class PackageOrderRequestController extends Controller
 
         return redirect()->route('admin.order-requests.show', $id)
             ->with('success', 'تم تحويل الطلب إلى WHMCS بنجاح.');
+    }
+
+    public function provisionHosting($id)
+    {
+        $orderRequest = PackageOrderRequest::with('product')->findOrFail($id);
+        $result = $this->hostProvisioning->provisionFromOrder($orderRequest);
+
+        if (! $result['success']) {
+            return redirect()->back()->with('error', $result['message']);
+        }
+
+        return redirect()->route('admin.order-requests.show', $id)
+            ->with('success', $result['message'].' — تتبع الحالة من صفحة موقع WordPress.');
     }
 }

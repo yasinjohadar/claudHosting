@@ -33,50 +33,47 @@
                 <h2>ماذا يقول عملاؤنا</h2>
                 <p>آراء وتجارب بعض عملائنا حول جودة الاستضافة، سرعة الخوادم، ومستوى الدعم الفني</p>
             </div>
-            <div class="row g-4">
-                <div class="col-lg-4 col-md-6">
-                    <div class="glass-panel testimonial-card animate-on-scroll animate-delay-1">
-                        <div class="stars"><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i></div>
-                        <p class="quote-text">"دورة تطوير الويب كانت نقطة تحول في مسيرتي المهنية. أسلوب الشرح ممتاز والتطبيقات العملية رائعة. أنصح الجميع بالتسجيل!"</p>
-                        <div class="student-info"><div><div class="student-name">أحمد محمد</div><div class="student-role">مطور ويب - سوريا</div></div></div>
-                    </div>
-                </div>
-                <div class="col-lg-4 col-md-6">
-                    <div class="glass-panel testimonial-card animate-on-scroll animate-delay-2">
-                        <div class="stars"><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i></div>
-                        <p class="quote-text">"فريق كلاودسوفت من أفضل مزودي الاستضافة. الدعم سريع، الخوادم مستقرة، والمحتوى التعليمي محدث. استفدت كثيراً من باقة VPS."</p>
-                        <div class="student-info"><div><div class="student-name">سارة العلي</div><div class="student-role">مهندسة برمجيات - الأردن</div></div></div>
-                    </div>
-                </div>
-                <div class="col-lg-4 col-md-6">
-                    <div class="glass-panel testimonial-card animate-on-scroll animate-delay-3">
-                        <div class="stars"><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star-half-alt"></i></div>
-                        <p class="quote-text">"تعلمت Flutter من دورة الموبايل وقمت ببناء أول تطبيق لي خلال شهرين فقط! الدعم الفني والمتابعة من المدرب كانت ممتازة."</p>
-                        <div class="student-info"><div><div class="student-name">عمر حسان</div><div class="student-role">مطور تطبيقات - العراق</div></div></div>
-                    </div>
-                </div>
-                <div class="col-lg-4 col-md-6">
-                    <div class="glass-panel testimonial-card animate-on-scroll animate-delay-1">
-                        <div class="stars"><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i></div>
-                        <p class="quote-text">"باقة Node.js فتحت لي آفاقاً جديدة. الاستضافة السحابية ساعدتني في تشغيل أول تطبيق بشكل موثوق. شكراً كلاودسوفت!"</p>
-                        <div class="student-info"><div><div class="student-name">محمد خالد</div><div class="student-role">مطور Backend - مصر</div></div></div>
-                    </div>
-                </div>
-                <div class="col-lg-4 col-md-6">
-                    <div class="glass-panel testimonial-card animate-on-scroll animate-delay-2">
-                        <div class="stars"><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i></div>
-                        <p class="quote-text">"المحتوى منظم جداً والتمارين متنوعة. تحولت من مبتدئ إلى قادر على بناء مواقع كاملة بفضل دورة تطوير الويب الشاملة."</p>
-                        <div class="student-info"><div><div class="student-name">نور الدين</div><div class="student-role">مطور ويب - تونس</div></div></div>
-                    </div>
-                </div>
-                <div class="col-lg-4 col-md-6">
-                    <div class="glass-panel testimonial-card animate-on-scroll animate-delay-3">
-                        <div class="stars"><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star-half-alt"></i></div>
-                        <p class="quote-text">"أفضل استثمار قمت به في تعلم البرمجة. المدرب يرد على الاستفسارات بسرعة ويشرح بأمثلة من الواقع. أنصح بشدة."</p>
-                        <div class="student-info"><div><div class="student-name">لينا أحمد</div><div class="student-role">مطورة - لبنان</div></div></div>
-                    </div>
-                </div>
-            </div>
+            @php
+                $testimonials = [
+                    [
+                        'name' => 'أحمد محمد',
+                        'role' => 'مطور ويب — سوريا',
+                        'quote' => 'دورة تطوير الويب كانت نقطة تحول في مسيرتي المهنية. أسلوب الشرح ممتاز والتطبيقات العملية رائعة. أنصح الجميع بالتسجيل!',
+                        'stars' => 5,
+                    ],
+                    [
+                        'name' => 'سارة العلي',
+                        'role' => 'مهندسة برمجيات — الأردن',
+                        'quote' => 'فريق كلاودسوفت من أفضل مزودي الاستضافة. الدعم سريع، الخوادم مستقرة، والمحتوى التعليمي محدث. استفدت كثيراً من باقة VPS.',
+                        'stars' => 5,
+                    ],
+                    [
+                        'name' => 'عمر حسان',
+                        'role' => 'مطور تطبيقات — العراق',
+                        'quote' => 'تعلمت Flutter من دورة الموبايل وقمت ببناء أول تطبيق لي خلال شهرين فقط! الدعم الفني والمتابعة من المدرب كانت ممتازة.',
+                        'stars' => 4.5,
+                    ],
+                    [
+                        'name' => 'محمد خالد',
+                        'role' => 'مطور Backend — مصر',
+                        'quote' => 'باقة Node.js فتحت لي آفاقاً جديدة. الاستضافة السحابية ساعدتني في تشغيل أول تطبيق بشكل موثوق. شكراً كلاودسوفت!',
+                        'stars' => 5,
+                    ],
+                    [
+                        'name' => 'نور الدين',
+                        'role' => 'مطور ويب — تونس',
+                        'quote' => 'المحتوى منظم جداً والتمارين متنوعة. تحولت من مبتدئ إلى قادر على بناء مواقع كاملة بفضل دورة تطوير الويب الشاملة.',
+                        'stars' => 5,
+                    ],
+                    [
+                        'name' => 'لينا أحمد',
+                        'role' => 'مطورة — لبنان',
+                        'quote' => 'أفضل استثمار قمت به في تعلم البرمجة. المدرب يرد على الاستفسارات بسرعة ويشرح بأمثلة من الواقع. أنصح بشدة.',
+                        'stars' => 4.5,
+                    ],
+                ];
+            @endphp
+            @include('frontend.partials.testimonials-list', ['testimonials' => $testimonials])
             <div class="text-center mt-5 animate-on-scroll">
                 <a href="{{ route('frontend.packages') }}" class="btn-primary-custom"><i class="fas fa-server"></i> تصفّح الباقات</a>
             </div>

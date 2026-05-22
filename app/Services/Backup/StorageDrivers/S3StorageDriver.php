@@ -3,6 +3,7 @@
 namespace App\Services\Backup\StorageDrivers;
 
 use App\Contracts\BackupStorageInterface;
+use App\Services\Storage\AppStorageFactory;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Config;
@@ -14,19 +15,19 @@ class S3StorageDriver implements BackupStorageInterface
 
     public function __construct(array $config)
     {
-        $this->config = $config;
-        $this->diskName = 's3_custom_' . md5(json_encode($config));
-        
+        $this->config = AppStorageFactory::normalizeConfig($config);
+        $this->diskName = 's3_custom_' . md5(json_encode($this->config));
+
         // إعداد disk ديناميكي
         Config::set("filesystems.disks.{$this->diskName}", [
             'driver' => 's3',
-            'key' => $config['access_key_id'] ?? '',
-            'secret' => $config['secret_access_key'] ?? '',
-            'region' => $config['region'] ?? 'us-east-1',
-            'bucket' => $config['bucket'] ?? '',
-            'url' => $config['url'] ?? null,
-            'endpoint' => $config['endpoint'] ?? null,
-            'use_path_style_endpoint' => $config['use_path_style'] ?? false,
+            'key' => $this->config['access_key_id'] ?? '',
+            'secret' => $this->config['secret_access_key'] ?? '',
+            'region' => $this->config['region'] ?? 'us-east-1',
+            'bucket' => $this->config['bucket'] ?? '',
+            'url' => $this->config['url'] ?? null,
+            'endpoint' => $this->config['endpoint'] ?? null,
+            'use_path_style_endpoint' => AppStorageFactory::toBool($this->config['use_path_style'] ?? false),
             'throw' => false,
         ]);
     }

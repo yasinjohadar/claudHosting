@@ -1,0 +1,13 @@
+{
+  "mcpServers": {
+    "wordpress": {
+      "command": "npx",
+      "args": ["-y", "@automattic/mcp-wordpress-remote@latest"],
+      "env": {
+        "WP_API_URL": "https://YOUR-SITE.example.com/wp-json",
+        "WP_USERNAME": "admin",
+        "WP_APP_PASSWORD": "paste-from-wordpress-site-page-after-bootstrap"
+      }
+    }
+  }
+}

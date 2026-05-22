@@ -21,10 +21,6 @@
                         <svg xmlns="http://www.w3.org/2000/svg" fill="#7b8191" width="24" height="24" viewBox="0 0 24 24"> <path d="M13.293 6.293 7.586 12l5.707 5.707 1.414-1.414L10.414 12l4.293-4.293z"></path> </svg>
                     </div>
                     <ul class="main-menu">
-                        <!-- Start::slide__category -->
-                        <li class="slide__category"><span class="category-name">الرئيسية</span></li>
-                        <!-- End::slide__category -->
-
                         <!-- لوحة التحكم -->
                         <li class="slide">
                             <a href="{{ route('admin.dashboard') }}" class="side-menu__item {{ request()->routeIs('admin.dashboard') ? 'active' : '' }}">
@@ -48,10 +44,6 @@
                             </a>
                         </li>
 
-                        <!-- Start::slide__category -->
-                        <li class="slide__category"><span class="category-name">إدارة النظام</span></li>
-                        <!-- End::slide__category -->
-
                         <!-- العملاء -->
                         <li class="slide has-sub {{ request()->routeIs('admin.customers.*') ? 'open' : '' }}">
                             <a href="javascript:void(0);" class="side-menu__item {{ request()->routeIs('admin.customers.*') ? 'active' : '' }}">
@@ -63,9 +55,6 @@
                                 <i class="fe fe-chevron-right side-menu__angle"></i>
                             </a>
                             <ul class="slide-menu child1">
-                                <li class="slide side-menu__label1">
-                                    <a href="javascript:void(0);">العملاء</a>
-                                </li>
                                 <li class="slide">
                                     <a href="{{ route('admin.customers.index') }}" class="side-menu__item {{ request()->routeIs('admin.customers.index') ? 'active' : '' }}">قائمة العملاء</a>
                                 </li>
@@ -86,9 +75,6 @@
                                 <i class="fe fe-chevron-right side-menu__angle"></i>
                             </a>
                             <ul class="slide-menu child1">
-                                <li class="slide side-menu__label1">
-                                    <a href="javascript:void(0);">المنتجات</a>
-                                </li>
                                 <li class="slide">
                                     <a href="{{ route('admin.products.index') }}" class="side-menu__item {{ request()->routeIs('admin.products.index') ? 'active' : '' }}">قائمة المنتجات</a>
                                 </li>
@@ -109,14 +95,6 @@
                             </a>
                         </li>
 
-                        <!-- إعدادات الموقع -->
-                        <li class="slide">
-                            <a href="{{ route('admin.settings.index') }}" class="side-menu__item {{ request()->routeIs('admin.settings.*') ? 'active' : '' }}">
-                                <svg xmlns="http://www.w3.org/2000/svg" class="side-menu__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
-                                <span class="side-menu__label">إعدادات الموقع</span>
-                            </a>
-                        </li>
-
                         <!-- الفواتير -->
                         <li class="slide has-sub {{ request()->routeIs('admin.invoices.*') ? 'open' : '' }}">
                             <a href="javascript:void(0);" class="side-menu__item {{ request()->routeIs('admin.invoices.*') ? 'active' : '' }}">
@@ -128,9 +106,6 @@
                                 <i class="fe fe-chevron-right side-menu__angle"></i>
                             </a>
                             <ul class="slide-menu child1">
-                                <li class="slide side-menu__label1">
-                                    <a href="javascript:void(0);">الفواتير</a>
-                                </li>
                                 <li class="slide">
                                     <a href="{{ route('admin.invoices.index') }}" class="side-menu__item {{ request()->routeIs('admin.invoices.index') ? 'active' : '' }}">قائمة الفواتير</a>
                                 </li>
@@ -151,9 +126,6 @@
                                 <i class="fe fe-chevron-right side-menu__angle"></i>
                             </a>
                             <ul class="slide-menu child1">
-                                <li class="slide side-menu__label1">
-                                    <a href="javascript:void(0);">التذاكر</a>
-                                </li>
                                 <li class="slide">
                                     <a href="{{ route('admin.tickets.index') }}" class="side-menu__item {{ request()->routeIs('admin.tickets.index') ? 'active' : '' }}">قائمة التذاكر</a>
                                 </li>
@@ -178,19 +150,6 @@
                             </ul>
                         </li>
 
-                        <!-- الذكاء الاصطناعي -->
-                        <li class="slide has-sub {{ request()->routeIs('admin.ai.*') ? 'open active' : '' }}">
-                            <a href="javascript:void(0);" class="side-menu__item">
-                                <svg xmlns="http://www.w3.org/2000/svg" class="side-menu__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>
-                                <span class="side-menu__label">الذكاء الاصطناعي</span>
-                                <i class="fe fe-chevron-right side-menu__angle"></i>
-                            </a>
-                            <ul class="slide-menu child1">
-                                <li class="slide"><a href="{{ route('admin.ai.models.index') }}" class="side-menu__item">نماذج AI</a></li>
-                                <li class="slide"><a href="{{ route('admin.ai.settings.index') }}" class="side-menu__item">الإعدادات</a></li>
-                            </ul>
-                        </li>
-
                         <!-- التخزين السحابي -->
                         <li class="slide has-sub {{ request()->routeIs('admin.storage.*') ? 'open active' : '' }}">
                             <a href="javascript:void(0);" class="side-menu__item">
@@ -203,29 +162,6 @@
                                 <li class="slide"><a href="{{ route('admin.storage.create') }}" class="side-menu__item">إضافة مكان تخزين</a></li>
                                 <li class="slide"><a href="{{ route('admin.storage.analytics') }}" class="side-menu__item">الإحصائيات</a></li>
                             </ul>
-                        </li>
-
-                        <!-- النسخ الاحتياطي -->
-                        <li class="slide has-sub {{ request()->routeIs('admin.backups.*') || request()->routeIs('admin.backup-schedules.*') || request()->routeIs('admin.backup-storage.*') ? 'open active' : '' }}">
-                            <a href="javascript:void(0);" class="side-menu__item">
-                                <svg xmlns="http://www.w3.org/2000/svg" class="side-menu__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
-                                <span class="side-menu__label">النسخ الاحتياطي</span>
-                                <i class="fe fe-chevron-right side-menu__angle"></i>
-                            </a>
-                            <ul class="slide-menu child1">
-                                <li class="slide"><a href="{{ route('admin.backups.index') }}" class="side-menu__item">النسخ الاحتياطية</a></li>
-                                <li class="slide"><a href="{{ route('admin.backups.create') }}" class="side-menu__item">إنشاء نسخة</a></li>
-                                <li class="slide"><a href="{{ route('admin.backup-schedules.index') }}" class="side-menu__item">الجداول الزمنية</a></li>
-                                <li class="slide"><a href="{{ route('admin.backup-storage.index') }}" class="side-menu__item">إعدادات التخزين</a></li>
-                            </ul>
-                        </li>
-
-                        <!-- ربط الأقراص -->
-                        <li class="slide">
-                            <a href="{{ route('admin.storage-disk-mappings.index') }}" class="side-menu__item">
-                                <svg xmlns="http://www.w3.org/2000/svg" class="side-menu__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="2" x2="12" y2="6"/><line x1="12" y1="18" x2="12" y2="22"/><line x1="4.93" y1="4.93" x2="7.76" y2="7.76"/><line x1="16.24" y1="16.24" x2="19.07" y2="19.07"/><line x1="2" y1="12" x2="6" y2="12"/><line x1="18" y1="12" x2="22" y2="12"/><line x1="4.93" y1="19.07" x2="7.76" y2="16.24"/><line x1="16.24" y1="7.76" x2="19.07" y2="4.93"/></svg>
-                                <span class="side-menu__label">ربط الأقراص</span>
-                            </a>
                         </li>
 
                         <!-- واتساب -->
@@ -243,10 +179,6 @@
                             </ul>
                         </li>
 
-                        <!-- Start::slide__category -->
-                        <li class="slide__category"><span class="category-name">التقارير</span></li>
-                        <!-- End::slide__category -->
-
                         <!-- التقارير -->
                         <li class="slide has-sub {{ request()->routeIs('admin.reports.*') ? 'open' : '' }}">
                             <a href="{{ route('admin.reports.index') }}" class="side-menu__item {{ request()->routeIs('admin.reports.*') ? 'active' : '' }}">
@@ -258,9 +190,6 @@
                                 <i class="fe fe-chevron-right side-menu__angle"></i>
                             </a>
                             <ul class="slide-menu child1">
-                                <li class="slide side-menu__label1">
-                                    <a href="javascript:void(0);">التقارير</a>
-                                </li>
                                 <li class="slide">
                                     <a href="{{ route('admin.reports.index') }}" class="side-menu__item {{ request()->routeIs('admin.reports.index') ? 'active' : '' }}">
                                         <i class="fe fe-bar-chart-2 mr-2"></i> لوحة التقارير الرئيسية
@@ -310,13 +239,9 @@
                             </ul>
                         </li>
 
-                        <!-- Start::slide__category -->
-                        <li class="slide__category"><span class="category-name">الإعدادات</span></li>
-                        <!-- End::slide__category -->
-
-                        <!-- المستخدمين والصلاحيات -->
-                        <li class="slide has-sub {{ request()->routeIs('users.*') || request()->routeIs('roles.*') ? 'open' : '' }}">
-                            <a href="javascript:void(0);" class="side-menu__item {{ request()->routeIs('users.*') || request()->routeIs('roles.*') ? 'active' : '' }}">
+                        <!-- المستخدمين -->
+                        <li class="slide has-sub {{ request()->routeIs('users.*') ? 'open' : '' }}">
+                            <a href="javascript:void(0);" class="side-menu__item {{ request()->routeIs('users.*') ? 'active' : '' }}">
                                 <svg xmlns="http://www.w3.org/2000/svg" class="side-menu__icon" viewBox="0 0 24 24">
                                     <path d="M0 0h24v24H0z" fill="none"/>
                                     <path d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z"/>
@@ -325,21 +250,125 @@
                                 <i class="fe fe-chevron-right side-menu__angle"></i>
                             </a>
                             <ul class="slide-menu child1">
-                                <li class="slide side-menu__label1">
-                                    <a href="javascript:void(0);">المستخدمين</a>
-                                </li>
                                 <li class="slide">
                                     <a href="{{ route('users.index') }}" class="side-menu__item {{ request()->routeIs('users.index') ? 'active' : '' }}">قائمة المستخدمين</a>
                                 </li>
                                 <li class="slide">
                                     <a href="{{ route('users.create') }}" class="side-menu__item {{ request()->routeIs('users.create') ? 'active' : '' }}">إضافة مستخدم</a>
                                 </li>
+                            </ul>
+                        </li>
+
+                        <!-- الإعدادات -->
+                        @php
+                            $settingsMenuActive = request()->routeIs('admin.settings.*')
+                                || request()->routeIs('roles.*')
+                                || request()->routeIs('admin.backups.*')
+                                || request()->routeIs('admin.backup-schedules.*')
+                                || request()->routeIs('admin.backup-storage.*')
+                                || request()->routeIs('admin.storage-disk-mappings.*')
+                                || request()->routeIs('admin.ai.*')
+                                || request()->routeIs('admin.coolify.backups.*');
+                        @endphp
+                        <li class="slide has-sub {{ $settingsMenuActive ? 'open' : '' }}">
+                            <a href="javascript:void(0);" class="side-menu__item {{ $settingsMenuActive ? 'active' : '' }}">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="side-menu__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+                                <span class="side-menu__label">الإعدادات</span>
+                                <i class="fe fe-chevron-right side-menu__angle"></i>
+                            </a>
+                            <ul class="slide-menu child1">
+                                <li class="slide">
+                                    <a href="{{ route('admin.settings.index') }}" class="side-menu__item {{ request()->routeIs('admin.settings.*') ? 'active' : '' }}">إعدادات الموقع</a>
+                                </li>
+                                <li class="slide divider"></li>
                                 <li class="slide">
                                     <a href="{{ route('roles.index') }}" class="side-menu__item {{ request()->routeIs('roles.index') ? 'active' : '' }}">الصلاحيات</a>
                                 </li>
                                 <li class="slide">
                                     <a href="{{ route('roles.create') }}" class="side-menu__item {{ request()->routeIs('roles.create') ? 'active' : '' }}">إضافة صلاحية</a>
                                 </li>
+                                <li class="slide divider"></li>
+                                <li class="slide">
+                                    <a href="{{ route('admin.backups.index') }}" class="side-menu__item {{ request()->routeIs('admin.backups.index') ? 'active' : '' }}">النسخ الاحتياطية</a>
+                                </li>
+                                <li class="slide">
+                                    <a href="{{ route('admin.backups.create') }}" class="side-menu__item {{ request()->routeIs('admin.backups.create') ? 'active' : '' }}">إنشاء نسخة احتياطية</a>
+                                </li>
+                                <li class="slide">
+                                    <a href="{{ route('admin.backup-schedules.index') }}" class="side-menu__item {{ request()->routeIs('admin.backup-schedules.*') ? 'active' : '' }}">جداول النسخ الاحتياطي</a>
+                                </li>
+                                <li class="slide">
+                                    <a href="{{ route('admin.backup-storage.index') }}" class="side-menu__item {{ request()->routeIs('admin.backup-storage.*') ? 'active' : '' }}">تخزين النسخ الاحتياطي</a>
+                                </li>
+                                <li class="slide">
+                                    <a href="{{ route('admin.storage-disk-mappings.index') }}" class="side-menu__item {{ request()->routeIs('admin.storage-disk-mappings.*') ? 'active' : '' }}">ربط الأقراص</a>
+                                </li>
+                                <li class="slide divider"></li>
+                                <li class="slide">
+                                    <a href="{{ route('admin.coolify.backups.index') }}" class="side-menu__item {{ request()->routeIs('admin.coolify.backups.*') ? 'active' : '' }}">نسخ واستعادة Coolify</a>
+                                </li>
+                                <li class="slide divider"></li>
+                                <li class="slide">
+                                    <a href="{{ route('admin.ai.models.index') }}" class="side-menu__item {{ request()->routeIs('admin.ai.models.*') ? 'active' : '' }}">نماذج الذكاء الاصطناعي</a>
+                                </li>
+                                <li class="slide">
+                                    <a href="{{ route('admin.ai.settings.index') }}" class="side-menu__item {{ request()->routeIs('admin.ai.settings.*') ? 'active' : '' }}">إعدادات الذكاء الاصطناعي</a>
+                                </li>
+                            </ul>
+                        </li>
+
+                        <!-- النطاقات -->
+                        <li class="slide has-sub {{ request()->routeIs('admin.domains.*') || request()->routeIs('admin.cloudflare.*') || request()->routeIs('admin.namecom.*') ? 'open' : '' }}">
+                            <a href="javascript:void(0);" class="side-menu__item {{ request()->routeIs('admin.domains.*') || request()->routeIs('admin.cloudflare.*') || request()->routeIs('admin.namecom.*') ? 'active' : '' }}">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="side-menu__icon" viewBox="0 0 24 24"><path d="M0 0h24v24H0z" fill="none"/><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z"/></svg>
+                                <span class="side-menu__label">النطاقات</span>
+                                <i class="fe fe-chevron-right side-menu__angle"></i>
+                            </a>
+                            <ul class="slide-menu child1">
+                                <li class="slide"><a href="{{ route('admin.domains.index') }}" class="side-menu__item {{ request()->routeIs('admin.domains.index') ? 'active' : '' }}">مركز تحكم النطاقات</a></li>
+                                <li class="slide"><a href="{{ route('admin.domains.search') }}" class="side-menu__item {{ request()->routeIs('admin.domains.search') ? 'active' : '' }}">البحث عن نطاق</a></li>
+                                <li class="slide"><a href="{{ route('admin.domains.whmcs.index') }}" class="side-menu__item {{ request()->routeIs('admin.domains.whmcs.*') ? 'active' : '' }}">نطاقات WHMCS</a></li>
+                                <li class="slide"><a href="{{ route('admin.cloudflare.zones.index') }}" class="side-menu__item {{ request()->routeIs('admin.cloudflare.zones.*') ? 'active' : '' }}">جميع نطاقات CF (Zones)</a></li>
+                                <li class="slide"><a href="{{ route('admin.cloudflare.registrar.index') }}" class="side-menu__item {{ request()->routeIs('admin.cloudflare.registrar.*') ? 'active' : '' }}">مسجّل عند CF فقط</a></li>
+                                <li class="slide"><a href="{{ route('admin.cloudflare.settings.index') }}" class="side-menu__item {{ request()->routeIs('admin.cloudflare.settings.*') ? 'active' : '' }}">إعدادات Cloudflare</a></li>
+                                <li class="slide"><a href="{{ route('admin.namecom.domains.index') }}" class="side-menu__item {{ request()->routeIs('admin.namecom.domains.*') ? 'active' : '' }}">نطاقات name.com</a></li>
+                                <li class="slide"><a href="{{ route('admin.namecom.settings.index') }}" class="side-menu__item {{ request()->routeIs('admin.namecom.settings.*') ? 'active' : '' }}">إعدادات name.com</a></li>
+                            </ul>
+                        </li>
+
+                        <!-- Coolify -->
+                        <li class="slide has-sub {{ request()->routeIs('admin.coolify.*') ? 'open' : '' }}">
+                            <a href="javascript:void(0);" class="side-menu__item {{ request()->routeIs('admin.coolify.*') ? 'active' : '' }}">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="side-menu__icon" viewBox="0 0 24 24">
+                                    <path d="M0 0h24v24H0z" fill="none"/>
+                                    <path d="M20 13H4c-.55 0-1 .45-1 1v6c0 .55.45 1 1 1h16c.55 0 1-.45 1-1v-6c0-.55-.45-1-1-1zM7 19c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2zM20 3H4c-.55 0-1 .45-1 1v6c0 .55.45 1 1 1h16c.55 0 1-.45 1-1V4c0-.55-.45-1-1-1zM7 9c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2z"/>
+                                </svg>
+                                <span class="side-menu__label">Coolify</span>
+                                <i class="fe fe-chevron-right side-menu__angle"></i>
+                            </a>
+                            <ul class="slide-menu child1">
+                                <li class="slide"><a href="{{ route('admin.coolify.overview') }}" class="side-menu__item {{ request()->routeIs('admin.coolify.overview') ? 'active' : '' }}">لوحة Coolify</a></li>
+                                <li class="slide"><a href="{{ route('admin.coolify.operations.index') }}" class="side-menu__item {{ request()->routeIs('admin.coolify.operations.*') ? 'active' : '' }}">مركز العمليات</a></li>
+                                <li class="slide"><a href="{{ route('admin.coolify.readiness.index') }}" class="side-menu__item {{ request()->routeIs('admin.coolify.readiness.*') ? 'active' : '' }}">جاهزية الاستضافة</a></li>
+                                <li class="slide"><a href="{{ route('admin.coolify.catalog.index') }}" class="side-menu__item {{ request()->routeIs('admin.coolify.catalog.*') && !request()->routeIs('admin.coolify.catalog-settings.*') ? 'active' : '' }}">إضافة مورد</a></li>
+                                <li class="slide"><a href="{{ route('admin.coolify.wordpress-sites.index') }}" class="side-menu__item {{ request()->routeIs('admin.coolify.wordpress-sites.*') ? 'active' : '' }}">مواقع WordPress</a></li>
+                                <li class="slide"><a href="{{ route('admin.coolify.catalog-settings.index') }}" class="side-menu__item {{ request()->routeIs('admin.coolify.catalog-settings.*') ? 'active' : '' }}">إعدادات الكتالوج</a></li>
+                                <li class="slide"><a href="{{ route('admin.coolify.resources.index') }}" class="side-menu__item {{ request()->routeIs('admin.coolify.resources.*') ? 'active' : '' }}">كل الموارد</a></li>
+                                <li class="slide"><a href="{{ route('admin.coolify.system.index') }}" class="side-menu__item {{ request()->routeIs('admin.coolify.system.*') ? 'active' : '' }}">نظام Coolify</a></li>
+                                <li class="slide"><a href="{{ route('admin.coolify.servers.index') }}" class="side-menu__item {{ request()->routeIs('admin.coolify.servers.*') ? 'active' : '' }}">السيرفرات</a></li>
+                                <li class="slide"><a href="{{ route('admin.coolify.servers.create') }}" class="side-menu__item {{ request()->routeIs('admin.coolify.servers.create') ? 'active' : '' }}">إضافة سيرفر</a></li>
+                                <li class="slide"><a href="{{ route('admin.coolify.projects.index') }}" class="side-menu__item {{ request()->routeIs('admin.coolify.projects.*') ? 'active' : '' }}">المشاريع</a></li>
+                                <li class="slide"><a href="{{ route('admin.coolify.projects.create') }}" class="side-menu__item {{ request()->routeIs('admin.coolify.projects.create') ? 'active' : '' }}">إضافة مشروع</a></li>
+                                <li class="slide"><a href="{{ route('admin.coolify.applications.index') }}" class="side-menu__item {{ request()->routeIs('admin.coolify.applications.*') ? 'active' : '' }}">التطبيقات</a></li>
+                                <li class="slide"><a href="{{ route('admin.coolify.databases.index') }}" class="side-menu__item {{ request()->routeIs('admin.coolify.databases.*') && !request()->routeIs('admin.coolify.backups.*') ? 'active' : '' }}">قواعد البيانات</a></li>
+                                <li class="slide"><a href="{{ route('admin.coolify.backups.index') }}" class="side-menu__item {{ request()->routeIs('admin.coolify.backups.*') ? 'active' : '' }}">نسخ Coolify</a></li>
+                                <li class="slide"><a href="{{ route('admin.coolify.services.index') }}" class="side-menu__item {{ request()->routeIs('admin.coolify.services.*') ? 'active' : '' }}">الخدمات</a></li>
+                                <li class="slide"><a href="{{ route('admin.coolify.deployments.index') }}" class="side-menu__item {{ request()->routeIs('admin.coolify.deployments.*') ? 'active' : '' }}">النشرات</a></li>
+                                <li class="slide"><a href="{{ route('admin.coolify.private-keys.index') }}" class="side-menu__item {{ request()->routeIs('admin.coolify.private-keys.*') ? 'active' : '' }}">مفاتيح SSH</a></li>
+                                <li class="slide"><a href="{{ route('admin.coolify.github-apps.index') }}" class="side-menu__item {{ request()->routeIs('admin.coolify.github-apps.*') ? 'active' : '' }}">GitHub Apps</a></li>
+                                <li class="slide"><a href="{{ route('admin.coolify.cloud-tokens.index') }}" class="side-menu__item {{ request()->routeIs('admin.coolify.cloud-tokens.*') ? 'active' : '' }}">Cloud Tokens</a></li>
+                                <li class="slide"><a href="{{ route('admin.coolify.teams.index') }}" class="side-menu__item {{ request()->routeIs('admin.coolify.teams.*') ? 'active' : '' }}">فرق العمل</a></li>
+                                <li class="slide"><a href="{{ route('admin.coolify.settings.index') }}" class="side-menu__item {{ request()->routeIs('admin.coolify.settings.*') ? 'active' : '' }}">إعدادات الاتصال</a></li>
                             </ul>
                         </li>
 
@@ -354,9 +383,6 @@
                                 <i class="fe fe-chevron-right side-menu__angle"></i>
                             </a>
                             <ul class="slide-menu child1">
-                                <li class="slide side-menu__label1">
-                                    <a href="javascript:void(0);">WHMCS</a>
-                                </li>
                                 <li class="slide">
                                     <a href="{{ route('admin.whmcs.test') }}" class="side-menu__item {{ request()->routeIs('admin.whmcs.test') ? 'active' : '' }}">اختبار الاتصال</a>
                                 </li>

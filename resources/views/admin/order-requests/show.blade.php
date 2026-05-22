@@ -27,6 +27,15 @@
                     <button type="submit" class="btn btn-success"><i class="fe fe-check-circle"></i> تحويل إلى WHMCS</button>
                 </form>
                 @endif
+                @if($orderRequest->product && !$orderRequest->coolify_wordpress_site_id)
+                <form action="{{ route('admin.order-requests.provision-hosting', $orderRequest->id) }}" method="POST" class="d-inline" onsubmit="return confirm('بدء تزويد WordPress عبر Coolify؟');">
+                    @csrf
+                    <button type="submit" class="btn btn-warning"><i class="fe fe-server"></i> تزويد Coolify</button>
+                </form>
+                @endif
+                @if($orderRequest->coolifyWordpressSite)
+                <a href="{{ route('admin.coolify.wordpress-sites.show', $orderRequest->coolifyWordpressSite->uuid) }}" class="btn btn-outline-primary">موقع WordPress</a>
+                @endif
                 <a href="{{ route('admin.order-requests.index') }}" class="btn btn-secondary"><i class="fe fe-arrow-left"></i> العودة</a>
             </div>
         </div>
@@ -68,6 +77,9 @@
                             @endif
                             @if($orderRequest->whmcs_client_id)
                             <li class="mb-3 d-flex justify-content-between"><span class="fw-semibold">معرف العميل WHMCS:</span><span>{{ $orderRequest->whmcs_client_id }}</span></li>
+                            @endif
+                            @if($orderRequest->provision_status)
+                            <li class="mb-3 d-flex justify-content-between"><span class="fw-semibold">تزويد Coolify:</span><span>{{ $orderRequest->provision_status_label }}</span></li>
                             @endif
                             @if($orderRequest->user_id)
                             <li class="mb-3 d-flex justify-content-between"><span class="fw-semibold">حساب الموقع:</span><span>مرتبط بمستخدم #{{ $orderRequest->user_id }}</span></li>

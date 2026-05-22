@@ -31,27 +31,10 @@
     <section class="section-padding" id="packages" style="background: var(--clr-bg-secondary);">
         <div class="container">
             @if(isset($products) && $products->isNotEmpty())
-            <div class="row g-4">
+            <div class="row g-4 align-items-stretch">
                 @foreach($products as $index => $product)
-                <div class="col-lg-4 col-md-6">
-                    <a href="{{ route('frontend.package-detail', $product->id) }}" class="glass-panel course-card animate-on-scroll animate-delay-{{ ($index % 3) + 1 }}" style="text-decoration:none;color:inherit;cursor:pointer;height:100%;display:block;">
-                        <div class="course-img-wrapper">
-                            <i class="fas fa-server fa-3x text-white"></i>
-                            <span class="course-badge">{{ $product->group_name ?? 'باقة' }}</span>
-                        </div>
-                        <div class="course-body">
-                            <h5>{{ $product->name }}</h5>
-                            <p>{{ Str::limit(strip_tags($product->description ?? ''), 120) ?: 'باقة استضافة مناسبة لاحتياجاتك.' }}</p>
-                            <ul class="course-features">
-                                <li><i class="fas fa-check"></i> {{ $product->type_name ?? $product->type }}</li>
-                                <li><i class="fas fa-check"></i> دورة فوترة: {{ $product->billingcycle ?? 'شهري' }}</li>
-                                <li><i class="fas fa-check"></i> {{ $product->availability_status }}</li>
-                            </ul>
-                        </div>
-                        <div class="course-footer">
-                            <span class="price">{{ $product->price }} $ / {{ $product->billingcycle ? 'شهرياً' : '' }}</span>
-                        </div>
-                    </a>
+                <div class="col-lg-4 col-md-6 d-flex">
+                    @include('frontend.partials.package-card', ['product' => $product, 'index' => $index, 'descriptionLimit' => 120, 'showAvailability' => true])
                 </div>
                 @endforeach
             </div>

@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\AppStorageConfig;
+use App\Services\Storage\AppStorageFactory;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
@@ -67,7 +68,7 @@ class AppStorageController extends Controller
 
         try {
             $driver = $validated['driver'];
-            $configData = $request->input('config', []);
+            $configData = AppStorageFactory::normalizeConfig($request->input('config', []));
 
             // للتخزين المحلي: يمكن أن يكون config فارغاً، نضع قيمة افتراضية للمسار
             if ($driver === 'local') {
@@ -166,7 +167,7 @@ class AppStorageController extends Controller
 
         try {
             $driver = $validated['driver'];
-            $configData = $request->input('config', []);
+            $configData = AppStorageFactory::normalizeConfig($request->input('config', []));
 
             // دمج config مع القيم القديمة (للحفاظ على passwords)
             $oldConfig = $config->getDecryptedConfig();
@@ -272,7 +273,7 @@ class AppStorageController extends Controller
             ]);
 
             $driver = $request->input('driver');
-            $configData = $request->input('config');
+            $configData = AppStorageFactory::normalizeConfig($request->input('config', []));
 
             // تنظيف وtrim للـ credentials (خاصة لـ Bunny Storage)
             if ($driver === 'bunny') {
@@ -337,7 +338,7 @@ class AppStorageController extends Controller
                     'bucket' => $configData['bucket'] ?? '',
                     'url' => $configData['url'] ?? null,
                     'endpoint' => $configData['endpoint'] ?? null,
-                    'use_path_style_endpoint' => $configData['use_path_style'] ?? false,
+                    'use_path_style_endpoint' => AppStorageFactory::toBool($configData['use_path_style'] ?? false),
                     'throw' => false,
                 ],
                 'cloudflare_r2' => [

@@ -10,6 +10,37 @@ use Illuminate\Support\Facades\Log;
 class AppStorageFactory
 {
     /**
+     * تحويل قيم النماذج (مثل "1" من checkbox) إلى boolean.
+     */
+    public static function toBool(mixed $value, bool $default = false): bool
+    {
+        if (is_bool($value)) {
+            return $value;
+        }
+
+        if ($value === null || $value === '') {
+            return $default;
+        }
+
+        return filter_var($value, FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE) ?? $default;
+    }
+
+    /**
+     * @param  array<string, mixed>  $config
+     * @return array<string, mixed>
+     */
+    public static function normalizeConfig(array $config): array
+    {
+        foreach (['use_path_style', 'passive', 'ssl', 'use_tls'] as $key) {
+            if (array_key_exists($key, $config)) {
+                $config[$key] = self::toBool($config[$key]);
+            }
+        }
+
+        return $config;
+    }
+
+    /**
      * إنشاء Laravel Storage disk من AppStorageConfig
      */
     public static function create(AppStorageConfig $config): \Illuminate\Contracts\Filesystem\Filesystem
@@ -17,7 +48,7 @@ class AppStorageFactory
         // استخدام fresh() لضمان قراءة القيمة المحدثة من قاعدة البيانات
         $freshConfig = $config->fresh();
         
-        $driverConfig = $freshConfig->getDecryptedConfig();
+        $driverConfig = self::normalizeConfig($freshConfig->getDecryptedConfig());
         $diskName = 'app_storage_' . $freshConfig->id . '_' . md5(json_encode($driverConfig));
         
         $diskConfig = match($freshConfig->driver) {
@@ -72,7 +103,7 @@ class AppStorageFactory
             'bucket' => $config['bucket'] ?? '',
             'url' => $config['url'] ?? null,
             'endpoint' => $config['endpoint'] ?? null,
-            'use_path_style_endpoint' => $config['use_path_style'] ?? false,
+            'use_path_style_endpoint' => self::toBool($config['use_path_style'] ?? false),
             'throw' => false,
         ];
     }

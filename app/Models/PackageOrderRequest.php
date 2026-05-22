@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class PackageOrderRequest extends Model
 {
@@ -20,6 +21,8 @@ class PackageOrderRequest extends Model
         'user_id',
         'whmcs_order_id',
         'whmcs_client_id',
+        'provision_status',
+        'coolify_wordpress_site_id',
     ];
 
     protected $casts = [
@@ -61,6 +64,26 @@ class PackageOrderRequest extends Model
     public function user()
     {
         return $this->belongsTo(User::class);
+    }
+
+    public function coolifyWordpressSite(): BelongsTo
+    {
+        return $this->belongsTo(CoolifyWordpressSite::class, 'coolify_wordpress_site_id');
+    }
+
+    public static function provisionStatuses(): array
+    {
+        return [
+            'pending' => 'معلق',
+            'provisioning' => 'جاري التزويد',
+            'running' => 'يعمل',
+            'failed' => 'فاشل',
+        ];
+    }
+
+    public function getProvisionStatusLabelAttribute(): string
+    {
+        return self::provisionStatuses()[$this->provision_status] ?? ($this->provision_status ?: '—');
     }
 
     public function getStatusLabelAttribute(): string

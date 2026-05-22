@@ -83,6 +83,14 @@ class Customer extends Model
     }
 
     /**
+     * نطاقات WHMCS المزامنة
+     */
+    public function whmcsDomains()
+    {
+        return $this->hasMany(WhmcsDomain::class);
+    }
+
+    /**
      * العلاقة مع المنتجات/الخدمات
      */
     public function products()

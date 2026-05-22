@@ -68,6 +68,7 @@ class Product extends Model
         'created_at',
         'updated_at',
         'synced_at',
+        'coolify_provision',
     ];
 
     /**
@@ -88,6 +89,7 @@ class Product extends Model
         'autoterminate' => 'boolean',
         'autorenew' => 'boolean',
         'synced_at' => 'datetime',
+        'coolify_provision' => 'array',
     ];
 
     /**

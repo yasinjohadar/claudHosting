@@ -1,0 +1,18 @@
+@extends('admin.layouts.master')
+@section('page-title') تعديل قاعدة بيانات @stop
+@section('content')
+<div class="main-content app-content">
+    <div class="container-fluid">
+        <h4 class="my-4">تعديل قاعدة البيانات</h4>
+        @include('admin.coolify.partials.alerts')
+        <div class="card custom-card"><div class="card-body">
+            <form method="POST" action="{{ route('admin.coolify.databases.update', $uuid) }}">
+                @csrf @method('PUT')
+                <div class="mb-3"><label class="form-label">الاسم</label><input type="text" name="name" class="form-control" value="{{ old('name', $database['name'] ?? '') }}"></div>
+                <button type="submit" class="btn btn-primary">حفظ</button>
+                <a href="{{ route('admin.coolify.databases.show', $uuid) }}" class="btn btn-light">إلغاء</a>
+            </form>
+        </div></div>
+    </div>
+</div>
+@endsection

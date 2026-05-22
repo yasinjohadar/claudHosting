@@ -1306,6 +1306,93 @@ class WhmcsApiService
     }
 
     /**
+     * نطاقات عميل واحد من WHMCS (GetClientsDomains)
+     *
+     * @return array<int, array<string, mixed>>
+     */
+    public function getClientDomains(int $clientId): array
+    {
+        $response = $this->request('GetClientsDomains', [
+            'clientid' => $clientId,
+            'limitnum' => 500,
+        ]);
+
+        if (! ($response['success'] ?? false)) {
+            Log::info('WHMCS GetClientsDomains failed', [
+                'clientid' => $clientId,
+                'message' => $response['message'] ?? 'unknown',
+            ]);
+
+            return [];
+        }
+
+        $data = $response['data'] ?? [];
+        $domains = $data['domains']['domain'] ?? $data['domains'] ?? $data['domain'] ?? null;
+
+        if ($domains === null || ! is_array($domains) || $domains === []) {
+            return [];
+        }
+
+        return isset($domains[0]) ? $domains : [$domains];
+    }
+
+    /**
+     * مزامنة كل نطاقات العملاء من WHMCS إلى whmcs_domains
+     */
+    public function syncAllWhmcsDomains(): array
+    {
+        $customers = \App\Models\Customer::query()
+            ->whereNotNull('whmcs_id')
+            ->get();
+
+        $synced = 0;
+        $errors = 0;
+
+        foreach ($customers as $customer) {
+            $items = $this->getClientDomains((int) $customer->whmcs_id);
+            foreach ($items as $row) {
+                $domainId = (int) ($row['id'] ?? $row['domainid'] ?? 0);
+                if ($domainId <= 0) {
+                    continue;
+                }
+
+                try {
+                    \App\Models\WhmcsDomain::updateOrCreate(
+                        ['whmcs_domain_id' => $domainId],
+                        [
+                            'customer_id' => $customer->id,
+                            'whmcs_client_id' => (int) $customer->whmcs_id,
+                            'domain' => $row['domain'] ?? $row['domainname'] ?? '',
+                            'status' => $row['status'] ?? null,
+                            'registrationdate' => $this->parseDate($row['registrationdate'] ?? $row['regdate'] ?? null),
+                            'expirydate' => $this->parseDate($row['expirydate'] ?? $row['expiry'] ?? null),
+                            'nextduedate' => $this->parseDate($row['nextduedate'] ?? null),
+                            'recurringamount' => $row['recurringamount'] ?? $row['amount'] ?? null,
+                            'registrar' => $row['registrar'] ?? null,
+                            'paymentmethod' => $row['paymentmethod'] ?? null,
+                            'billingcycle' => $row['billingcycle'] ?? null,
+                            'domainstatus' => $row['domainstatus'] ?? null,
+                            'notes' => $row['notes'] ?? null,
+                            'synced_at' => now(),
+                        ]
+                    );
+                    $synced++;
+                } catch (\Throwable $e) {
+                    $errors++;
+                    Log::warning('syncAllWhmcsDomains row failed', [
+                        'domain_id' => $domainId,
+                        'message' => $e->getMessage(),
+                    ]);
+                }
+            }
+        }
+
+        Cache::forget('whmcs_domains_stats');
+
+        return ['synced' => $synced, 'errors' => $errors, 'customers' => $customers->count()];
+    }
+
+    /**
      * التحقق من توفر النطاق (DomainWhois)
      *
      * @param string $domain النطاق الكامل مثل example.com
@@ -1319,8 +1406,9 @@ class WhmcsApiService
         }
         $response = $this->request('DomainWhois', ['domain' => $domain]);
         if ($response['success']) {
-            $status = $response['data']['status'] ?? 'unavailable';
+            $status = strtolower(trim((string) ($response['data']['status'] ?? 'unavailable')));
             $whois = $response['data']['whois'] ?? '';
+
             return [
                 'success' => true,
                 'status' => $status === 'available' ? 'available' : 'unavailable',
@@ -1328,9 +1416,10 @@ class WhmcsApiService
                 'message' => '',
             ];
         }
+
         return [
             'success' => false,
-            'status' => 'unavailable',
+            'status' => 'unknown',
             'whois' => '',
             'message' => $response['message'] ?? 'Unknown error',
         ];

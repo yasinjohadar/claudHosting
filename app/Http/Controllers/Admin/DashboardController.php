@@ -11,6 +11,7 @@ use App\Models\Payment;
 use App\Models\User;
 use Spatie\Permission\Models\Role;
 use App\Services\WhmcsApiService;
+use App\Services\CoolifyApiService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Carbon\Carbon;
@@ -19,9 +20,12 @@ class DashboardController extends Controller
 {
     protected $whmcsApiService;
 
-    public function __construct(WhmcsApiService $whmcsApiService)
+    protected $coolifyApiService;
+
+    public function __construct(WhmcsApiService $whmcsApiService, CoolifyApiService $coolifyApiService)
     {
         $this->whmcsApiService = $whmcsApiService;
+        $this->coolifyApiService = $coolifyApiService;
         $this->middleware('auth');
     }
 
@@ -32,8 +36,9 @@ class DashboardController extends Controller
      */
     public function index()
     {
-        // التحقق من اتصال WHMCS
+        // التحقق من اتصال WHMCS و Coolify
         $whmcsConnected = $this->checkWhmcsConnection();
+        $coolifyStats = $this->coolifyApiService->getDashboardStats();
         
         // الإحصائيات العامة
         $stats = [
@@ -91,6 +96,7 @@ class DashboardController extends Controller
         
         return view('admin.dashboard', compact(
             'whmcsConnected',
+            'coolifyStats',
             'stats',
             'latestCustomers',
             'latestInvoices',
