@@ -21,7 +21,9 @@
         'reselleraccount' => 'fa-sitemap',
     ];
     $icon = $iconMap[strtolower($product->type ?? '')] ?? 'fa-cloud';
-    $desc = Str::limit(strip_tags($product->description ?? ''), $descriptionLimit ?? 100) ?: 'باقة استضافة مناسبة لاحتياجاتك.';
+    $featureItems = $product->resolvedPackageFeatures();
+    $desc = Str::limit(strip_tags($product->description ?? ''), $descriptionLimit ?? 100) ?: (count($featureItems) ? '' : 'باقة استضافة مناسبة لاحتياجاتك.');
+    $featureLimit = $featureLimit ?? 4;
 @endphp
 <a href="{{ route('frontend.package-detail', $product->id) }}" class="pricing-card-link animate-on-scroll animate-delay-{{ ($index % 3) + 1 }}">
     <article class="pricing-card glass-panel {{ $isFeatured ? 'pricing-card--featured' : '' }}">
@@ -33,7 +35,15 @@
         </div>
         <div class="pricing-card-body">
             <h3 class="pricing-card-name">{{ $product->name }}</h3>
+            @if($desc !== '')
             <p class="pricing-card-desc">{{ $desc }}</p>
+            @endif
+            @if(count($featureItems) > 0)
+                @include('frontend.partials.package-features-list', [
+                    'product' => $product,
+                    'limit' => $featureLimit,
+                ])
+            @else
             <ul class="pricing-card-features">
                 <li>
                     <span class="pricing-card-check"><i class="fas fa-check"></i></span>
@@ -46,6 +56,7 @@
                 </li>
                 @endif
             </ul>
+            @endif
         </div>
         <div class="pricing-card-foot">
             <div class="pricing-card-price-block">

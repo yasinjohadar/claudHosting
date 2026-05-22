@@ -74,8 +74,14 @@
                                     @enderror
                                 </div>
                                 <div class="col-12">
-                                    <label class="form-label">الوصف</label>
-                                    <textarea class="form-control @error('description') is-invalid @enderror" name="description" rows="3">{{ old('description') }}</textarea>
+                                    @include('admin.products.partials.package-features-editor', [
+                                        'featureIcons' => $featureIcons,
+                                        'packageFeatures' => $packageFeatures,
+                                    ])
+                                </div>
+                                <div class="col-12">
+                                    <label class="form-label">وصف مختصر (اختياري)</label>
+                                    <textarea class="form-control @error('description') is-invalid @enderror" name="description" rows="2" placeholder="جملة تعريفية قصيرة للبطاقة في الموقع">{{ old('description') }}</textarea>
                                     @error('description')
                                         <div class="invalid-feedback">{{ $message }}</div>
                                     @enderror

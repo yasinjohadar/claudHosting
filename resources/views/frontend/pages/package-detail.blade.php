@@ -41,8 +41,18 @@
         <div class="container">
             <div class="glass-panel animate-on-scroll p-4">
                 <h2 class="mb-3">تفاصيل الباقة</h2>
-                @if($product->description)
-                    <div class="mb-4">{!! $product->description !!}</div>
+                @php $detailFeatures = $product->resolvedPackageFeatures(); @endphp
+                @if(count($detailFeatures) > 0)
+                    <h3 class="h5 mb-3">ميزات الباقة</h3>
+                    @include('frontend.partials.package-features-list', [
+                        'product' => $product,
+                        'class' => 'package-features-list--detail mb-4',
+                    ])
+                @elseif($product->description)
+                    <div class="mb-4 package-legacy-description">{!! $product->description !!}</div>
+                @endif
+                @if($product->description && count($detailFeatures) > 0)
+                    <p class="text-secondary mb-4">{{ Str::limit(strip_tags($product->description), 300) }}</p>
                 @endif
 
                 @php

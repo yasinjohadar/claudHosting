@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Support\PackageFeatures;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
@@ -21,6 +22,7 @@ class Product extends Model
         'gid',
         'name',
         'description',
+        'package_features',
         'paytype',
         'pricing',
         'currency',
@@ -79,6 +81,7 @@ class Product extends Model
      */
     protected $casts = [
         'pricing' => 'array',
+        'package_features' => 'array',
         'showdomainoptions' => 'boolean',
         'stockcontrol' => 'boolean',
         'prorata' => 'boolean',
@@ -110,6 +113,21 @@ class Product extends Model
     {
         return $this->belongsToMany(Invoice::class, 'invoice_items', 'product_id', 'invoice_id')
             ->withPivot(['id', 'whmcs_invoice_item_id', 'description', 'amount', 'taxed', 'created_at', 'updated_at']);
+    }
+
+    /**
+     * بنود ميزات الباقة للعرض (محفوظة أو مستخرجة من الوصف القديم).
+     *
+     * @return array<int, array{icon: string, text: string}>
+     */
+    public function resolvedPackageFeatures(): array
+    {
+        $stored = PackageFeatures::normalize($this->package_features);
+        if ($stored !== []) {
+            return $stored;
+        }
+
+        return PackageFeatures::parseFromDescription($this->description);
     }
 
     /**

@@ -5,9 +5,11 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\Product;
 use App\Models\CustomerProduct;
+use App\Support\PackageFeatures;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Validation\Rule;
 use Carbon\Carbon;
 
 class ProductController extends Controller
@@ -35,7 +37,10 @@ class ProductController extends Controller
      */
     public function create()
     {
-        return view('admin.products.create');
+        return view('admin.products.create', [
+            'featureIcons' => PackageFeatures::iconCatalog(),
+            'packageFeatures' => [],
+        ]);
     }
 
     /**
@@ -63,6 +68,9 @@ class ProductController extends Controller
             'annually' => 'required|numeric|min:0',
             'biennially' => 'required|numeric|min:0',
             'status' => 'required|in:Active,Inactive',
+            'package_features' => 'nullable|array|max:'.(int) config('package_features.max_items', 20),
+            'package_features.*.icon' => ['required', 'string', Rule::in(array_keys(PackageFeatures::iconCatalog()))],
+            'package_features.*.text' => 'required|string|max:'.(int) config('package_features.max_text_length', 500),
         ]);
 
         if ($validator->fails()) {
@@ -74,6 +82,8 @@ class ProductController extends Controller
         DB::beginTransaction();
         
         try {
+            $packageFeatures = PackageFeatures::normalize($request->input('package_features', []));
+
             // إنشاء بيانات التسعير
             $pricing = [
                 'USD' => [
@@ -97,6 +107,7 @@ class ProductController extends Controller
                 'gid' => $request->gid,
                 'name' => $request->name,
                 'description' => $request->description,
+                'package_features' => $packageFeatures ?: null,
                 'paytype' => $request->paytype,
                 'pricing' => $pricing,
                 'currency' => 1,
@@ -147,7 +158,11 @@ class ProductController extends Controller
     public function edit($id)
     {
         $product = Product::findOrFail($id);
-        return view('admin.products.edit', compact('product'));
+        return view('admin.products.edit', [
+            'product' => $product,
+            'featureIcons' => PackageFeatures::iconCatalog(),
+            'packageFeatures' => $product->package_features ?? $product->resolvedPackageFeatures(),
+        ]);
     }
 
     /**
@@ -178,6 +193,9 @@ class ProductController extends Controller
             'annually' => 'required|numeric|min:0',
             'biennially' => 'required|numeric|min:0',
             'status' => 'required|in:Active,Inactive',
+            'package_features' => 'nullable|array|max:'.(int) config('package_features.max_items', 20),
+            'package_features.*.icon' => ['required', 'string', Rule::in(array_keys(PackageFeatures::iconCatalog()))],
+            'package_features.*.text' => 'required|string|max:'.(int) config('package_features.max_text_length', 500),
         ]);
 
         if ($validator->fails()) {
@@ -189,6 +207,8 @@ class ProductController extends Controller
         DB::beginTransaction();
         
         try {
+            $packageFeatures = PackageFeatures::normalize($request->input('package_features', []));
+
             // إنشاء بيانات التسعير
             $pricing = [
                 'USD' => [
@@ -211,6 +231,7 @@ class ProductController extends Controller
                 'gid' => $request->gid,
                 'name' => $request->name,
                 'description' => $request->description,
+                'package_features' => $packageFeatures ?: null,
                 'paytype' => $request->paytype,
                 'pricing' => $pricing,
                 'status' => $request->status,

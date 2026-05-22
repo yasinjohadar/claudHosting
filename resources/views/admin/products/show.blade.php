@@ -122,14 +122,29 @@
             <div class="col-xl-8">
                 <!-- وصف المنتج -->
                 <div class="card custom-card">
-                    <div class="card-header">
-                        <div class="card-title">وصف المنتج</div>
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <div class="card-title mb-0">ميزات الباقة</div>
+                        <a href="{{ route('admin.products.edit', $product->id) }}" class="btn btn-sm btn-outline-primary">تعديل البنود</a>
                     </div>
                     <div class="card-body">
-                        @if ($product->description)
-                            <div class="product-description">{!! $product->description !!}</div>
+                        @php $adminFeatures = $product->resolvedPackageFeatures(); @endphp
+                        @if(count($adminFeatures) > 0)
+                            <ul class="list-unstyled mb-0">
+                                @foreach($adminFeatures as $f)
+                                    @php $ic = \App\Support\PackageFeatures::iconClasses($f['icon'] ?? 'check'); @endphp
+                                    <li class="d-flex align-items-center gap-2 mb-2">
+                                        <span class="badge bg-primary-transparent">
+                                            <i class="{{ $ic['prefix'] }} {{ $ic['class'] }}"></i>
+                                        </span>
+                                        <span>{{ $f['text'] }}</span>
+                                    </li>
+                                @endforeach
+                            </ul>
+                        @elseif ($product->description)
+                            <div class="product-description text-muted small">{!! $product->description !!}</div>
+                            <p class="text-warning small mt-2 mb-0">يُفضّل تحويل الوصف إلى بنود من صفحة التعديل.</p>
                         @else
-                            <p class="text-muted mb-0">لا يوجد وصف متاح لهذا المنتج.</p>
+                            <p class="text-muted mb-0">لا توجد ميزات — أضفها من التعديل.</p>
                         @endif
                     </div>
                 </div>
