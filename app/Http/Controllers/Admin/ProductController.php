@@ -270,11 +270,7 @@ class ProductController extends Controller
         DB::beginTransaction();
 
         try {
-            $copy = $product->replicate([
-                'sales_count',
-                'synced_at',
-                'whmcs_id',
-            ]);
+            $copy = $product->replicate();
             $copy->name = $this->duplicateProductName($product->name);
             $copy->whmcs_id = null;
             $copy->sales_count = 0;

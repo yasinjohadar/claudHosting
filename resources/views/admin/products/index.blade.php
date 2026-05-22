@@ -27,6 +27,17 @@
         </div>
         <!-- End Page Header -->
 
+        @if(session('success'))
+            <div class="alert alert-success alert-dismissible fade show">{{ session('success') }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+        @endif
+        @if(session('error'))
+            <div class="alert alert-danger alert-dismissible fade show">{{ session('error') }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+        @endif
+
         <!-- Row -->
         <div class="row">
             <div class="col-xl-12">
@@ -97,14 +108,16 @@
                                                 <a href="{{ route('admin.products.edit', $product->id) }}" class="btn btn-icon btn-sm btn-warning-transparent rounded-pill" title="تعديل">
                                                     <i class="ri-edit-line"></i>
                                                 </a>
-                                                <form action="{{ route('admin.products.duplicate', $product->id) }}" method="POST" class="d-inline"
-                                                    onsubmit="return confirm('نسخ هذا المنتج مع كل بياناته (التسعير، الميزات، WHM)؟');">
-                                                    @csrf
-                                                    <button type="submit" class="btn btn-icon btn-sm btn-success-transparent rounded-pill" title="نسخ">
-                                                        <i class="ri-file-copy-line"></i>
-                                                    </button>
-                                                </form>
-                                                <button type="button" class="btn btn-icon btn-sm btn-danger-transparent rounded-pill delete-product" data-id="{{ $product->id }}" title="حذف">
+                                                <button type="button"
+                                                    class="btn btn-icon btn-sm btn-success-transparent rounded-pill duplicate-product"
+                                                    title="نسخ"
+                                                    data-url="{{ route('admin.products.duplicate', $product->id) }}">
+                                                    <i class="ri-file-copy-line"></i>
+                                                </button>
+                                                <button type="button"
+                                                    class="btn btn-icon btn-sm btn-danger-transparent rounded-pill delete-product"
+                                                    title="حذف"
+                                                    data-url="{{ route('admin.products.destroy', $product->id) }}">
                                                     <i class="ri-delete-bin-line"></i>
                                                 </button>
                                             </div>
@@ -127,38 +140,61 @@
 </div>
 <!-- End::app-content -->
 
-<!-- Delete Form -->
-<form id="delete-form" action="" method="POST" style="display: none;">
+<form id="delete-form" action="" method="POST" class="d-none">
     @csrf
     @method('DELETE')
+</form>
+<form id="duplicate-form" action="" method="POST" class="d-none">
+    @csrf
 </form>
 @endsection
 
 @section('scripts')
 <script>
-    $(document).ready(function() {
-        // DataTable
-        if ($.fn.DataTable) {
-            $('#productsTable').DataTable({
-                "language": {
-                    "url": "//cdn.datatables.net/plug-ins/1.13.7/i18n/ar.json"
-                },
-                "responsive": true,
-                "lengthChange": true,
-                "autoWidth": false,
-                "order": [[0, 'desc']]
-            });
+(function () {
+    const csrf = document.querySelector('meta[name="csrf-token"]')?.content || '';
+
+    function submitHiddenForm(formId, url) {
+        const form = document.getElementById(formId);
+        if (!form || !url) return;
+        form.setAttribute('action', url);
+        form.submit();
+    }
+
+    document.addEventListener('click', function (e) {
+        const dupBtn = e.target.closest('.duplicate-product');
+        if (dupBtn) {
+            e.preventDefault();
+            e.stopPropagation();
+            const url = dupBtn.getAttribute('data-url');
+            if (!url) return;
+            if (!confirm('نسخ هذا المنتج مع كل بياناته (التسعير، الميزات، WHM)؟')) return;
+            submitHiddenForm('duplicate-form', url);
+            return;
         }
-        
-        // Delete Product
-        $('.delete-product').click(function() {
-            if (confirm('هل أنت متأكد من حذف هذا المنتج؟')) {
-                var id = $(this).data('id');
-                var form = $('#delete-form');
-                form.attr('action', '/admin/products/' + id);
-                form.submit();
-            }
+
+        const delBtn = e.target.closest('.delete-product');
+        if (delBtn) {
+            e.preventDefault();
+            e.stopPropagation();
+            const url = delBtn.getAttribute('data-url');
+            if (!url) return;
+            if (!confirm('هل أنت متأكد من حذف هذا المنتج؟')) return;
+            submitHiddenForm('delete-form', url);
+        }
+    });
+
+    $(document).ready(function () {
+        if (!$.fn.DataTable) return;
+        $('#productsTable').DataTable({
+            language: { url: '//cdn.datatables.net/plug-ins/1.13.7/i18n/ar.json' },
+            responsive: true,
+            lengthChange: true,
+            autoWidth: false,
+            order: [[0, 'desc']],
+            columnDefs: [{ orderable: false, searchable: false, targets: -1 }],
         });
     });
+})();
 </script>
 @endsection
