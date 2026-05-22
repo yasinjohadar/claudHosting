@@ -9,7 +9,7 @@ use App\Models\Product;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Str;
 
-class WhmcsHostProvisioningService
+class HostProvisioningService
 {
     public function __construct(protected CoolifySettingsService $settings) {}
 
@@ -57,7 +57,6 @@ class WhmcsHostProvisioningService
             'metadata' => [
                 'package_order_request_id' => $order->id,
                 'product_id' => $product->id,
-                'whmcs_order_id' => $order->whmcs_order_id,
             ],
             'created_by' => Auth::id(),
         ]);
@@ -82,11 +81,7 @@ class WhmcsHostProvisioningService
             $raw = json_decode($raw, true);
         }
         if (! is_array($raw) || empty($raw['enabled'])) {
-            $mapped = $this->mapFromConfigOptions($product);
-            if ($mapped === null) {
-                return null;
-            }
-            $raw = $mapped;
+            return null;
         }
 
         $serverUuid = trim((string) ($raw['server_uuid'] ?? $this->settings->getWordpressDefaultServerUuid()));
@@ -101,31 +96,6 @@ class WhmcsHostProvisioningService
             'project_uuid' => $raw['project_uuid'] ?? $this->settings->getWordpressSharedProjectUuid(),
             'environment_name' => $raw['environment_name'] ?? $this->settings->getWordpressDefaultEnvironment(),
             'slug_prefix' => $raw['slug_prefix'] ?? '',
-        ];
-    }
-
-    /**
-     * @return array<string, mixed>|null
-     */
-    protected function mapFromConfigOptions(Product $product): ?array
-    {
-        $map = config('coolify.whmcs_provision_map', []);
-        if ($map === []) {
-            return null;
-        }
-
-        $server = trim((string) ($product->{$map['server_uuid'] ?? 'configoption1'} ?? ''));
-        if ($server === '') {
-            return null;
-        }
-
-        return [
-            'enabled' => true,
-            'server_uuid' => $server,
-            'project_mode' => $product->{$map['project_mode'] ?? 'configoption2'} ?? 'shared',
-            'project_uuid' => $product->{$map['project_uuid'] ?? 'configoption3'} ?? null,
-            'environment_name' => $product->{$map['environment_name'] ?? 'configoption4'} ?? null,
-            'slug_prefix' => $product->{$map['slug_prefix'] ?? 'configoption5'} ?? '',
         ];
     }
 

@@ -78,6 +78,8 @@ public function index(Request $request)
             $usersQuery->where('is_active', $request->input('is_active'));
         }
 
+        $usersQuery->withCount('whmAccounts');
+
         // تنفيذ الاستعلام
         $users = $usersQuery->paginate(10);
 
@@ -163,8 +165,13 @@ public function index(Request $request)
      */
     public function show(string $id)
     {
-        $user = User::findOrFail($id);
-        return view("admin.pages.users.profile" , compact("user"));
+        $user = User::with(['whmAccounts' => fn ($q) => $q->orderByDesc('joined_at')])
+            ->withCount('whmAccounts')
+            ->findOrFail($id);
+
+        $whmConfigured = app(\App\Services\Whm\WhmApiService::class)->isConfigured();
+
+        return view('admin.pages.users.profile', compact('user', 'whmConfigured'));
     }
 
     /**

@@ -3,10 +3,13 @@
 namespace App\Services\Domain;
 
 use App\Http\Controllers\Admin\Namecom\NamecomDomainController;
-use App\Models\WhmcsDomain;
+use App\Models\ClientDomain;
+use App\Models\User;
+use App\Models\WhmAccount;
 use App\Services\CloudflareApiService;
 use App\Services\CoolifyApiService;
 use App\Services\NamecomApiService;
+use App\Services\Whm\WhmApiService;
 use Carbon\Carbon;
 
 class DomainCommandCenterService
@@ -14,7 +17,8 @@ class DomainCommandCenterService
     public function __construct(
         protected CloudflareApiService $cloudflare,
         protected NamecomApiService $namecom,
-        protected CoolifyApiService $coolify
+        protected CoolifyApiService $coolify,
+        protected WhmApiService $whm
     ) {}
 
     /**
@@ -35,7 +39,7 @@ class DomainCommandCenterService
         $configured = [
             'cloudflare' => $this->cloudflare->isConfigured(),
             'namecom' => $this->namecom->isConfigured(),
-            'whmcs' => true,
+            'whm' => $this->whm->isConfigured(),
         ];
 
         $errors = [
@@ -136,24 +140,28 @@ class DomainCommandCenterService
 
         $this->mergeCoolifyDomains($registry);
 
-        $whmcsDomains = WhmcsDomain::query()->orderBy('domain')->get();
-        foreach ($whmcsDomains as $domain) {
-            $display = (string) $domain->domain;
+        if ($forceRefresh && $configured['whm']) {
+            app(\App\Services\Whm\WhmAccountService::class)->syncFromWhm();
+        }
+
+        $whmAccounts = WhmAccount::query()->orderBy('domain')->get();
+        foreach ($whmAccounts as $account) {
+            $display = (string) $account->domain;
             $name = strtolower(trim($display));
             if ($name === '') {
                 continue;
             }
             $this->upsertRow($registry, $name, [
                 'display_name' => $display,
-                'source' => 'whmcs',
-                'source_label' => 'WHMCS',
+                'source' => 'whm',
+                'source_label' => 'WHM / cPanel',
                 'source_badge' => 'bg-warning-transparent text-warning',
-                'status' => strtolower((string) ($domain->status ?? '')),
-                'status_label' => $domain->status_label,
-                'expires_at' => $domain->expirydate,
-                'registered_at' => $domain->registrationdate,
-                'detail_url' => route('admin.domains.whmcs.show', $domain),
-                'extra' => $domain->registrar,
+                'status' => strtolower((string) ($account->status ?? '')),
+                'status_label' => $account->status_label,
+                'expires_at' => null,
+                'registered_at' => $account->created_at,
+                'detail_url' => route('admin.whm.accounts.show', $account),
+                'extra' => $account->username.($account->package ? ' · '.$account->package : ''),
             ]);
         }
 
@@ -165,7 +173,9 @@ class DomainCommandCenterService
 
         usort($rows, fn ($a, $b) => strcmp($a['name'], $b['name']));
 
-        $stats = $this->computeStats($rows, $configured, $whmcsDomains->count());
+        $this->attachClientOwnership($rows);
+
+        $stats = $this->computeStats($rows, $configured, $whmAccounts->count());
 
         return [
             'rows' => $rows,
@@ -281,7 +291,7 @@ class DomainCommandCenterService
      */
     protected function primaryDetailUrl(array $sources): ?string
     {
-        $priority = ['namecom', 'cf_registrar', 'whmcs', 'cf_zone'];
+        $priority = ['namecom', 'cf_registrar', 'whm', 'cf_zone'];
         foreach ($priority as $key) {
             foreach ($sources as $src) {
                 if (($src['key'] ?? '') === $key && ! empty($src['detail_url'])) {
@@ -457,13 +467,13 @@ class DomainCommandCenterService
      * @param  array<string, bool>  $configured
      * @return array<string, int|bool>
      */
-    protected function computeStats(array $rows, array $configured, int $whmcsCount): array
+    protected function computeStats(array $rows, array $configured, int $whmCount): array
     {
         $sourceCounts = [
             'cf_zone' => 0,
             'cf_registrar' => 0,
             'namecom' => 0,
-            'whmcs' => 0,
+            'whm' => 0,
             'coolify' => 0,
         ];
 
@@ -491,12 +501,46 @@ class DomainCommandCenterService
             'cf_zone' => $sourceCounts['cf_zone'],
             'cf_registrar' => $sourceCounts['cf_registrar'],
             'namecom' => $sourceCounts['namecom'],
-            'whmcs' => $sourceCounts['whmcs'],
+            'whm' => $sourceCounts['whm'],
             'coolify' => $sourceCounts['coolify'],
-            'whmcs_records' => $whmcsCount,
+            'whm_records' => $whmCount,
+            'whm_configured' => $configured['whm'] ?? false,
             'cloudflare_configured' => $configured['cloudflare'],
             'namecom_configured' => $configured['namecom'],
         ];
+    }
+
+    /**
+     * @param  array<int, array<string, mixed>>  $rows
+     */
+    public function attachClientOwnership(array &$rows): void
+    {
+        $domainOwners = ClientDomain::query()
+            ->whereNotNull('user_id')
+            ->pluck('user_id', 'domain_name')
+            ->all();
+
+        $whmOwners = [];
+        foreach (WhmAccount::query()->whereNotNull('user_id')->get(['domain', 'user_id']) as $account) {
+            $name = ClientDomain::normalizeName((string) $account->domain);
+            if ($name !== '' && ! isset($domainOwners[$name])) {
+                $whmOwners[$name] = $account->user_id;
+            }
+        }
+
+        $userIds = collect($domainOwners)->merge($whmOwners)->unique()->filter()->values();
+        $users = User::query()->whereIn('id', $userIds)->get()->keyBy('id');
+
+        foreach ($rows as &$row) {
+            $name = $row['name'] ?? '';
+            $userId = $domainOwners[$name] ?? $whmOwners[$name] ?? null;
+            $row['user_id'] = $userId;
+            $row['client'] = $userId ? $users->get($userId) : null;
+            $row['client_label'] = $row['client']
+                ? trim($row['client']->name.' — '.$row['client']->email)
+                : null;
+        }
+        unset($row);
     }
 
     /**
@@ -508,10 +552,17 @@ class DomainCommandCenterService
         $q = strtolower(trim((string) ($filters['q'] ?? '')));
         $source = (string) ($filters['source'] ?? 'all');
         $status = (string) ($filters['status'] ?? 'all');
+        $userId = isset($filters['user_id']) && $filters['user_id'] !== '' && $filters['user_id'] !== null
+            ? (int) $filters['user_id']
+            : null;
         $sort = (string) ($filters['sort'] ?? 'name');
         $dir = strtolower((string) ($filters['dir'] ?? 'asc')) === 'desc' ? 'desc' : 'asc';
 
-        $filtered = array_values(array_filter($rows, function (array $row) use ($q, $source, $status) {
+        $filtered = array_values(array_filter($rows, function (array $row) use ($q, $source, $status, $userId) {
+            if ($userId !== null && (int) ($row['user_id'] ?? 0) !== $userId) {
+                return false;
+            }
+
             if ($q !== '' && ! str_contains($row['name'], $q) && ! str_contains(strtolower($row['display_name']), $q)) {
                 return false;
             }

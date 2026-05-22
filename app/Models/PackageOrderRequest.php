@@ -23,6 +23,7 @@ class PackageOrderRequest extends Model
         'whmcs_client_id',
         'provision_status',
         'coolify_wordpress_site_id',
+        'whm_account_id',
     ];
 
     protected $casts = [
@@ -39,7 +40,7 @@ class PackageOrderRequest extends Model
         return [
             self::STATUS_PENDING    => 'قيد الانتظار',
             self::STATUS_CONTACTED  => 'تم التواصل',
-            self::STATUS_CONVERTED  => 'تم التحويل لـ WHMCS',
+            self::STATUS_CONVERTED  => 'تم التنفيذ',
             self::STATUS_CANCELLED  => 'ملغي',
         ];
     }
@@ -69,6 +70,11 @@ class PackageOrderRequest extends Model
     public function coolifyWordpressSite(): BelongsTo
     {
         return $this->belongsTo(CoolifyWordpressSite::class, 'coolify_wordpress_site_id');
+    }
+
+    public function whmAccount(): BelongsTo
+    {
+        return $this->belongsTo(WhmAccount::class, 'whm_account_id');
     }
 
     public static function provisionStatuses(): array

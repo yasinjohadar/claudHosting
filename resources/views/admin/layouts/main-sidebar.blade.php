@@ -51,15 +51,15 @@
                                     <path d="M0 0h24v24H0z" fill="none"/>
                                     <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/>
                                 </svg>
-                                <span class="side-menu__label">العملاء</span>
+                                <span class="side-menu__label">عملاء الاستضافة</span>
                                 <i class="fe fe-chevron-right side-menu__angle"></i>
                             </a>
                             <ul class="slide-menu child1">
                                 <li class="slide">
-                                    <a href="{{ route('admin.customers.index') }}" class="side-menu__item {{ request()->routeIs('admin.customers.index') ? 'active' : '' }}">قائمة العملاء</a>
+                                    <a href="{{ route('admin.customers.index') }}" class="side-menu__item {{ request()->routeIs('admin.customers.index') ? 'active' : '' }}">قائمة عملاء الاستضافة</a>
                                 </li>
                                 <li class="slide">
-                                    <a href="{{ route('admin.customers.create') }}" class="side-menu__item {{ request()->routeIs('admin.customers.create') ? 'active' : '' }}">إضافة عميل</a>
+                                    <a href="{{ route('users.create') }}" class="side-menu__item {{ request()->routeIs('users.create') ? 'active' : '' }}">إضافة مستخدم / عميل</a>
                                 </li>
                             </ul>
                         </li>
@@ -327,7 +327,6 @@
                             <ul class="slide-menu child1">
                                 <li class="slide"><a href="{{ route('admin.domains.index') }}" class="side-menu__item {{ request()->routeIs('admin.domains.index') ? 'active' : '' }}">مركز تحكم النطاقات</a></li>
                                 <li class="slide"><a href="{{ route('admin.domains.search') }}" class="side-menu__item {{ request()->routeIs('admin.domains.search') ? 'active' : '' }}">البحث عن نطاق</a></li>
-                                <li class="slide"><a href="{{ route('admin.domains.whmcs.index') }}" class="side-menu__item {{ request()->routeIs('admin.domains.whmcs.*') ? 'active' : '' }}">نطاقات WHMCS</a></li>
                                 <li class="slide"><a href="{{ route('admin.cloudflare.zones.index') }}" class="side-menu__item {{ request()->routeIs('admin.cloudflare.zones.*') ? 'active' : '' }}">جميع نطاقات CF (Zones)</a></li>
                                 <li class="slide"><a href="{{ route('admin.cloudflare.registrar.index') }}" class="side-menu__item {{ request()->routeIs('admin.cloudflare.registrar.*') ? 'active' : '' }}">مسجّل عند CF فقط</a></li>
                                 <li class="slide"><a href="{{ route('admin.cloudflare.settings.index') }}" class="side-menu__item {{ request()->routeIs('admin.cloudflare.settings.*') ? 'active' : '' }}">إعدادات Cloudflare</a></li>
@@ -372,22 +371,25 @@
                             </ul>
                         </li>
 
-                        <!-- إعدادات WHMCS -->
-                        <li class="slide has-sub {{ request()->routeIs('admin.whmcs.*') ? 'open' : '' }}">
-                            <a href="javascript:void(0);" class="side-menu__item {{ request()->routeIs('admin.whmcs.*') ? 'active' : '' }}">
+                        <!-- WHM / cPanel -->
+                        <li class="slide has-sub {{ request()->routeIs('admin.whm.*') ? 'open' : '' }}">
+                            <a href="javascript:void(0);" class="side-menu__item {{ request()->routeIs('admin.whm.*') ? 'active' : '' }}">
                                 <svg xmlns="http://www.w3.org/2000/svg" class="side-menu__icon" viewBox="0 0 24 24">
                                     <path d="M0 0h24v24H0z" fill="none"/>
-                                    <path d="M19.14 12.94c.04-.31.06-.63.06-.94 0-.31-.02-.63-.06-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.04.31-.06.63-.06.94s.02.63.06.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z"/>
+                                    <path d="M20 13H4c-.55 0-1 .45-1 1v6c0 .55.45 1 1 1h16c.55 0 1-.45 1-1v-6c0-.55-.45-1-1-1zM7 19c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2zM20 3H4c-.55 0-1 .45-1 1v6c0 .55.45 1 1 1h16c.55 0 1-.45 1-1V4c0-.55-.45-1-1-1zM7 9c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2z"/>
                                 </svg>
-                                <span class="side-menu__label">إعدادات WHMCS</span>
+                                <span class="side-menu__label">WHM / cPanel</span>
                                 <i class="fe fe-chevron-right side-menu__angle"></i>
                             </a>
                             <ul class="slide-menu child1">
                                 <li class="slide">
-                                    <a href="{{ route('admin.whmcs.test') }}" class="side-menu__item {{ request()->routeIs('admin.whmcs.test') ? 'active' : '' }}">اختبار الاتصال</a>
+                                    <a href="{{ route('admin.whm.settings.index') }}" class="side-menu__item {{ request()->routeIs('admin.whm.settings.*') ? 'active' : '' }}">إعدادات WHM</a>
                                 </li>
                                 <li class="slide">
-                                    <a href="{{ route('admin.whmcs.sync') }}" class="side-menu__item {{ request()->routeIs('admin.whmcs.sync') ? 'active' : '' }}">مزامنة كاملة</a>
+                                    <a href="{{ route('admin.whm.server.index') }}" class="side-menu__item {{ request()->routeIs('admin.whm.server.*') ? 'active' : '' }}">حالة السيرفر</a>
+                                </li>
+                                <li class="slide">
+                                    <a href="{{ route('admin.whm.accounts.index') }}" class="side-menu__item {{ request()->routeIs('admin.whm.accounts.*') ? 'active' : '' }}">حسابات الاستضافة</a>
                                 </li>
                             </ul>
                         </li>

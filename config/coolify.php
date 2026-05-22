@@ -100,18 +100,7 @@ return [
         'cloudflare_r2',
     ],
 
-    /**
-     * ربط حقول WHMCS configoption في Product بتزويد Coolify (بديل لـ coolify_provision JSON).
-     */
     'metrics_refresh_seconds' => 10,
     'metrics_cache_seconds' => 8,
-
-    'whmcs_provision_map' => [
-        'server_uuid' => 'configoption1',
-        'project_mode' => 'configoption2',
-        'project_uuid' => 'configoption3',
-        'environment_name' => 'configoption4',
-        'slug_prefix' => 'configoption5',
-    ],
 
 ];

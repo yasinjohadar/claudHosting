@@ -3,11 +3,11 @@
 namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
-use App\Providers\RouteServiceProvider;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Validator;
+use Spatie\Permission\Models\Role;
 
 class RegisterController extends Controller
 {
@@ -16,7 +16,7 @@ class RegisterController extends Controller
      *
      * @var string
      */
-    protected $redirectTo = '/admin/dashboard';
+    protected $redirectTo = '/client';
 
     /**
      * إنشاء مثيل جديد من وحدة التحكم.
@@ -62,11 +62,15 @@ class RegisterController extends Controller
             'name' => $request->name,
             'email' => $request->email,
             'password' => Hash::make($request->password),
+            'status' => 'active',
+            'is_active' => true,
         ]);
 
-        // تسجيل الدخول تلقائيًا بعد التسجيل
+        Role::firstOrCreate(['name' => 'client', 'guard_name' => 'web']);
+        $user->assignRole('client');
+
         auth()->login($user);
 
-        return redirect($this->redirectTo);
+        return redirect()->route('client.dashboard');
     }
 }

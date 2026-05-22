@@ -110,6 +110,7 @@
                                                 <th scope="col" style="min-width: 200px;">البريد</th>
                                                 <th scope="col" style="min-width: 120px;">الهاتف</th>
                                                 <th scope="col" style="min-width: 130px;">اخر دخول</th>
+                                                <th scope="col" style="min-width: 90px;">cPanel</th>
                                                 <th scope="col" style="min-width: 150px;">الأدوار</th>
                                                 <th scope="col" style="min-width: 110px;">الحالة</th>
                                                 <th scope="col" style="min-width: 120px;">الحالة النشطة</th>
@@ -167,6 +168,18 @@
                                                         @endif
                                                     </td>
 
+                                                    <td class="text-center">
+                                                        @if(($user->whm_accounts_count ?? 0) > 0)
+                                                            <a href="{{ route('admin.whm.accounts.index', ['user_id' => $user->id]) }}"
+                                                                class="badge bg-primary-transparent text-primary text-decoration-none"
+                                                                title="حسابات الاستضافة">
+                                                                {{ $user->whm_accounts_count }}
+                                                            </a>
+                                                        @else
+                                                            <span class="text-muted">0</span>
+                                                        @endif
+                                                    </td>
+
                                                     <td>
                                                         @foreach ($user->getRoleNames() as $role)
                                                             <span class="badge bg-primary me-1">{{ $role }}</span>
@@ -199,6 +212,15 @@
                                                     </td>
 
                                                     <td>
+                                                        @if(auth()->user()?->isAdminPanelUser() && ! $user->isAdminPanelUser())
+                                                            <button type="button"
+                                                                class="btn btn-warning btn-sm me-1 js-impersonate-client"
+                                                                data-url="{{ route('admin.users.impersonation-token', $user) }}"
+                                                                data-name="{{ $user->name }}"
+                                                                title="رابط دخول كعميل">
+                                                                <i class="fe fe-log-in"></i>
+                                                            </button>
+                                                        @endif
                                                         <a class="btn btn-info btn-sm me-1"
                                                             href="{{ route('users.edit', $user->id) }}"
                                                             title="تعديل المستخدم">
@@ -250,7 +272,7 @@
     </div>
     <!-- End::app-content -->
 
-
+@include('admin.partials.impersonate-client-modal')
 
 @stop
 

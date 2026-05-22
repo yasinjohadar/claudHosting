@@ -329,6 +329,12 @@
                 </div>
             @endif
 
+            @if (session('error'))
+                <div class="error-message mb-3" style="display:block;padding:10px 12px;background:#fef2f2;border-radius:8px;">
+                    {{ session('error') }}
+                </div>
+            @endif
+
             <form method="POST" action="{{ route('login') }}">
                 @csrf
 

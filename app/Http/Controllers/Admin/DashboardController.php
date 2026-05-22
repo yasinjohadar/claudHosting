@@ -10,37 +10,25 @@ use App\Models\Ticket;
 use App\Models\Payment;
 use App\Models\User;
 use Spatie\Permission\Models\Role;
-use App\Services\WhmcsApiService;
 use App\Services\CoolifyApiService;
-use Illuminate\Http\Request;
+use App\Services\Whm\WhmApiService;
 use Illuminate\Support\Facades\DB;
 use Carbon\Carbon;
 
 class DashboardController extends Controller
 {
-    protected $whmcsApiService;
-
-    protected $coolifyApiService;
-
-    public function __construct(WhmcsApiService $whmcsApiService, CoolifyApiService $coolifyApiService)
-    {
-        $this->whmcsApiService = $whmcsApiService;
-        $this->coolifyApiService = $coolifyApiService;
+    public function __construct(
+        protected WhmApiService $whmApiService,
+        protected CoolifyApiService $coolifyApiService
+    ) {
         $this->middleware('auth');
     }
 
-    /**
-     * عرض لوحة التحكم الرئيسية
-     *
-     * @return \Illuminate\View\View
-     */
     public function index()
     {
-        // التحقق من اتصال WHMCS و Coolify
-        $whmcsConnected = $this->checkWhmcsConnection();
+        $whmConnected = $this->whmApiService->isConfigured() && ($this->whmApiService->ping()['success'] ?? false);
         $coolifyStats = $this->coolifyApiService->getDashboardStats();
-        
-        // الإحصائيات العامة
+
         $stats = [
             'total_customers' => Customer::count(),
             'total_products' => Product::count(),
@@ -52,50 +40,32 @@ class DashboardController extends Controller
             'revenue_yearly' => $this->getYearlyRevenue(),
             'revenue_total' => $this->getTotalRevenue(),
         ];
-        
-        // آخر العملاء
+
         $latestCustomers = Customer::orderBy('date_created', 'desc')->take(5)->get();
-        
-        // آخر الفواتير
         $latestInvoices = Invoice::orderBy('date', 'desc')->take(5)->get();
-        
-        // آخر التذاكر
         $latestTickets = Ticket::orderBy('date', 'desc')->take(5)->get();
-        
-        // الفواتير غير المدفوعة
-        $unpaidInvoices = Invoice::where('status', 'Unpaid')
-            ->orderBy('duedate', 'asc')
-            ->take(5)
-            ->get();
-        
-        // التذاكر العاجلة
+        $unpaidInvoices = Invoice::where('status', 'Unpaid')->orderBy('duedate', 'asc')->take(5)->get();
         $urgentTickets = Ticket::whereIn('priority', ['High', 'Urgent'])
             ->where('status', '!=', 'Closed')
             ->orderBy('date', 'asc')
             ->take(5)
             ->get();
-        
-        // بيانات الرسوم البيانية
+
         $monthlyRevenueLabels = $this->getMonthlyLabels();
         $monthlyRevenueData = $this->getMonthlyRevenueData();
-        
         $monthlyTicketsLabels = $this->getMonthlyLabels();
         $monthlyTicketsData = $this->getMonthlyTicketsData();
-        
         $ticketsByDepartmentLabels = $this->getTicketsByDepartmentLabels();
         $ticketsByDepartmentData = $this->getTicketsByDepartmentData();
-        
         $invoicesByStatusLabels = ['مدفوعة', 'غير مدفوعة', 'ملغاة', 'مستردة'];
         $invoicesByStatusData = $this->getInvoicesByStatusData();
-        
         $customersByStatusLabels = ['نشط', 'غير نشط', 'مغلق'];
         $customersByStatusData = $this->getCustomersByStatusData();
-        
         $topSellingProductsLabels = $this->getTopSellingProductsLabels();
         $topSellingProductsData = $this->getTopSellingProductsData();
-        
+
         return view('admin.dashboard', compact(
-            'whmcsConnected',
+            'whmConnected',
             'coolifyStats',
             'stats',
             'latestCustomers',
@@ -117,198 +87,99 @@ class DashboardController extends Controller
             'topSellingProductsData'
         ));
     }
-    
-    /**
-     * التحقق من اتصال WHMCS
-     *
-     * @return bool
-     */
-    private function checkWhmcsConnection()
-    {
-        try {
-            $response = $this->whmcsApiService->getProducts(1);
-            return $response !== null;
-        } catch (\Exception $e) {
-            return false;
-        }
-    }
-    
-    /**
-     * الحصول على إيرادات الشهر الحالي
-     *
-     * @return float
-     */
+
     private function getMonthlyRevenue()
     {
         $currentMonth = Carbon::now()->month;
         $currentYear = Carbon::now()->year;
-        
+
         return Payment::whereMonth('date', $currentMonth)
             ->whereYear('date', $currentYear)
             ->sum('amount');
     }
-    
-    /**
-     * الحصول على إيرادات السنة الحالية
-     *
-     * @return float
-     */
+
     private function getYearlyRevenue()
     {
-        $currentYear = Carbon::now()->year;
-        
-        return Payment::whereYear('date', $currentYear)
-            ->sum('amount');
+        return Payment::whereYear('date', Carbon::now()->year)->sum('amount');
     }
-    
-    /**
-     * الحصول على إجمالي الإيرادات
-     *
-     * @return float
-     */
+
     private function getTotalRevenue()
     {
         return Payment::sum('amount');
     }
-    
-    /**
-     * الحصول على تسميات الأشهر
-     *
-     * @return array
-     */
+
     private function getMonthlyLabels()
     {
         return [
             'يناير', 'فبراير', 'مارس', 'أبريل', 'مايو', 'يونيو',
-            'يوليو', 'أغسطس', 'سبتمبر', 'أكتوبر', 'نوفمبر', 'ديسمبر'
+            'يوليو', 'أغسطس', 'سبتمبر', 'أكتوبر', 'نوفمبر', 'ديسمبر',
         ];
     }
-    
-    /**
-     * الحصول على بيانات الإيرادات الشهرية
-     *
-     * @return array
-     */
+
     private function getMonthlyRevenueData()
     {
         $data = [];
         $currentYear = Carbon::now()->year;
-        
         for ($month = 1; $month <= 12; $month++) {
-            $revenue = Payment::whereMonth('date', $month)
-                ->whereYear('date', $currentYear)
-                ->sum('amount');
-                
-            $data[] = $revenue;
+            $data[] = Payment::whereMonth('date', $month)->whereYear('date', $currentYear)->sum('amount');
         }
-        
+
         return $data;
     }
-    
-    /**
-     * الحصول على بيانات التذاكر الشهرية
-     *
-     * @return array
-     */
+
     private function getMonthlyTicketsData()
     {
         $data = [];
         $currentYear = Carbon::now()->year;
-        
         for ($month = 1; $month <= 12; $month++) {
-            $tickets = Ticket::whereMonth('date', $month)
-                ->whereYear('date', $currentYear)
-                ->count();
-                
-            $data[] = $tickets;
+            $data[] = Ticket::whereMonth('date', $month)->whereYear('date', $currentYear)->count();
         }
-        
+
         return $data;
     }
-    
-    /**
-     * الحصول على تسميات أقسام التذاكر
-     *
-     * @return array
-     */
+
     private function getTicketsByDepartmentLabels()
     {
         return Ticket::distinct()->pluck('department')->toArray();
     }
-    
-    /**
-     * الحصول على بيانات التذاكر حسب القسم
-     *
-     * @return array
-     */
+
     private function getTicketsByDepartmentData()
     {
-        $departments = Ticket::distinct()->pluck('department');
         $data = [];
-        
-        foreach ($departments as $department) {
-            $count = Ticket::where('department', $department)->count();
-            $data[] = $count;
+        foreach (Ticket::distinct()->pluck('department') as $department) {
+            $data[] = Ticket::where('department', $department)->count();
         }
-        
+
         return $data;
     }
-    
-    /**
-     * الحصول على بيانات الفواتير حسب الحالة
-     *
-     * @return array
-     */
+
     private function getInvoicesByStatusData()
     {
-        $statuses = ['Paid', 'Unpaid', 'Cancelled', 'Refunded'];
         $data = [];
-        
-        foreach ($statuses as $status) {
-            $count = Invoice::where('status', $status)->count();
-            $data[] = $count;
+        foreach (['Paid', 'Unpaid', 'Cancelled', 'Refunded'] as $status) {
+            $data[] = Invoice::where('status', $status)->count();
         }
-        
+
         return $data;
     }
-    
-    /**
-     * الحصول على بيانات العملاء حسب الحالة
-     *
-     * @return array
-     */
+
     private function getCustomersByStatusData()
     {
-        $statuses = ['Active', 'Inactive', 'Closed'];
         $data = [];
-        
-        foreach ($statuses as $status) {
-            $count = Customer::where('status', $status)->count();
-            $data[] = $count;
+        foreach (['Active', 'Inactive', 'Closed'] as $status) {
+            $data[] = Customer::where('status', $status)->count();
         }
-        
+
         return $data;
     }
-    
-    /**
-     * الحصول على تسميات المنتجات الأكثر مبيعًا
-     *
-     * @return array
-     */
+
     private function getTopSellingProductsLabels()
     {
-        $products = Product::orderBy('sales_count', 'desc')->take(5)->get();
-        return $products->pluck('name')->toArray();
+        return Product::orderBy('sales_count', 'desc')->take(5)->pluck('name')->toArray();
     }
-    
-    /**
-     * الحصول على بيانات المنتجات الأكثر مبيعًا
-     *
-     * @return array
-     */
+
     private function getTopSellingProductsData()
     {
-        $products = Product::orderBy('sales_count', 'desc')->take(5)->get();
-        return $products->pluck('sales_count')->toArray();
+        return Product::orderBy('sales_count', 'desc')->take(5)->pluck('sales_count')->toArray();
     }
 }

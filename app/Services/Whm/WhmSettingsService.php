@@ -1,0 +1,148 @@
+<?php
+
+namespace App\Services\Whm;
+
+use App\Models\SystemSetting;
+use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Crypt;
+
+class WhmSettingsService
+{
+    protected const GROUP = 'whm';
+
+    protected const CACHE_KEY = 'whm_connection_config';
+
+    /**
+     * @return array{
+     *   host: string,
+     *   username: string,
+     *   api_token: string,
+     *   verify_ssl: bool,
+     *   default_package: string,
+     *   default_domain_suffix: string,
+     *   timeout: int,
+     *   token_configured: bool
+     * }
+     */
+    public function getConnectionConfig(): array
+    {
+        return Cache::remember(self::CACHE_KEY, 300, function () {
+            $this->initializeDefaults();
+
+            $keys = config('whm.keys');
+            $stored = SystemSetting::query()
+                ->where('group', self::GROUP)
+                ->pluck('value', 'key')
+                ->toArray();
+
+            $host = trim((string) ($stored[$keys['host']] ?? ''));
+            $username = trim((string) ($stored[$keys['username']] ?? config('whm.defaults.username')));
+            $tokenRaw = $stored[$keys['api_token']] ?? '';
+            $verifySsl = ($stored[$keys['verify_ssl']] ?? config('whm.defaults.verify_ssl')) !== '0';
+            $defaultPackage = trim((string) ($stored[$keys['default_package']] ?? config('whm.defaults.default_package')));
+            $domainSuffix = trim((string) ($stored[$keys['default_domain_suffix']] ?? ''));
+            $timeout = (int) ($stored[$keys['timeout']] ?? config('whm.defaults.timeout', 60));
+
+            $token = $this->decryptIfEncrypted($tokenRaw);
+
+            return [
+                'host' => rtrim($host, '/'),
+                'username' => $username,
+                'api_token' => $token,
+                'verify_ssl' => $verifySsl,
+                'default_package' => $defaultPackage !== '' ? $defaultPackage : 'default',
+                'default_domain_suffix' => $domainSuffix,
+                'timeout' => max(10, min(180, $timeout)),
+                'token_configured' => $token !== '' || $tokenRaw !== '',
+            ];
+        });
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    public function getFormSettings(): array
+    {
+        $config = $this->getConnectionConfig();
+
+        return [
+            'host' => $config['host'],
+            'username' => $config['username'],
+            'verify_ssl' => $config['verify_ssl'],
+            'default_package' => $config['default_package'],
+            'default_domain_suffix' => $config['default_domain_suffix'],
+            'timeout' => $config['timeout'],
+            'has_token' => $config['token_configured'],
+        ];
+    }
+
+    public function updateSettings(array $data): void
+    {
+        $keys = config('whm.keys');
+
+        if (array_key_exists('host', $data)) {
+            SystemSetting::set($keys['host'], rtrim(trim((string) $data['host']), '/'), 'string', self::GROUP);
+        }
+
+        if (array_key_exists('username', $data)) {
+            SystemSetting::set($keys['username'], trim((string) $data['username']), 'string', self::GROUP);
+        }
+
+        if (array_key_exists('verify_ssl', $data)) {
+            SystemSetting::set($keys['verify_ssl'], ! empty($data['verify_ssl']) ? '1' : '0', 'string', self::GROUP);
+        }
+
+        if (array_key_exists('default_package', $data)) {
+            SystemSetting::set($keys['default_package'], trim((string) $data['default_package']), 'string', self::GROUP);
+        }
+
+        if (array_key_exists('default_domain_suffix', $data)) {
+            SystemSetting::set($keys['default_domain_suffix'], trim((string) $data['default_domain_suffix']), 'string', self::GROUP);
+        }
+
+        if (isset($data['timeout'])) {
+            SystemSetting::set($keys['timeout'], (string) max(10, min(180, (int) $data['timeout'])), 'integer', self::GROUP);
+        }
+
+        if (! empty($data['api_token'])) {
+            SystemSetting::set(
+                $keys['api_token'],
+                Crypt::encryptString((string) $data['api_token']),
+                'string',
+                self::GROUP
+            );
+        }
+
+        $this->clearCache();
+    }
+
+    public function clearCache(): void
+    {
+        Cache::forget(self::CACHE_KEY);
+    }
+
+    public function initializeDefaults(): void
+    {
+        $keys = config('whm.keys');
+        $defaults = config('whm.defaults');
+
+        foreach ($keys as $settingKey => $dbKey) {
+            if (! SystemSetting::query()->where('group', self::GROUP)->where('key', $dbKey)->exists()) {
+                SystemSetting::set($dbKey, (string) ($defaults[$settingKey] ?? ''), 'string', self::GROUP);
+            }
+        }
+    }
+
+    protected function decryptIfEncrypted(?string $value): string
+    {
+        if ($value === null || $value === '') {
+            return '';
+        }
+
+        try {
+            return Crypt::decryptString($value);
+        } catch (\Throwable) {
+            return $value;
+        }
+    }
+}

@@ -10,6 +10,16 @@
                 @csrf
                 <div class="mb-3"><label class="form-label">الاسم *</label><input type="text" name="name" class="form-control" required value="{{ old('name') }}"></div>
                 <div class="mb-3"><label class="form-label">الوصف</label><textarea name="description" class="form-control">{{ old('description') }}</textarea></div>
+                <div class="mb-3">
+                    <label class="form-label">إنشاء ضمن فريق عميل (اختياري)</label>
+                    <select name="user_id" class="form-select">
+                        <option value="">— توكن اللوحة الرئيسي —</option>
+                        @foreach($clientUsers ?? [] as $u)
+                            <option value="{{ $u->id }}" @selected(old('user_id') == $u->id)>{{ $u->name }}</option>
+                        @endforeach
+                    </select>
+                    <div class="form-text">يظهر العملاء الذين لديهم فريق Coolify مربوط مع توكن API.</div>
+                </div>
                 <button type="submit" class="btn btn-primary">حفظ</button>
                 <a href="{{ route('admin.coolify.projects.index') }}" class="btn btn-light">إلغاء</a>
             </form>

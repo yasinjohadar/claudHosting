@@ -7,7 +7,11 @@ use App\Http\Controllers\Admin\Coolify\Concerns\LogsCoolifyActivity;
 use App\Http\Controllers\Controller;
 use App\Jobs\RestoreProjectSnapshotJob;
 use App\Models\CoolifyProjectSnapshot;
+use App\Models\ClientCoolifyProject;
+use App\Models\User;
+use App\Services\Client\ClientAssetService;
 use App\Services\Coolify\CoolifyProjectCleanupService;
+use App\Services\Coolify\CoolifyTeamService;
 use App\Services\CoolifyApiService;
 use Illuminate\Http\Request;
 
@@ -18,12 +22,14 @@ class CoolifyProjectController extends Controller
 
     public function __construct(
         protected CoolifyApiService $coolify,
-        protected CoolifyProjectCleanupService $projectCleanup
+        protected CoolifyProjectCleanupService $projectCleanup,
+        protected ClientAssetService $clientAssets,
+        protected CoolifyTeamService $teamService
     ) {
         $this->middleware('auth');
     }
 
-    public function index()
+    public function index(Request $request)
     {
         if (! $this->coolify->isConfigured()) {
             return $this->coolifyRedirectError('يرجى ضبط إعدادات Coolify أولاً.');
@@ -33,8 +39,20 @@ class CoolifyProjectController extends Controller
         $projects = $this->coolifyList($response);
         $error = $response['success'] ? null : ($response['message'] ?? 'فشل جلب المشاريع');
 
+        $assignments = $this->clientAssets->coolifyProjectAssignmentMap();
+        $filterUserId = $request->filled('user_id') ? (int) $request->user_id : null;
+
         foreach ($projects as $index => $project) {
             $uuid = trim((string) ($project['uuid'] ?? ''));
+            $assignment = $assignments[$uuid] ?? null;
+            $projects[$index]['_client'] = $assignment?->client;
+            $projects[$index]['_user_id'] = $assignment?->user_id;
+
+            if ($filterUserId !== null && (int) ($assignment?->user_id ?? 0) !== $filterUserId) {
+                unset($projects[$index]);
+                continue;
+            }
+
             $projects[$index]['_inspection'] = $uuid !== ''
                 ? $this->projectCleanup->inspectProject($uuid)
                 : [
@@ -45,12 +63,61 @@ class CoolifyProjectController extends Controller
                 ];
         }
 
-        return view('admin.coolify.projects.index', compact('projects', 'error'));
+        $projects = array_values($projects);
+        $clientUsers = User::query()->orderBy('name')->select(['id', 'name', 'email'])->limit(500)->get();
+
+        return view('admin.coolify.projects.index', compact('projects', 'error', 'clientUsers', 'filterUserId'));
+    }
+
+    public function assignClient(Request $request, string $uuid)
+    {
+        $validated = $request->validate([
+            'user_id' => 'nullable|exists:users,id',
+            'project_name' => 'nullable|string|max:255',
+        ]);
+
+        $userId = isset($validated['user_id']) && $validated['user_id'] !== ''
+            ? (int) $validated['user_id']
+            : null;
+
+        $projectName = $validated['project_name'] ?? null;
+        if ($projectName === null || $projectName === '') {
+            $existing = $this->coolify->getProject($uuid);
+            if ($existing['success'] ?? false) {
+                $item = $this->coolifyItem($existing);
+                $projectName = is_array($item) ? ($item['name'] ?? null) : null;
+            }
+        }
+
+        $result = $this->clientAssets->assignCoolifyProject($userId, $uuid, $projectName);
+
+        if ($request->wantsJson() || $request->ajax()) {
+            $client = $result['project']?->client;
+
+            return response()->json([
+                'success' => $result['success'],
+                'message' => $result['message'],
+                'html' => view('admin.coolify.projects.partials.client-cell', [
+                    'uuid' => $uuid,
+                    'client' => $client,
+                ])->render(),
+            ], $result['success'] ? 200 : 422);
+        }
+
+        return back()->with($result['success'] ? 'success' : 'error', $result['message']);
     }
 
     public function create()
     {
-        return view('admin.coolify.projects.create');
+        $clientUsers = User::query()
+            ->whereHas('clientCoolifyTeam', function ($q) {
+                $q->whereNotNull('api_token');
+            })
+            ->orderBy('name')
+            ->select(['id', 'name', 'email'])
+            ->get();
+
+        return view('admin.coolify.projects.create', compact('clientUsers'));
     }
 
     public function store(Request $request)
@@ -58,9 +125,27 @@ class CoolifyProjectController extends Controller
         $validated = $request->validate([
             'name' => 'required|string|max:255',
             'description' => 'nullable|string',
+            'user_id' => 'nullable|exists:users,id',
         ]);
 
-        $response = $this->coolify->createProject($validated);
+        $api = $this->coolify;
+        $userId = isset($validated['user_id']) ? (int) $validated['user_id'] : null;
+
+        if ($userId !== null) {
+            $clientApi = $this->teamService->apiForUser($userId);
+            if ($clientApi === null) {
+                return back()->withInput()->with(
+                    'error',
+                    'اربط فريق Coolify وتوكنه للعميل أولاً من قسم فرق العمل'
+                );
+            }
+            $api = $clientApi;
+        }
+
+        $response = $api->createProject([
+            'name' => $validated['name'],
+            'description' => $validated['description'] ?? null,
+        ]);
         $this->coolify->clearDashboardCache();
 
         if (! $response['success']) {
@@ -72,6 +157,10 @@ class CoolifyProjectController extends Controller
 
         if ($uuid) {
             $this->logCoolify('create', 'project', $uuid, $validated['name'] ?? null);
+
+            if ($userId !== null) {
+                $this->clientAssets->assignCoolifyProject($userId, $uuid, $validated['name'] ?? null);
+            }
 
             return $this->coolifyRedirectSuccess('تم إنشاء المشروع', 'admin.coolify.projects.show', ['uuid' => $uuid]);
         }
@@ -100,8 +189,11 @@ class CoolifyProjectController extends Controller
             ->limit(8)
             ->get();
 
+        $assignment = ClientCoolifyProject::where('project_uuid', $uuid)->first();
+        $clientUsers = User::query()->orderBy('name')->select(['id', 'name', 'email'])->limit(500)->get();
+
         return view('admin.coolify.projects.show', compact(
-            'project', 'uuid', 'resources', 'inspection', 'projectSnapshots'
+            'project', 'uuid', 'resources', 'inspection', 'projectSnapshots', 'assignment', 'clientUsers'
         ));
     }
 

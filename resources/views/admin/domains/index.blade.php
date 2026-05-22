@@ -33,7 +33,7 @@
         <div class="d-md-flex d-block align-items-center justify-content-between my-4 page-header-breadcrumb">
             <div>
                 <h4 class="mb-0">مركز تحكم النطاقات</h4>
-                <p class="mb-0 text-muted">Cloudflare · name.com · WHMCS · Coolify</p>
+                <p class="mb-0 text-muted">Cloudflare · name.com · WHM · Coolify</p>
             </div>
             <div class="d-flex flex-wrap gap-2 mt-2 mt-md-0">
                 <a href="{{ route('admin.domains.search') }}" class="btn btn-success btn-sm">
@@ -93,8 +93,8 @@
             <div class="col-6 col-sm-4 col-lg-2">
                 <div class="card domain-cc-stat custom-card mb-0 h-100">
                     <div class="card-body text-center py-3">
-                        <div class="display-6 fw-bold text-warning mb-0">{{ $stats['whmcs'] ?? 0 }}</div>
-                        <small class="text-muted">WHMCS</small>
+                        <div class="display-6 fw-bold text-warning mb-0">{{ $stats['whm'] ?? 0 }}</div>
+                        <small class="text-muted">WHM</small>
                     </div>
                 </div>
             </div>
@@ -143,7 +143,7 @@
                             <option value="cf_zone" @selected(($filters['source'] ?? '') === 'cf_zone')>CF Zone</option>
                             <option value="cf_registrar" @selected(($filters['source'] ?? '') === 'cf_registrar')>CF Registrar</option>
                             <option value="namecom" @selected(($filters['source'] ?? '') === 'namecom')>name.com</option>
-                            <option value="whmcs" @selected(($filters['source'] ?? '') === 'whmcs')>WHMCS</option>
+                            <option value="whm" @selected(($filters['source'] ?? '') === 'whm')>WHM / cPanel</option>
                             <option value="coolify" @selected(($filters['source'] ?? '') === 'coolify')>Coolify</option>
                         </select>
                     </div>
@@ -155,6 +155,15 @@
                             <option value="expiring" @selected(($filters['status'] ?? '') === 'expiring')>ينتهي قريباً</option>
                             <option value="expired" @selected(($filters['status'] ?? '') === 'expired')>منتهي</option>
                             <option value="pending" @selected(($filters['status'] ?? '') === 'pending')>قيد الانتظار</option>
+                        </select>
+                    </div>
+                    <div class="col-6 col-md-3 col-lg-2">
+                        <label class="form-label fw-semibold">العميل</label>
+                        <select name="user_id" class="form-select">
+                            <option value="">الكل</option>
+                            @foreach($clientUsers ?? [] as $u)
+                                <option value="{{ $u->id }}" @selected(($filters['user_id'] ?? '') == $u->id)>{{ $u->name }}</option>
+                            @endforeach
                         </select>
                     </div>
                     <div class="col-6 col-md-3 col-lg-2">
@@ -194,6 +203,7 @@
                             <th>المصادر</th>
                             <th>Coolify</th>
                             <th>الحالة</th>
+                            <th>العميل</th>
                             <th>التسجيل</th>
                             <th>
                                 @php
@@ -239,6 +249,21 @@
                             <td>
                                 <span class="badge {{ $row['status_badge'] }}">{{ $row['status_label'] }}</span>
                             </td>
+                            <td class="domain-client-cell domain-row-{{ $loop->index }}" data-domain="{{ $row['name'] }}">
+                                <div class="domain-client-label">
+                                    @include('admin.domains.partials.client-cell', ['row' => $row])
+                                </div>
+                                <div class="mt-1">
+                                    @include('admin.partials.asset-client-assign-inline', [
+                                        'assignUrl' => route('admin.domains.assign-client'),
+                                        'payloadKey' => 'domain_name',
+                                        'payloadValue' => $row['name'],
+                                        'clientUsers' => $clientUsers ?? [],
+                                        'selectedUserId' => $row['user_id'] ?? null,
+                                        'cellSelector' => '.domain-row-'.$loop->index.' .domain-client-label',
+                                    ])
+                                </div>
+                            </td>
                             <td class="text-muted small">{{ $row['registered_formatted'] }}</td>
                             <td>
                                 <span class="{{ ($row['expiring_soon'] ?? false) ? 'text-warning fw-semibold' : '' }}">
@@ -263,6 +288,12 @@
                                             @endif
                                         </li>
                                         @endforeach
+                                        @if(in_array('whm', $row['source_keys'] ?? [], true) && ($configured['whm'] ?? false))
+                                        <li><hr class="dropdown-divider"></li>
+                                        <li>
+                                            <a class="dropdown-item" href="{{ route('admin.domains.whm-dns', ['domain' => $row['name']]) }}" target="_blank">سجلات DNS (WHM)</a>
+                                        </li>
+                                        @endif
                                     </ul>
                                 </div>
                             </td>
@@ -288,7 +319,7 @@
                 <span class="badge bg-primary-transparent text-primary ms-1">CF Zone</span> DNS على Cloudflare —
                 <span class="badge bg-info-transparent text-info ms-1">CF Registrar</span> مسجّل عند Cloudflare —
                 <span class="badge bg-success-transparent text-success ms-1">name.com</span> مسجّل عند name.com —
-                <span class="badge bg-warning-transparent text-warning ms-1">WHMCS</span> من نظام الفوترة
+                <span class="badge bg-warning-transparent text-warning ms-1">WHM</span> من حسابات cPanel
             </div>
             @endif
         </div>
@@ -311,14 +342,18 @@
                 </a>
             </div>
             <div class="col-md-4">
-                <a href="{{ route('admin.domains.whmcs.index') }}" class="card custom-card text-decoration-none h-100 mb-0">
+                <a href="{{ route('admin.whm.accounts.index') }}" class="card custom-card text-decoration-none h-100 mb-0">
                     <div class="card-body py-3">
-                        <h6 class="mb-1">WHMCS</h6>
-                        <small class="text-muted">مزامنة وإدارة العملاء</small>
+                        <h6 class="mb-1">WHM / cPanel</h6>
+                        <small class="text-muted">حسابات الاستضافة من WHM</small>
                     </div>
                 </a>
             </div>
         </div>
     </div>
 </div>
+@push('scripts')
+@include('admin.whm.accounts.partials.whm-toast')
+@include('admin.partials.asset-client-assign-script')
+@endpush
 @endsection

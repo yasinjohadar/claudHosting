@@ -39,7 +39,10 @@ class AdminUserSeeder extends Seeder
 
         // إنشاء دور admin
         $adminRole = Role::firstOrCreate(['name' => 'admin', 'guard_name' => 'web']);
-        
+
+        // دور العملاء — لوحة /client فقط (بدون صلاحيات أدمن)
+        Role::firstOrCreate(['name' => 'client', 'guard_name' => 'web']);
+
         // تعيين جميع الصلاحيات لدور admin
         $adminRole->syncPermissions(Permission::all());
 

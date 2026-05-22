@@ -57,4 +57,37 @@ class User extends Authenticatable
     {
         return $this->hasOne(Customer::class);
     }
+
+    public function whmAccounts()
+    {
+        return $this->hasMany(WhmAccount::class);
+    }
+
+    public function clientDomains()
+    {
+        return $this->hasMany(ClientDomain::class);
+    }
+
+    public function clientCoolifyProjects()
+    {
+        return $this->hasMany(ClientCoolifyProject::class);
+    }
+
+    public function clientCoolifyTeam()
+    {
+        return $this->hasOne(ClientCoolifyTeam::class);
+    }
+
+    public function isAdminPanelUser(): bool
+    {
+        if ($this->hasRole('admin')) {
+            return true;
+        }
+
+        try {
+            return $this->can('user-list');
+        } catch (\Throwable) {
+            return false;
+        }
+    }
 }

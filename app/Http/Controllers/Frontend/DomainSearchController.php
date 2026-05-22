@@ -4,26 +4,18 @@ namespace App\Http\Controllers\Frontend;
 
 use App\Http\Controllers\Controller;
 use App\Services\Domain\DomainAvailabilitySearchService;
-use App\Services\WhmcsApiService;
+use App\Services\Domain\DomainPriceFormatter;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
 
 class DomainSearchController extends Controller
 {
-    public function __construct(
-        protected WhmcsApiService $whmcs,
-        protected DomainAvailabilitySearchService $availabilitySearch
-    ) {}
+    public function __construct(protected DomainAvailabilitySearchService $availabilitySearch) {}
 
-    /**
-     * صفحة بحث النطاقات — جلب أسعار TLDs وعرض النموذج
-     */
     public function index()
     {
-        $currencyId = (int) config('whmcs.default_currency', 1);
-        $pricingResult = $this->whmcs->getTldPricing($currencyId, null);
-        $pricing = $pricingResult['success'] ? $pricingResult['pricing'] : [];
-        $currency = $pricingResult['success'] ? $pricingResult['currency'] : [];
+        $pricing = $this->defaultPricing();
+        $currency = config('domain_search.default_currency', ['code' => 'USD', 'suffix' => ' USD']);
 
         return view('frontend.pages.domain-search', [
             'pricing' => $pricing,
@@ -31,19 +23,16 @@ class DomainSearchController extends Controller
         ]);
     }
 
-    /**
-     * معالجة البحث: التحقق من التوفر وعرض السعر والخيارات
-     */
     public function search(Request $request)
     {
-        $rules = [
+        $validator = Validator::make($request->all(), [
             'domain' => 'required|string|max:253',
-        ];
-        $validator = Validator::make($request->all(), $rules);
+        ]);
         if ($validator->fails()) {
             if ($request->wantsJson()) {
                 return response()->json(['success' => false, 'message' => __('validation.required', ['attribute' => 'domain']), 'results' => []]);
             }
+
             return redirect()->route('frontend.domain-search')->withErrors($validator)->withInput();
         }
 
@@ -55,10 +44,8 @@ class DomainSearchController extends Controller
         $selectedTlds = array_map('strtolower', array_map('trim', $selectedTlds));
         $selectedTlds = array_values(array_filter($selectedTlds, fn ($t) => $t !== ''));
 
-        $currencyId = (int) config('whmcs.default_currency', 1);
-        $pricingResult = $this->whmcs->getTldPricing($currencyId, null);
-        $pricing = $pricingResult['success'] ? $pricingResult['pricing'] : [];
-        $currency = $pricingResult['success'] ? $pricingResult['currency'] : [];
+        $pricing = $this->defaultPricing();
+        $currency = config('domain_search.default_currency', ['code' => 'USD', 'suffix' => ' USD']);
 
         $domainsToCheck = [];
         if (str_contains($input, '.')) {
@@ -69,6 +56,7 @@ class DomainSearchController extends Controller
                 if ($request->wantsJson()) {
                     return response()->json(['success' => false, 'message' => 'يرجى إدخال اسم أو نطاق صحيح.', 'results' => []]);
                 }
+
                 return redirect()->route('frontend.domain-search')->with('error', 'يرجى إدخال اسم أو نطاق صحيح.')->withInput();
             }
             $availableTlds = array_keys($pricing);
@@ -79,7 +67,7 @@ class DomainSearchController extends Controller
                 $tldsToUse = ['com', 'net', 'org'];
             }
             foreach ($tldsToUse as $tld) {
-                $domainsToCheck[] = $name . '.' . $tld;
+                $domainsToCheck[] = $name.'.'.$tld;
             }
         }
 
@@ -108,6 +96,24 @@ class DomainSearchController extends Controller
     }
 
     /**
+     * @return array<string, array<string, mixed>>
+     */
+    protected function defaultPricing(): array
+    {
+        $pricing = [];
+        foreach (config('domain_search.default_tlds', ['com', 'net', 'org']) as $tld) {
+            $pricing[$tld] = [
+                'register' => [],
+                'transfer' => [],
+                'renew' => [],
+                'addons' => [],
+            ];
+        }
+
+        return $pricing;
+    }
+
+    /**
      * @param  array<int, string>  $domainsToCheck
      * @param  array<string, mixed>  $pricing
      * @param  array<string, mixed>  $currency
@@ -115,7 +121,7 @@ class DomainSearchController extends Controller
      */
     protected function buildResults(array $domainsToCheck, array $pricing, array $currency, string $searchInput): array
     {
-        $currencySuffix = ($currency['suffix'] ?? '') ?: (' ' . ($currency['code'] ?? ''));
+        $currencySuffix = ($currency['suffix'] ?? '') ?: (' '.($currency['code'] ?? ''));
         $availabilityPayload = $this->availabilitySearch->search($searchInput);
         $availabilityByDomain = [];
         foreach ($availabilityPayload['rows'] as $availRow) {
@@ -125,19 +131,12 @@ class DomainSearchController extends Controller
         $results = [];
 
         foreach ($domainsToCheck as $domain) {
-            $whoisResult = $this->whmcs->domainWhois($domain);
             $external = $availabilityByDomain[$domain] ?? null;
-            $whoisOk = (bool) ($whoisResult['success'] ?? false);
-
             $available = false;
             $checkState = 'unknown';
             $sources = [];
 
-            if ($whoisOk) {
-                $available = ($whoisResult['status'] ?? '') === 'available';
-                $checkState = $available ? 'available' : 'unavailable';
-                $sources[] = 'WHMCS';
-            } elseif ($external !== null) {
+            if ($external !== null) {
                 $available = (bool) ($external['any_available'] ?? false);
                 $checkState = $available ? 'available' : 'unavailable';
                 if ($external['cloudflare'] ?? null) {
@@ -161,8 +160,8 @@ class DomainSearchController extends Controller
                 'available' => $available,
                 'check_state' => $checkState,
                 'sources' => $sources,
-                'status' => $whoisResult['status'] ?? 'unknown',
-                'whois' => $whoisResult['whois'] ?? '',
+                'status' => $available ? 'available' : 'unavailable',
+                'whois' => '',
                 'register' => $registerPrice,
                 'transfer' => $transferPrice,
                 'renew' => $renewPrice,
@@ -170,9 +169,9 @@ class DomainSearchController extends Controller
                 'cloudflare' => $external['cloudflare'] ?? null,
                 'namecom' => $external['namecom'] ?? null,
             ];
-            $row['register_text'] = WhmcsApiService::formatDomainPrice($registerPrice, $currencySuffix);
-            $row['transfer_text'] = WhmcsApiService::formatDomainPrice($transferPrice, $currencySuffix);
-            $row['renew_text'] = WhmcsApiService::formatDomainPrice($renewPrice, $currencySuffix);
+            $row['register_text'] = DomainPriceFormatter::format($registerPrice, $currencySuffix);
+            $row['transfer_text'] = DomainPriceFormatter::format($transferPrice, $currencySuffix);
+            $row['renew_text'] = DomainPriceFormatter::format($renewPrice, $currencySuffix);
             $this->applyRegistrarPrices($row);
 
             $addonsParts = [];
@@ -180,7 +179,7 @@ class DomainSearchController extends Controller
                 foreach ($addons as $addonName => $addonVal) {
                     if ($addonVal !== false && $addonVal !== null && $addonVal !== '') {
                         $name = is_string($addonName) ? $addonName : 'إضافة';
-                        $addonsParts[] = $name . ': ' . (is_array($addonVal) ? WhmcsApiService::formatDomainPrice($addonVal, $currencySuffix) : $addonVal . $currencySuffix);
+                        $addonsParts[] = $name.': '.(is_array($addonVal) ? DomainPriceFormatter::format($addonVal, $currencySuffix) : $addonVal.$currencySuffix);
                     }
                 }
             }
@@ -216,15 +215,15 @@ class DomainSearchController extends Controller
         $cf = $row['cloudflare'] ?? null;
         $nc = $row['namecom'] ?? null;
         if ($cf && ($cf['available'] ?? false) && isset($cf['price'])) {
-            $row['register_text'] = '$' . number_format((float) $cf['price'], 2) . ' (Cloudflare)';
+            $row['register_text'] = '$'.number_format((float) $cf['price'], 2).' (Cloudflare)';
         } elseif ($nc && ($nc['available'] ?? false) && isset($nc['price'])) {
-            $row['register_text'] = '$' . number_format((float) $nc['price'], 2) . ' (name.com)';
+            $row['register_text'] = '$'.number_format((float) $nc['price'], 2).' (name.com)';
         }
         if (($row['renew_text'] ?? '—') === '—' || ($row['renew_text'] ?? '') === '') {
             if ($cf && isset($cf['renewal'])) {
-                $row['renew_text'] = '$' . number_format((float) $cf['renewal'], 2);
+                $row['renew_text'] = '$'.number_format((float) $cf['renewal'], 2);
             } elseif ($nc && isset($nc['renewal'])) {
-                $row['renew_text'] = '$' . number_format((float) $nc['renewal'], 2);
+                $row['renew_text'] = '$'.number_format((float) $nc['renewal'], 2);
             }
         }
     }
@@ -260,9 +259,9 @@ class DomainSearchController extends Controller
             'namecom' => $availRow['namecom'] ?? null,
             'addons_text' => '—',
         ];
-        $row['register_text'] = WhmcsApiService::formatDomainPrice($row['register'], $currencySuffix);
-        $row['transfer_text'] = WhmcsApiService::formatDomainPrice($row['transfer'], $currencySuffix);
-        $row['renew_text'] = WhmcsApiService::formatDomainPrice($row['renew'], $currencySuffix);
+        $row['register_text'] = DomainPriceFormatter::format($row['register'], $currencySuffix);
+        $row['transfer_text'] = DomainPriceFormatter::format($row['transfer'], $currencySuffix);
+        $row['renew_text'] = DomainPriceFormatter::format($row['renew'], $currencySuffix);
         $this->applyRegistrarPrices($row);
 
         return $row;

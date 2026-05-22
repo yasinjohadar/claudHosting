@@ -69,6 +69,7 @@ class Product extends Model
         'updated_at',
         'synced_at',
         'coolify_provision',
+        'whm_provision',
     ];
 
     /**
@@ -90,6 +91,7 @@ class Product extends Model
         'autorenew' => 'boolean',
         'synced_at' => 'datetime',
         'coolify_provision' => 'array',
+        'whm_provision' => 'array',
     ];
 
     /**

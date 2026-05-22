@@ -5,7 +5,6 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\Product;
 use App\Models\CustomerProduct;
-use App\Services\WhmcsApiService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
@@ -13,11 +12,8 @@ use Carbon\Carbon;
 
 class ProductController extends Controller
 {
-    protected $whmcsApiService;
-
-    public function __construct(WhmcsApiService $whmcsApiService)
+    public function __construct()
     {
-        $this->whmcsApiService = $whmcsApiService;
         $this->middleware('auth');
     }
 
@@ -108,22 +104,6 @@ class ProductController extends Controller
                 'sales_count' => 0,
                 'synced_at' => null,
             ]);
-            
-            // إنشاء المنتج في WHMCS
-            $whmcsProduct = $this->whmcsApiService->addProduct([
-                'type' => $request->type,
-                'gid' => $request->gid,
-                'name' => $request->name,
-                'description' => $request->description,
-                'paytype' => $request->paytype,
-                'pricing' => $pricing,
-            ]);
-            
-            if ($whmcsProduct && ($whmcsProduct['success'] ?? false) && isset($whmcsProduct['pid'])) {
-                $product->whmcs_id = $whmcsProduct['pid'];
-                $product->synced_at = Carbon::now();
-                $product->save();
-            }
             
             DB::commit();
             
@@ -236,21 +216,12 @@ class ProductController extends Controller
                 'status' => $request->status,
             ]);
             
-            // تحديث المنتج في WHMCS إذا كان لديه معرف
-            if ($product->whmcs_id) {
-                $this->whmcsApiService->updateProduct($product->whmcs_id, [
-                    'type' => $request->type,
-                    'gid' => $request->gid,
-                    'name' => $request->name,
-                    'description' => $request->description,
-                    'paytype' => $request->paytype,
-                    'pricing' => $pricing,
-                ]);
-                
-                $product->synced_at = Carbon::now();
+            if ($request->filled('whm_provision_json')) {
+                $decoded = json_decode($request->whm_provision_json, true);
+                $product->whm_provision = is_array($decoded) ? $decoded : null;
                 $product->save();
             }
-            
+
             DB::commit();
             
             return redirect()->route('admin.products.index')
@@ -278,13 +249,6 @@ class ProductController extends Controller
         DB::beginTransaction();
 
         try {
-            if ($product->whmcs_id) {
-                try {
-                    $this->whmcsApiService->deleteProduct($product->whmcs_id);
-                } catch (\Exception $e) {
-                    // تجاهل فشل الحذف من WHMCS والمتابعة في الحذف المحلي
-                }
-            }
             $product->delete();
             DB::commit();
             return redirect()->route('admin.products.index')
@@ -296,45 +260,4 @@ class ProductController extends Controller
         }
     }
     
-    /**
-     * مزامنة المنتج مع WHMCS
-     *
-     * @param  int  $id
-     * @return \Illuminate\Http\RedirectResponse
-     */
-    public function sync($id)
-    {
-        $product = Product::findOrFail($id);
-        
-        try {
-            // مزامنة المنتج مع WHMCS
-            $this->whmcsApiService->syncProduct($product);
-            
-            return redirect()->route('admin.products.show', $id)
-                ->with('success', 'تمت مزامنة المنتج مع WHMCS بنجاح');
-                
-        } catch (\Exception $e) {
-            return redirect()->back()
-                ->with('error', 'حدث خطأ أثناء مزامنة المنتج: ' . $e->getMessage());
-        }
-    }
-    
-    /**
-     * مزامنة جميع المنتجات مع WHMCS
-     *
-     * @return \Illuminate\Http\RedirectResponse
-     */
-    public function syncAll()
-    {
-        try {
-            $count = $this->whmcsApiService->syncProducts();
-            
-            return redirect()->route('admin.products.index')
-                ->with('success', 'تمت مزامنة ' . $count . ' منتج مع WHMCS بنجاح');
-                
-        } catch (\Exception $e) {
-            return redirect()->back()
-                ->with('error', 'حدث خطأ أثناء مزامنة المنتجات: ' . $e->getMessage());
-        }
-    }
 }

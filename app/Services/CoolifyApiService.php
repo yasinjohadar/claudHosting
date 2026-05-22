@@ -35,6 +35,22 @@ class CoolifyApiService
     }
 
     /**
+     * Use a different API token (e.g. per-client team token) while keeping URL and timeout.
+     */
+    public function withToken(string $token): self
+    {
+        $clone = clone $this;
+        $clone->token = $token;
+
+        return $clone;
+    }
+
+    public function getBaseUrl(): string
+    {
+        return $this->baseUrl;
+    }
+
+    /**
      * @return array{success: bool, data?: mixed, message?: string, status?: int}
      */
     protected function request(string $method, string $path, array $data = [], array $query = []): array
@@ -1589,6 +1605,16 @@ class CoolifyApiService
     public function listTeams(): array
     {
         return $this->request('GET', 'teams');
+    }
+
+    public function getTeam(int $id): array
+    {
+        return $this->request('GET', "teams/{$id}");
+    }
+
+    public function getTeamMembers(int $id): array
+    {
+        return $this->request('GET', "teams/{$id}/members");
     }
 
     public function getCurrentTeam(): array

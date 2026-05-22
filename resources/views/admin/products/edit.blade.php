@@ -144,6 +144,11 @@
                                 </div>
                             </div>
                         </div>
+                        <div class="form-group mt-3">
+                            <label for="whm_provision_json">تزويد WHM (JSON)</label>
+                            <textarea name="whm_provision_json" id="whm_provision_json" class="form-control font-monospace" rows="6" dir="ltr">@json($product->whm_provision ?? ['enabled' => false, 'package' => 'default'], JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE)</textarea>
+                            <small class="text-muted">مثال: {"enabled":true,"package":"default","username_prefix":"u","domain":"client.example.com"}</small>
+                        </div>
                     </div>
                     <div class="card-footer">
                         <button type="submit" class="btn btn-primary">تحديث المنتج</button>
@@ -160,7 +165,7 @@
                 </div>
                 <div class="card-body">
                     <p><strong>معرف المنتج:</strong> {{ $product->id }}</p>
-                    <p><strong>معرف WHMCS:</strong> {{ $product->whmcs_id }}</p>
+                    @if($product->whmcs_id)<p><strong>معرف خارجي (قديم):</strong> {{ $product->whmcs_id }}</p>@endif
                     <p><strong>الحالة:</strong>
                         @if ($product->status == 'Active')
                             <span class="badge badge-success">نشط</span>
@@ -178,7 +183,7 @@
                     <h3 class="card-title">ملاحظات</h3>
                 </div>
                 <div class="card-body">
-                    <p>سيتم تحديث بيانات المنتج في نظام WHMCS وفي قاعدة البيانات المحلية.</p>
+                    <p>إدارة محلية — اضبط تزويد WHM من حقل JSON في نموذج التعديل.</p>
                     <div class="alert alert-warning">
                         <h5><i class="icon fas fa-exclamation-triangle"></i> تحذير</h5>
                         الحقول المطلوبة يجب ملؤها قبل تحديث المنتج.

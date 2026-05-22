@@ -21,11 +21,15 @@
                 </nav>
             </div>
             <div class="ms-auto pageheader-btn">
-                @if($orderRequest->status !== \App\Models\PackageOrderRequest::STATUS_CONVERTED && $orderRequest->product?->whmcs_id)
-                <form action="{{ route('admin.order-requests.convert-to-whmcs', $orderRequest->id) }}" method="POST" class="d-inline">
+                @php $whmProv = $orderRequest->product?->whm_provision; @endphp
+                @if(!$orderRequest->whm_account_id && is_array($whmProv) && !empty($whmProv['enabled']))
+                <form action="{{ route('admin.order-requests.provision-whm', $orderRequest->id) }}" method="POST" class="d-inline" onsubmit="return confirm('إنشاء حساب cPanel عبر WHM؟');">
                     @csrf
-                    <button type="submit" class="btn btn-success"><i class="fe fe-check-circle"></i> تحويل إلى WHMCS</button>
+                    <button type="submit" class="btn btn-success"><i class="fe fe-check-circle"></i> إنشاء حساب WHM</button>
                 </form>
+                @endif
+                @if($orderRequest->whmAccount)
+                <a href="{{ route('admin.whm.accounts.show', $orderRequest->whmAccount) }}" class="btn btn-outline-success">حساب WHM</a>
                 @endif
                 @if($orderRequest->product && !$orderRequest->coolify_wordpress_site_id)
                 <form action="{{ route('admin.order-requests.provision-hosting', $orderRequest->id) }}" method="POST" class="d-inline" onsubmit="return confirm('بدء تزويد WordPress عبر Coolify؟');">
@@ -72,11 +76,8 @@
                                 </span>
                             </li>
                             <li class="mb-3 d-flex justify-content-between"><span class="fw-semibold">تاريخ الطلب:</span><span>{{ $orderRequest->created_at->format('Y-m-d H:i') }}</span></li>
-                            @if($orderRequest->whmcs_order_id)
-                            <li class="mb-3 d-flex justify-content-between"><span class="fw-semibold">رقم الطلب WHMCS:</span><span>{{ $orderRequest->whmcs_order_id }}</span></li>
-                            @endif
-                            @if($orderRequest->whmcs_client_id)
-                            <li class="mb-3 d-flex justify-content-between"><span class="fw-semibold">معرف العميل WHMCS:</span><span>{{ $orderRequest->whmcs_client_id }}</span></li>
+                            @if($orderRequest->whmAccount)
+                            <li class="mb-3 d-flex justify-content-between"><span class="fw-semibold">حساب WHM:</span><span><code dir="ltr">{{ $orderRequest->whmAccount->username }}</code> — {{ $orderRequest->whmAccount->domain }}</span></li>
                             @endif
                             @if($orderRequest->provision_status)
                             <li class="mb-3 d-flex justify-content-between"><span class="fw-semibold">تزويد Coolify:</span><span>{{ $orderRequest->provision_status_label }}</span></li>

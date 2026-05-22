@@ -23,6 +23,22 @@
             </div>
         </div>
         @include('admin.coolify.partials.alerts')
+        <div class="card custom-card mb-3">
+            <div class="card-body">
+                <h6 class="fw-semibold mb-2">العميل المسؤول</h6>
+                @include('admin.coolify.projects.partials.client-cell', ['client' => $assignment?->client])
+                <div class="mt-2">
+                    @include('admin.partials.asset-client-assign-inline', [
+                        'assignUrl' => route('admin.coolify.projects.assign-client', $uuid),
+                        'payloadKey' => 'project_name',
+                        'payloadValue' => $project['name'] ?? '',
+                        'clientUsers' => $clientUsers,
+                        'selectedUserId' => $assignment?->user_id,
+                        'cellSelector' => '',
+                    ])
+                </div>
+            </div>
+        </div>
         @include('admin.coolify.partials.metrics-widget', [
             'metricsScope' => 'project',
             'metricsUuid' => $uuid,

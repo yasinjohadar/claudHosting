@@ -1,175 +1,111 @@
 @extends('admin.layouts.master')
 
 @section('page-title')
-العملاء
+عملاء الاستضافة
 @stop
 
 @section('content')
-<!-- Start::app-content -->
 <div class="main-content app-content">
     <div class="container-fluid">
-        <!-- Page Header -->
         <div class="d-md-flex d-block align-items-center justify-content-between my-4 page-header-breadcrumb">
             <div>
-                <h4 class="mb-0">قائمة العملاء</h4>
-                <nav>
-                    <ol class="breadcrumb mb-0">
-                        <li class="breadcrumb-item"><a href="{{ route('admin.dashboard') }}">الرئيسية</a></li>
-                        <li class="breadcrumb-item active" aria-current="page">العملاء</li>
-                    </ol>
-                </nav>
+                <h4 class="mb-0">عملاء الاستضافة</h4>
+                <p class="text-muted small mb-0">مستخدمو النظام المسؤولون عن حسابات cPanel — الربط من <a href="{{ route('admin.whm.accounts.index') }}">حسابات WHM</a>.</p>
             </div>
-            <div class="ms-auto pageheader-btn">
-                <a href="{{ route('admin.customers.create') }}" class="btn btn-primary">
-                    <i class="fe fe-plus"></i> إضافة عميل جديد
+            <div class="ms-auto d-flex gap-2">
+                <a href="{{ route('users.create') }}" class="btn btn-primary btn-sm">
+                    <i class="fe fe-user-plus me-1"></i> مستخدم جديد
                 </a>
-                <button type="button" class="btn btn-success" id="syncAllCustomers">
-                    <i class="fe fe-refresh-cw"></i> مزامنة الكل
-                </button>
+                <a href="{{ route('admin.whm.accounts.index') }}" class="btn btn-outline-primary btn-sm">حسابات WHM</a>
             </div>
         </div>
-        <!-- End Page Header -->
 
-        @if(session('success'))
-            <div class="alert alert-success alert-dismissible fade show" role="alert">
-                <i class="fe fe-check-circle me-2"></i>{{ session('success') }}
-                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-            </div>
-        @endif
-        @if(session('error'))
-            <div class="alert alert-danger alert-dismissible fade show" role="alert">
-                <i class="fe fe-alert-circle me-2"></i>{{ session('error') }}
-                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-            </div>
-        @endif
+        @if(session('success'))<div class="alert alert-success">{{ session('success') }}</div>@endif
+        @if(session('error'))<div class="alert alert-danger">{{ session('error') }}</div>@endif
 
-        <!-- Row -->
-        <div class="row">
-            <div class="col-xl-12">
-                <div class="card custom-card">
-                    <div class="card-header">
-                        <div class="card-title">قائمة العملاء</div>
+        <div class="card custom-card mb-3">
+            <div class="card-body">
+                <form method="GET" class="row g-2 align-items-end">
+                    <div class="col-md-5">
+                        <label class="form-label">بحث</label>
+                        <input type="search" name="q" class="form-control" value="{{ request('q') }}" placeholder="اسم، بريد، هاتف">
                     </div>
-                    <div class="card-body">
-                        <div class="table-responsive">
-                            <table id="customersTable" class="table table-bordered text-nowrap w-100">
-                                <thead>
-                                    <tr>
-                                        <th>#</th>
-                                        <th>الاسم</th>
-                                        <th>البريد الإلكتروني</th>
-                                        <th>الشركة</th>
-                                        <th>رقم الهاتف</th>
-                                        <th>الحالة</th>
-                                        <th>تاريخ التسجيل</th>
-                                        <th>الإجراءات</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    @forelse($customers as $customer)
-                                    <tr>
-                                        <td>{{ $customer->id }}</td>
-                                        <td>{{ $customer->fullname }}</td>
-                                        <td>{{ $customer->email }}</td>
-                                        <td>{{ $customer->companyname ?: '-' }}</td>
-                                        <td>{{ $customer->phonenumber ?: '-' }}</td>
-                                        <td>
-                                            @if($customer->status == 'Active')
-                                                <span class="badge bg-success-transparent">نشط</span>
-                                            @elseif($customer->status == 'Inactive')
-                                                <span class="badge bg-warning-transparent">غير نشط</span>
-                                            @else
-                                                <span class="badge bg-danger-transparent">مغلق</span>
-                                            @endif
-                                        </td>
-                                        <td>{{ $customer->date_created ? $customer->date_created->format('Y-m-d') : '-' }}</td>
-                                        <td>
-                                            <div class="hstack gap-2 fs-15">
-                                                <a href="{{ route('admin.customers.show', $customer->id) }}" class="btn btn-icon btn-sm btn-info-transparent rounded-pill">
-                                                    <i class="ri-eye-line"></i>
-                                                </a>
-                                                <a href="{{ route('admin.customers.edit', $customer->id) }}" class="btn btn-icon btn-sm btn-warning-transparent rounded-pill">
-                                                    <i class="ri-edit-line"></i>
-                                                </a>
-                                                <button type="button" class="btn btn-icon btn-sm btn-danger-transparent rounded-pill delete-customer" data-id="{{ $customer->id }}">
-                                                    <i class="ri-delete-bin-line"></i>
-                                                </button>
-                                            </div>
-                                        </td>
-                                    </tr>
+                    <div class="col-md-4">
+                        <label class="form-label">فلتر</label>
+                        <select name="has_whm" class="form-select">
+                            <option value="">كل المستخدمين</option>
+                            <option value="1" @selected(request('has_whm'))>لديه حسابات استضافة فقط</option>
+                        </select>
+                    </div>
+                    <div class="col-md-3 d-flex gap-2">
+                        <button type="submit" class="btn btn-primary flex-grow-1">بحث</button>
+                        <a href="{{ route('admin.customers.index') }}" class="btn btn-light">مسح</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <div class="card custom-card">
+            <div class="table-responsive">
+                <table class="table table-hover mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th>العميل</th>
+                            <th>البريد</th>
+                            <th class="text-center">حسابات cPanel</th>
+                            <th>أحدث الحسابات</th>
+                            <th class="text-center">إجراء</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @forelse($clients as $client)
+                            <tr>
+                                <td class="fw-semibold">{{ $client->name }}</td>
+                                <td dir="ltr" class="small">{{ $client->email }}</td>
+                                <td class="text-center">
+                                    @if($client->whm_accounts_count > 0)
+                                        <span class="badge bg-primary-transparent text-primary">{{ $client->whm_accounts_count }}</span>
+                                    @else
+                                        <span class="text-muted">0</span>
+                                    @endif
+                                </td>
+                                <td class="small">
+                                    @forelse($client->whmAccounts as $acc)
+                                        <span class="d-inline-block me-2" dir="ltr">{{ $acc->domain }}</span>
                                     @empty
-                                    <tr>
-                                        <td colspan="8" class="text-center">لا يوجد عملاء</td>
-                                    </tr>
+                                        <span class="text-muted">—</span>
                                     @endforelse
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
-                </div>
+                                </td>
+                                <td class="text-center text-nowrap">
+                                    <a href="{{ route('admin.customers.show', $client->id) }}" class="btn btn-sm btn-primary-light">ملف العميل</a>
+                                    @if(auth()->user()?->isAdminPanelUser() && ! $client->isAdminPanelUser())
+                                        <button type="button"
+                                            class="btn btn-sm btn-warning-transparent js-impersonate-client"
+                                            data-url="{{ route('admin.users.impersonation-token', $client) }}"
+                                            data-name="{{ $client->name }}"
+                                            title="رابط دخول كعميل">
+                                            <i class="fe fe-log-in"></i>
+                                        </button>
+                                    @endif
+                                    @if($client->whm_accounts_count > 0)
+                                        <a href="{{ route('admin.whm.accounts.index', ['user_id' => $client->id]) }}" class="btn btn-sm btn-outline-secondary">WHM</a>
+                                    @endif
+                                </td>
+                            </tr>
+                        @empty
+                            <tr>
+                                <td colspan="5" class="text-center text-muted py-4">لا يوجد مستخدمون — أنشئ مستخدماً ثم اربطه من حسابات WHM.</td>
+                            </tr>
+                        @endforelse
+                    </tbody>
+                </table>
             </div>
+            @if($clients->hasPages())
+                <div class="card-footer">{{ $clients->links() }}</div>
+            @endif
         </div>
-        <!-- End Row -->
     </div>
 </div>
-<!-- End::app-content -->
 
-<!-- Delete Form -->
-<form id="delete-form" action="" method="POST" style="display: none;">
-    @csrf
-    @method('DELETE')
-</form>
-@endsection
-
-@section('scripts')
-<script>
-document.addEventListener('DOMContentLoaded', function() {
-    // Delete Customer
-    document.querySelectorAll('.delete-customer').forEach(function(btn) {
-        btn.addEventListener('click', function() {
-            if (confirm('هل أنت متأكد من حذف هذا العميل؟')) {
-                var id = this.getAttribute('data-id');
-                var form = document.getElementById('delete-form');
-                form.action = '{{ url("admin/customers") }}/' + id;
-                form.submit();
-            }
-        });
-    });
-
-    // Sync All Customers (بدون jQuery)
-    var syncBtn = document.getElementById('syncAllCustomers');
-    if (syncBtn) {
-        syncBtn.addEventListener('click', function() {
-            var btn = this;
-            btn.disabled = true;
-            btn.innerHTML = '<i class="fe fe-loader fa-spin"></i> جاري المزامنة...';
-            var url = '{{ route("admin.customers.syncAll") }}';
-            var token = '{{ csrf_token() }}';
-            fetch(url, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/x-www-form-urlencoded',
-                    'Accept': 'application/json',
-                    'X-CSRF-TOKEN': token,
-                    'X-Requested-With': 'XMLHttpRequest'
-                },
-                body: '_token=' + encodeURIComponent(token)
-            }).then(function(r) { return r.json(); }).then(function(data) {
-                btn.disabled = false;
-                btn.innerHTML = '<i class="fe fe-refresh-cw"></i> مزامنة الكل';
-                if (data.success) {
-                    alert(data.message || 'تم مزامنة العملاء بنجاح');
-                    location.reload();
-                } else {
-                    alert(data.message || 'حدث خطأ أثناء المزامنة');
-                }
-            }).catch(function() {
-                btn.disabled = false;
-                btn.innerHTML = '<i class="fe fe-refresh-cw"></i> مزامنة الكل';
-                alert('حدث خطأ أثناء المزامنة');
-            });
-        });
-    }
-});
-</script>
+@include('admin.partials.impersonate-client-modal')
 @endsection

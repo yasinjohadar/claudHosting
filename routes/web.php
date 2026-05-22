@@ -8,12 +8,13 @@ use App\Http\Controllers\Admin\PackageOrderRequestController;
 use App\Http\Controllers\Admin\InvoiceController;
 use App\Http\Controllers\Admin\TicketController;
 use App\Http\Controllers\ReportController;
-use App\Http\Controllers\Admin\WhmcsTestController;
+use App\Http\Controllers\Admin\Whm\WhmSettingsController;
+use App\Http\Controllers\Admin\Whm\WhmAccountController;
+use App\Http\Controllers\Admin\Whm\WhmServerStatusController;
 use App\Http\Controllers\Admin\UserController;
 use App\Http\Controllers\Admin\RoleController;
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\Auth\RegisterController;
-use App\Http\Controllers\WhmcsExampleController;
 use App\Http\Controllers\Admin\BlogPostController;
 use App\Http\Controllers\Admin\BlogCategoryController;
 use App\Http\Controllers\Admin\BlogTagController;
@@ -55,7 +56,6 @@ use App\Http\Controllers\Admin\Namecom\NamecomSettingsController;
 use App\Http\Controllers\Admin\Namecom\NamecomDomainController;
 use App\Http\Controllers\Admin\Domain\DomainHubController;
 use App\Http\Controllers\Admin\Domain\DomainSearchController;
-use App\Http\Controllers\Admin\Domain\WhmcsDomainController;
 use App\Http\Controllers\Admin\Coolify\CoolifyHetznerController;
 use App\Http\Controllers\Admin\AIBlogPostController;
 use App\Http\Controllers\Admin\AIModelController;
@@ -105,8 +105,37 @@ Route::post('password/reset', [App\Http\Controllers\Auth\ResetPasswordController
 Route::get('/api/webhooks/whatsapp', [App\Http\Controllers\Api\WhatsAppWebhookController::class, 'verify']);
 Route::post('/api/webhooks/whatsapp', [App\Http\Controllers\Api\WhatsAppWebhookController::class, 'handle']);
 
+Route::get('/client/impersonate/{token}', [\App\Http\Controllers\Client\ClientImpersonationController::class, 'consume'])
+    ->name('client.impersonate');
+
+Route::get('/customer/impersonate/{token}', function (string $token) {
+    return redirect()->route('client.impersonate', ['token' => $token]);
+});
+
+Route::redirect('/customer', '/client');
+Route::redirect('/customer/{path}', '/client/{path}')->where('path', '.*');
+
 // المسارات المحمية
 Route::middleware(['auth'])->group(function () {
+    Route::prefix('client')->name('client.')->group(function () {
+        Route::get('/', [\App\Http\Controllers\Client\ClientPortalController::class, 'dashboard'])->name('dashboard');
+        Route::post('/impersonate/stop', [\App\Http\Controllers\Client\ClientImpersonationController::class, 'stop'])
+            ->name('impersonate.stop');
+    });
+
+    Route::prefix('portal')->name('portal.')->group(function () {
+        Route::redirect('/', '/client')->name('dashboard');
+        Route::redirect('/domains', '/client')->name('domains.index');
+        Route::redirect('/domains/{domain}', '/client')->where('domain', '.+')->name('domains.show');
+        Route::redirect('/projects', '/client')->name('projects.index');
+        Route::redirect('/projects/{uuid}', '/client')->name('projects.show');
+        Route::redirect('/hosting', '/client')->name('hosting.index');
+        Route::redirect('/hosting/{account}', '/client')->name('hosting.show');
+        Route::redirect('/hosting/{account}/cpanel', '/client')->name('hosting.cpanel');
+    });
+});
+
+Route::middleware(['auth', 'admin.panel'])->group(function () {
     // لوحة التحكم
     Route::prefix('admin')->name('admin.')->group(function () {
         // الصفحة الرئيسية للوحة التحكم: /admin تعرض لوحة التحكم
@@ -123,14 +152,9 @@ Route::middleware(['auth'])->group(function () {
             Route::get('/{id}/edit', [CustomerController::class, 'edit'])->name('edit');
             Route::put('/{id}', [CustomerController::class, 'update'])->name('update');
             Route::delete('/{id}', [CustomerController::class, 'destroy'])->name('destroy');
-            Route::post('/{id}/sync', [CustomerController::class, 'sync'])->name('sync');
-            Route::post('/{id}/sync-products', [CustomerController::class, 'syncProducts'])->name('syncProducts');
-            Route::post('/{id}/sync-contacts', [CustomerController::class, 'syncContacts'])->name('syncContacts');
-            Route::post('/{id}/sync-full', [CustomerController::class, 'syncFull'])->name('syncFull');
             Route::post('/{id}/products/{serviceId}/suspend', [CustomerController::class, 'productSuspend'])->name('productSuspend');
             Route::post('/{id}/products/{serviceId}/unsuspend', [CustomerController::class, 'productUnsuspend'])->name('productUnsuspend');
             Route::post('/{id}/products/{serviceId}/terminate', [CustomerController::class, 'productTerminate'])->name('productTerminate');
-            Route::post('/sync-all', [CustomerController::class, 'syncAll'])->name('syncAll');
         });
 
         // إدارة المنتجات
@@ -142,8 +166,6 @@ Route::middleware(['auth'])->group(function () {
             Route::get('/{id}/edit', [ProductController::class, 'edit'])->name('edit');
             Route::put('/{id}', [ProductController::class, 'update'])->name('update');
             Route::delete('/{id}', [ProductController::class, 'destroy'])->name('destroy');
-            Route::post('/{id}/sync', [ProductController::class, 'sync'])->name('sync');
-            Route::post('/sync-all', [ProductController::class, 'syncAll'])->name('syncAll');
         });
 
         // طلبات الباقات (من الفرونت اند)
@@ -151,7 +173,7 @@ Route::middleware(['auth'])->group(function () {
             Route::get('/', [PackageOrderRequestController::class, 'index'])->name('index');
             Route::get('/{id}', [PackageOrderRequestController::class, 'show'])->name('show');
             Route::put('/{id}', [PackageOrderRequestController::class, 'update'])->name('update');
-            Route::post('/{id}/convert-to-whmcs', [PackageOrderRequestController::class, 'convertToWhmcs'])->name('convert-to-whmcs');
+            Route::post('/{id}/provision-whm', [PackageOrderRequestController::class, 'provisionWhm'])->name('provision-whm');
             Route::post('/{id}/provision-hosting', [PackageOrderRequestController::class, 'provisionHosting'])->name('provision-hosting');
         });
 
@@ -168,8 +190,6 @@ Route::middleware(['auth'])->group(function () {
             Route::get('/{id}/edit', [InvoiceController::class, 'edit'])->name('edit');
             Route::put('/{id}', [InvoiceController::class, 'update'])->name('update');
             Route::delete('/{id}', [InvoiceController::class, 'destroy'])->name('destroy');
-            Route::post('/{id}/sync', [InvoiceController::class, 'sync'])->name('sync');
-            Route::post('/sync-all', [InvoiceController::class, 'syncAll'])->name('syncAll');
             Route::post('/{id}/mark-paid', [InvoiceController::class, 'markPaid'])->name('markPaid');
             Route::post('/{id}/add-payment', [InvoiceController::class, 'addPayment'])->name('addPayment');
         });
@@ -183,8 +203,6 @@ Route::middleware(['auth'])->group(function () {
             Route::get('/{id}/edit', [TicketController::class, 'edit'])->name('edit');
             Route::put('/{id}', [TicketController::class, 'update'])->name('update');
             Route::delete('/{id}', [TicketController::class, 'destroy'])->name('destroy');
-            Route::post('/{id}/sync', [TicketController::class, 'sync'])->name('sync');
-            Route::post('/sync-all', [TicketController::class, 'syncAll'])->name('syncAll');
             Route::post('/{id}/reply', [TicketController::class, 'reply'])->name('reply');
             Route::post('/{id}/add-reply', [TicketController::class, 'reply'])->name('addReply');
             Route::post('/{id}/add-note', [TicketController::class, 'addNote'])->name('addNote');
@@ -268,7 +286,12 @@ Route::middleware(['auth'])->group(function () {
                 Route::get('/{uuid}', [CoolifyWordpressSiteController::class, 'show'])->name('show');
             });
 
-            Route::get('/teams', [CoolifyTeamController::class, 'index'])->name('teams.index');
+            Route::prefix('teams')->name('teams.')->group(function () {
+                Route::get('/', [CoolifyTeamController::class, 'index'])->name('index');
+                Route::post('/link-client', [CoolifyTeamController::class, 'linkClient'])->name('link-client');
+                Route::delete('/unlink/{user}', [CoolifyTeamController::class, 'unlink'])->name('unlink');
+                Route::get('/{teamId}', [CoolifyTeamController::class, 'show'])->whereNumber('teamId')->name('show');
+            });
 
             Route::prefix('github-apps')->name('github-apps.')->group(function () {
                 Route::get('/', [CoolifyGithubAppController::class, 'index'])->name('index');
@@ -306,6 +329,7 @@ Route::middleware(['auth'])->group(function () {
                 Route::get('/', [CoolifyProjectController::class, 'index'])->name('index');
                 Route::get('/create', [CoolifyProjectController::class, 'create'])->name('create');
                 Route::post('/', [CoolifyProjectController::class, 'store'])->name('store');
+                Route::post('/{uuid}/assign-client', [CoolifyProjectController::class, 'assignClient'])->name('assign-client');
                 Route::get('/{uuid}', [CoolifyProjectController::class, 'show'])->name('show');
                 Route::get('/{uuid}/edit', [CoolifyProjectController::class, 'edit'])->name('edit');
                 Route::put('/{uuid}', [CoolifyProjectController::class, 'update'])->name('update');
@@ -416,12 +440,11 @@ Route::middleware(['auth'])->group(function () {
         // ========== النطاقات ==========
         Route::prefix('domains')->name('domains.')->group(function () {
             Route::get('/', [DomainHubController::class, 'index'])->name('index');
+            Route::post('/assign-client', [DomainHubController::class, 'assignClient'])->name('assign-client');
+            Route::get('/{domain}/whm-dns', [DomainHubController::class, 'whmDns'])
+                ->where('domain', '.+')
+                ->name('whm-dns');
             Route::get('/search', [DomainSearchController::class, 'index'])->name('search');
-            Route::prefix('whmcs')->name('whmcs.')->group(function () {
-                Route::get('/', [WhmcsDomainController::class, 'index'])->name('index');
-                Route::post('/sync', [WhmcsDomainController::class, 'sync'])->name('sync');
-                Route::get('/{whmcs_domain}', [WhmcsDomainController::class, 'show'])->name('show');
-            });
         });
 
         Route::prefix('cloudflare')->name('cloudflare.')->group(function () {
@@ -443,18 +466,29 @@ Route::middleware(['auth'])->group(function () {
                 ->name('domains.show');
         });
 
-        // اختبار WHMCS
-        Route::prefix('whmcs')->name('whmcs.')->group(function () {
-            Route::get('/test', [WhmcsTestController::class, 'index'])->name('test');
-            Route::get('/test-currencies', [WhmcsExampleController::class, 'testConnection'])->name('testCurrencies');
-            Route::get('/debug', [WhmcsExampleController::class, 'debug'])->name('debug');
-            Route::post('/test-connection', [WhmcsTestController::class, 'testConnection'])->name('testConnection');
-            Route::post('/sync-customers', [WhmcsTestController::class, 'syncCustomers'])->name('syncCustomers');
-            Route::post('/sync-products', [WhmcsTestController::class, 'syncProducts'])->name('syncProducts');
-            Route::post('/sync-invoices', [WhmcsTestController::class, 'syncInvoices'])->name('syncInvoices');
-            Route::post('/sync-tickets', [WhmcsTestController::class, 'syncTickets'])->name('syncTickets');
-            Route::get('/sync', [WhmcsTestController::class, 'syncPage'])->name('sync');
-            Route::post('/full-sync', [WhmcsTestController::class, 'fullSync'])->name('fullSync');
+        // WHM / cPanel
+        Route::prefix('whm')->name('whm.')->group(function () {
+            Route::get('/settings', [WhmSettingsController::class, 'index'])->name('settings.index');
+            Route::put('/settings', [WhmSettingsController::class, 'update'])->name('settings.update');
+            Route::post('/settings/test-connection', [WhmSettingsController::class, 'testConnection'])->name('settings.test');
+            Route::get('/server', [WhmServerStatusController::class, 'index'])->name('server.index');
+            Route::get('/server-status', [WhmServerStatusController::class, 'refresh'])->name('server-status');
+            Route::prefix('accounts')->name('accounts.')->group(function () {
+                Route::get('/', [WhmAccountController::class, 'index'])->name('index');
+                Route::post('/sync', [WhmAccountController::class, 'sync'])->name('sync');
+                Route::get('/create', [WhmAccountController::class, 'create'])->name('create');
+                Route::post('/', [WhmAccountController::class, 'store'])->name('store');
+                Route::get('/{account}', [WhmAccountController::class, 'show'])->name('show');
+                Route::post('/{account}/refresh-summary', [WhmAccountController::class, 'refreshSummary'])->name('refresh-summary');
+                Route::post('/{account}/change-package', [WhmAccountController::class, 'changePackage'])->name('change-package');
+                Route::delete('/{account}', [WhmAccountController::class, 'destroy'])->name('destroy');
+                Route::get('/{account}/cpanel', [WhmAccountController::class, 'cpanelLogin'])->name('cpanel');
+                Route::post('/{account}/assign-client', [WhmAccountController::class, 'assignClient'])->name('assign-client');
+                Route::post('/{account}/toggle-status', [WhmAccountController::class, 'toggleStatus'])->name('toggle-status');
+                Route::post('/{account}/update-email', [WhmAccountController::class, 'updateEmail'])->name('update-email');
+                Route::post('/{account}/update-password', [WhmAccountController::class, 'updatePassword'])->name('update-password');
+                Route::post('/{account}/rename-user', [WhmAccountController::class, 'renameUser'])->name('rename-user');
+            });
         });
 
         // ========== Blog ==========
@@ -573,6 +607,9 @@ Route::middleware(['auth'])->group(function () {
             Route::post('/test-connection', [WhatsAppWebSettingsController::class, 'testConnection'])->name('test-connection');
         });
     });
+
+    Route::post('/admin/users/{user}/impersonation-token', [\App\Http\Controllers\Admin\ClientImpersonationController::class, 'store'])
+        ->name('admin.users.impersonation-token');
 
     // إدارة المستخدمين
     Route::prefix('users')->name('users.')->group(function () {

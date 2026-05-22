@@ -1,352 +1,207 @@
 @extends('admin.layouts.master')
 
 @section('page-title')
-تفاصيل العميل
+عميل: {{ $client->name }}
 @stop
 
 @section('content')
-<!-- Start::app-content -->
 <div class="main-content app-content">
     <div class="container-fluid">
-        <!-- Page Header -->
-        <div class="d-md-flex d-block align-items-center justify-content-between my-4 page-header-breadcrumb">
+        <div class="d-md-flex justify-content-between my-4 flex-wrap gap-2">
             <div>
-                <h4 class="mb-0">تفاصيل العميل: {{ $customer->fullname }}</h4>
-                <nav>
-                    <ol class="breadcrumb mb-0">
-                        <li class="breadcrumb-item"><a href="{{ route('admin.dashboard') }}">الرئيسية</a></li>
-                        <li class="breadcrumb-item"><a href="{{ route('admin.customers.index') }}">العملاء</a></li>
-                        <li class="breadcrumb-item active" aria-current="page">التفاصيل</li>
-                    </ol>
-                </nav>
+                <h4 class="mb-0">{{ $client->name }}</h4>
+                <p class="text-muted small mb-0" dir="ltr">{{ $client->email }}</p>
             </div>
-            <div class="ms-auto pageheader-btn">
-                @if($customer->whmcs_id)
-                <form action="{{ route('admin.customers.syncFull', $customer->id) }}" method="POST" class="d-inline">
-                    @csrf
-                    <button type="submit" class="btn btn-info">
-                        <i class="fe fe-refresh-cw"></i> مزامنة كاملة
+            <div class="d-flex flex-wrap gap-2">
+                <a href="{{ route('admin.customers.index') }}" class="btn btn-light btn-sm">رجوع</a>
+                @if(auth()->user()?->isAdminPanelUser() && ! $client->isAdminPanelUser())
+                    <button type="button"
+                        class="btn btn-warning btn-sm js-impersonate-client"
+                        data-url="{{ route('admin.users.impersonation-token', $client) }}"
+                        data-name="{{ $client->name }}">
+                        <i class="fe fe-log-in me-1"></i> رابط دخول كعميل
                     </button>
-                </form>
                 @endif
-                <a href="{{ route('admin.customers.edit', $customer->id) }}" class="btn btn-warning">
-                    <i class="fe fe-edit"></i> تعديل
-                </a>
-                <a href="{{ route('admin.customers.index') }}" class="btn btn-secondary">
-                    <i class="fe fe-arrow-left"></i> العودة
-                </a>
+                <a href="{{ route('users.edit', $client->id) }}" class="btn btn-outline-primary btn-sm">تعديل المستخدم</a>
+                <a href="{{ route('users.show', $client->id) }}" class="btn btn-outline-secondary btn-sm">ملف المستخدم</a>
             </div>
         </div>
-        <!-- End Page Header -->
 
-        <!-- Tabs Card -->
-        <div class="card custom-card">
-            <div class="card-header p-0 border-0">
-                <ul class="nav nav-tabs border-0 px-3 pt-2" role="tablist">
-                    <li class="nav-item" role="presentation">
-                        <a class="nav-link active" href="#customer-info" data-bs-toggle="tab" data-bs-target="#customer-info" role="tab" aria-selected="true">
-                            <i class="fe fe-user me-1"></i> المعلومات
-                        </a>
-                    </li>
-                    <li class="nav-item" role="presentation">
-                        <a class="nav-link" href="#customer-invoices" data-bs-toggle="tab" data-bs-target="#customer-invoices" role="tab" aria-selected="false">
-                            <i class="fe fe-file-text me-1"></i> الفواتير
-                        </a>
-                    </li>
-                    <li class="nav-item" role="presentation">
-                        <a class="nav-link" href="#customer-tickets" data-bs-toggle="tab" data-bs-target="#customer-tickets" role="tab" aria-selected="false">
-                            <i class="fe fe-message-circle me-1"></i> التذاكر
-                        </a>
-                    </li>
-                    <li class="nav-item" role="presentation">
-                        <a class="nav-link" href="#customer-products" data-bs-toggle="tab" data-bs-target="#customer-products" role="tab" aria-selected="false">
-                            <i class="fe fe-package me-1"></i> المنتجات والخدمات
-                        </a>
-                    </li>
-                </ul>
+        @if(session('success'))<div class="alert alert-success">{{ session('success') }}</div>@endif
+        @if(session('error'))<div class="alert alert-danger">{{ session('error') }}</div>@endif
+
+        <div class="row mb-4 g-3">
+            <div class="col-md-4">
+                <div class="card custom-card h-100">
+                    <div class="card-body text-center">
+                        <div class="fs-2 fw-bold text-primary">{{ $client->whm_accounts_count }}</div>
+                        <div class="text-muted small">حساب cPanel</div>
+                    </div>
+                </div>
             </div>
-            <div class="card-body">
-                <div class="tab-content">
-                    <!-- تاب: المعلومات -->
-                    <div class="tab-pane fade show active" id="customer-info" role="tabpanel">
-                        <div class="row">
-                            <div class="col-lg-4 col-xl-3 text-center mb-4 mb-lg-0">
-                                <span class="avatar avatar-xxl bg-primary-transparent">
-                                    {{ strtoupper(substr($customer->firstname, 0, 1)) }}{{ strtoupper(substr($customer->lastname, 0, 1)) }}
-                                </span>
-                                <h5 class="mt-3 mb-1">{{ $customer->fullname }}</h5>
-                                <p class="text-muted mb-0">{{ $customer->email }}</p>
-                            </div>
-                            <div class="col-lg-4 col-xl-5">
-                                <h6 class="fw-semibold mb-3">معلومات العميل</h6>
-                                <ul class="list-unstyled mb-0">
-                                    <li class="mb-2 d-flex justify-content-between"><span class="fw-semibold">الشركة:</span><span class="text-muted">{{ $customer->companyname ?: '-' }}</span></li>
-                                    <li class="mb-2 d-flex justify-content-between"><span class="fw-semibold">رقم الهاتف:</span><span class="text-muted">{{ $customer->phonenumber ?: '-' }}</span></li>
-                                    <li class="mb-2 d-flex justify-content-between"><span class="fw-semibold">الحالة:</span>
-                                        @if($customer->status == 'Active')
-                                            <span class="badge bg-success-transparent">نشط</span>
-                                        @elseif($customer->status == 'Inactive')
-                                            <span class="badge bg-warning-transparent">غير نشط</span>
-                                        @else
-                                            <span class="badge bg-danger-transparent">مغلق</span>
-                                        @endif
-                                    </li>
-                                    <li class="mb-2 d-flex justify-content-between"><span class="fw-semibold">معرف WHMCS:</span><span class="text-muted">{{ $customer->whmcs_id ?: 'غير متزامن' }}</span></li>
-                                    <li class="mb-2 d-flex justify-content-between"><span class="fw-semibold">تاريخ التسجيل:</span><span class="text-muted">{{ $customer->datecreated ? $customer->datecreated->format('Y-m-d') : '-' }}</span></li>
-                                </ul>
-                            </div>
-                            <div class="col-lg-4 col-xl-4">
-                                <h6 class="fw-semibold mb-3">العنوان</h6>
-                                <ul class="list-unstyled mb-0 small">
-                                    <li class="mb-1"><span class="fw-semibold">العنوان 1:</span> <span class="text-muted">{{ $customer->address1 ?: '-' }}</span></li>
-                                    <li class="mb-1"><span class="fw-semibold">العنوان 2:</span> <span class="text-muted">{{ $customer->address2 ?: '-' }}</span></li>
-                                    <li class="mb-1"><span class="fw-semibold">المدينة:</span> <span class="text-muted">{{ $customer->city ?: '-' }}</span></li>
-                                    <li class="mb-1"><span class="fw-semibold">المنطقة:</span> <span class="text-muted">{{ $customer->state ?: '-' }}</span></li>
-                                    <li class="mb-1"><span class="fw-semibold">الرمز البريدي:</span> <span class="text-muted">{{ $customer->postcode ?: '-' }}</span></li>
-                                    <li class="mb-1"><span class="fw-semibold">الدولة:</span> <span class="text-muted">{{ $customer->country_name }}</span></li>
-                                </ul>
-                                <h6 class="fw-semibold mb-2 mt-4">جهات الاتصال</h6>
-                                @if($customer->whmcs_id)
-                                <form action="{{ route('admin.customers.syncContacts', $customer->id) }}" method="POST" class="d-inline mb-2">
-                                    @csrf
-                                    <button type="submit" class="btn btn-sm btn-outline-primary">مزامنة</button>
-                                </form>
-                                @endif
-                                <ul class="list-unstyled mb-0">
-                                    @forelse($customer->contacts as $contact)
-                                    <li class="mb-2 pb-2 border-bottom">
-                                        <span class="fw-semibold d-block">{{ $contact->full_name }}</span>
-                                        @if($contact->email)<span class="text-muted small">{{ $contact->email }}</span>@endif
-                                        @if($contact->phonenumber)<span class="text-muted small d-block">{{ $contact->phonenumber }}</span>@endif
-                                    </li>
-                                    @empty
-                                    <li class="text-muted small">لا توجد جهات اتصال. قم بالمزامنة من WHMCS.</li>
-                                    @endforelse
-                                </ul>
-                            </div>
-                        </div>
+            <div class="col-md-4">
+                <div class="card custom-card h-100">
+                    <div class="card-body text-center">
+                        <div class="fs-2 fw-bold text-success">{{ $clientDomains->count() }}</div>
+                        <div class="text-muted small">نطاق</div>
                     </div>
-
-                    <!-- تاب: الفواتير -->
-                    <div class="tab-pane fade" id="customer-invoices" role="tabpanel">
-                        <div class="d-flex justify-content-between align-items-center mb-3">
-                            <h6 class="mb-0">الفواتير</h6>
-                            <a href="{{ route('admin.invoices.create') }}?customer_id={{ $customer->id }}" class="btn btn-sm btn-primary">
-                                <i class="fe fe-plus"></i> إنشاء فاتورة
-                            </a>
-                        </div>
-                        <div class="table-responsive">
-                            <table class="table table-bordered text-nowrap">
-                                <thead>
-                                    <tr>
-                                        <th>#</th>
-                                        <th>رقم الفاتورة</th>
-                                        <th>التاريخ</th>
-                                        <th>المبلغ</th>
-                                        <th>الحالة</th>
-                                        <th>الإجراءات</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    @forelse($customer->invoices as $invoice)
-                                    <tr>
-                                        <td>{{ $invoice->id }}</td>
-                                        <td>{{ $invoice->invoice_number }}</td>
-                                        <td>{{ $invoice->date ? $invoice->date->format('Y-m-d') : '-' }}</td>
-                                        <td>{{ number_format($invoice->total, 2) }}</td>
-                                        <td>
-                                            @if($invoice->status == 'Paid')
-                                                <span class="badge bg-success-transparent">مدفوعة</span>
-                                            @elseif($invoice->status == 'Unpaid')
-                                                <span class="badge bg-danger-transparent">غير مدفوعة</span>
-                                            @else
-                                                <span class="badge bg-secondary-transparent">{{ $invoice->status }}</span>
-                                            @endif
-                                        </td>
-                                        <td>
-                                            <a href="{{ route('admin.invoices.show', $invoice->id) }}" class="btn btn-icon btn-sm btn-info-transparent">
-                                                <i class="ri-eye-line"></i>
-                                            </a>
-                                        </td>
-                                    </tr>
-                                    @empty
-                                    <tr>
-                                        <td colspan="6" class="text-center">لا توجد فواتير</td>
-                                    </tr>
-                                    @endforelse
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
-
-                    <!-- تاب: التذاكر -->
-                    <div class="tab-pane fade" id="customer-tickets" role="tabpanel">
-                        <div class="d-flex justify-content-between align-items-center mb-3">
-                            <h6 class="mb-0">التذاكر</h6>
-                            <a href="{{ route('admin.tickets.create') }}?customer_id={{ $customer->id }}" class="btn btn-sm btn-primary">
-                                <i class="fe fe-plus"></i> إنشاء تذكرة
-                            </a>
-                        </div>
-                        <div class="table-responsive">
-                            <table class="table table-bordered text-nowrap">
-                                <thead>
-                                    <tr>
-                                        <th>#</th>
-                                        <th>الموضوع</th>
-                                        <th>القسم</th>
-                                        <th>الأولوية</th>
-                                        <th>الحالة</th>
-                                        <th>التاريخ</th>
-                                        <th>الإجراءات</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    @forelse($customer->tickets as $ticket)
-                                    <tr>
-                                        <td>{{ $ticket->id }}</td>
-                                        <td>{{ Str::limit($ticket->subject, 30) }}</td>
-                                        <td>{{ $ticket->department }}</td>
-                                        <td>
-                                            @if($ticket->priority == 'High' || $ticket->priority == 'Urgent')
-                                                <span class="badge bg-danger-transparent">{{ $ticket->priority }}</span>
-                                            @elseif($ticket->priority == 'Medium')
-                                                <span class="badge bg-warning-transparent">{{ $ticket->priority }}</span>
-                                            @else
-                                                <span class="badge bg-info-transparent">{{ $ticket->priority }}</span>
-                                            @endif
-                                        </td>
-                                        <td>
-                                            @if($ticket->status == 'Open')
-                                                <span class="badge bg-success-transparent">مفتوحة</span>
-                                            @elseif($ticket->status == 'Closed')
-                                                <span class="badge bg-secondary-transparent">مغلقة</span>
-                                            @else
-                                                <span class="badge bg-info-transparent">{{ $ticket->status }}</span>
-                                            @endif
-                                        </td>
-                                        <td>{{ $ticket->date ? $ticket->date->format('Y-m-d') : '-' }}</td>
-                                        <td>
-                                            <a href="{{ route('admin.tickets.show', $ticket->id) }}" class="btn btn-icon btn-sm btn-info-transparent">
-                                                <i class="ri-eye-line"></i>
-                                            </a>
-                                        </td>
-                                    </tr>
-                                    @empty
-                                    <tr>
-                                        <td colspan="7" class="text-center">لا توجد تذاكر</td>
-                                    </tr>
-                                    @endforelse
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
-
-                    <!-- تاب: المنتجات والخدمات -->
-                    <div class="tab-pane fade" id="customer-products" role="tabpanel">
-                        <div class="d-flex justify-content-between align-items-center mb-3">
-                            <h6 class="mb-0">المنتجات والخدمات</h6>
-                            @if($customer->whmcs_id)
-                            <form action="{{ route('admin.customers.syncProducts', $customer->id) }}" method="POST" class="d-inline">
-                                @csrf
-                                <button type="submit" class="btn btn-sm btn-outline-primary">
-                                    <i class="fe fe-refresh-cw"></i> مزامنة المنتجات
-                                </button>
-                            </form>
-                            @endif
-                        </div>
-                        <div class="table-responsive">
-                            <table class="table table-bordered text-nowrap">
-                                <thead>
-                                    <tr>
-                                        <th>المنتج</th>
-                                        <th>الدومين</th>
-                                        <th>الحالة</th>
-                                        <th>تاريخ الاستحقاق</th>
-                                        <th>المبلغ</th>
-                                        <th>دورة الفوترة</th>
-                                        <th>cPanel</th>
-                                        <th>تحكم الحساب</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    @forelse($customer->products as $product)
-                                    @php $status = $product->pivot->domainstatus ?? $product->pivot->status ?? ''; $sid = $product->pivot->whmcs_service_id ?? null; @endphp
-                                    <tr>
-                                        <td>{{ $product->name }}</td>
-                                        <td>{{ $product->pivot->domain ?? '-' }}</td>
-                                        <td>
-                                            @if($status == 'Active')
-                                                <span class="badge bg-success-transparent">نشط</span>
-                                            @elseif($status == 'Suspended')
-                                                <span class="badge bg-warning-transparent">موقوف</span>
-                                            @else
-                                                <span class="badge bg-secondary-transparent">{{ $status ?: '-' }}</span>
-                                            @endif
-                                        </td>
-                                        <td>{{ $product->pivot->nextduedate ? \Carbon\Carbon::parse($product->pivot->nextduedate)->format('Y-m-d') : '-' }}</td>
-                                        <td>{{ number_format($product->pivot->amount ?? 0, 2) }}</td>
-                                        <td>{{ $product->pivot->billingcycle ?? '-' }}</td>
-                                        <td>
-                                            @if(config('services.cpanel.url'))
-                                                @php
-                                                    $cpanelUrl = config('services.cpanel.url');
-                                                    if (!empty($product->pivot->username)) {
-                                                        $cpanelUrl = str_replace(':username', $product->pivot->username, $cpanelUrl);
-                                                    }
-                                                @endphp
-                                                @if(!empty($product->pivot->username) || !str_contains(config('services.cpanel.url'), ':username'))
-                                                    <a href="{{ $cpanelUrl }}" target="_blank" rel="noopener noreferrer" class="btn btn-sm btn-primary-transparent" title="فتح cPanel">
-                                                        <i class="fe fe-external-link"></i> دخول cPanel
-                                                    </a>
-                                                @else
-                                                    <span class="text-muted small">-</span>
-                                                @endif
-                                            @else
-                                                <span class="text-muted small" title="أضف CPANEL_BASE_URL في ملف .env">غير مُعد</span>
-                                            @endif
-                                        </td>
-                                        <td>
-                                            @if($customer->whmcs_id && $sid)
-                                                @if($status == 'Active')
-                                                    <form action="{{ route('admin.customers.productSuspend', [$customer->id, $sid]) }}" method="POST" class="d-inline">
-                                                        @csrf
-                                                        <input type="text" name="reason" class="form-control form-control-sm d-inline-block w-auto me-1" placeholder="سبب التعليق (اختياري)" style="max-width:120px">
-                                                        <button type="submit" class="btn btn-sm btn-warning">تعليق</button>
-                                                    </form>
-                                                @elseif($status == 'Suspended')
-                                                    <form action="{{ route('admin.customers.productUnsuspend', [$customer->id, $sid]) }}" method="POST" class="d-inline">
-                                                        @csrf
-                                                        <button type="submit" class="btn btn-sm btn-success">إلغاء التعليق</button>
-                                                    </form>
-                                                @endif
-                                                @if($status != 'Terminated' && $status != 'Cancelled')
-                                                    <form action="{{ route('admin.customers.productTerminate', [$customer->id, $sid]) }}" method="POST" class="d-inline" onsubmit="return confirm('هل أنت متأكد من إنهاء الخدمة نهائياً؟');">
-                                                        @csrf
-                                                        <button type="submit" class="btn btn-sm btn-danger">إنهاء</button>
-                                                    </form>
-                                                @endif
-                                                @if(!in_array($status, ['Active','Suspended','Terminated','Cancelled']))
-                                                    <span class="text-muted small">-</span>
-                                                @endif
-                                            @else
-                                                <span class="text-muted small">-</span>
-                                            @endif
-                                        </td>
-                                    </tr>
-                                    @empty
-                                    <tr>
-                                        <td colspan="8" class="text-center">لا توجد منتجات</td>
-                                    </tr>
-                                    @endforelse
-                                </tbody>
-                            </table>
-                        </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card custom-card h-100">
+                    <div class="card-body text-center">
+                        <div class="fs-2 fw-bold text-secondary">{{ count($clientProjects) }}</div>
+                        <div class="text-muted small">مشروع Coolify</div>
                     </div>
                 </div>
             </div>
         </div>
-        <!-- End Tabs Card -->
+
+        <div class="card custom-card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <span class="fw-semibold">حسابات الاستضافة (WHM)</span>
+                <a href="{{ route('admin.whm.accounts.index', ['user_id' => $client->id]) }}" class="btn btn-sm btn-primary">عرض في WHM</a>
+            </div>
+            <div class="table-responsive">
+                <table class="table table-hover mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th>المستخدم</th>
+                            <th>النطاق</th>
+                            <th>الباقة</th>
+                            <th>الحالة</th>
+                            <th class="text-center">إجراء</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @forelse($client->whmAccounts as $acc)
+                            <tr>
+                                <td><code dir="ltr">{{ $acc->username }}</code></td>
+                                <td dir="ltr">{{ $acc->domain }}</td>
+                                <td>{{ $acc->package ?: '—' }}</td>
+                                <td><span class="badge bg-{{ $acc->status === 'active' ? 'success' : 'warning' }}-transparent">{{ $acc->status_label }}</span></td>
+                                <td class="text-center text-nowrap">
+                                    <a href="{{ route('admin.whm.accounts.show', $acc) }}" class="btn btn-sm btn-primary-light">عرض</a>
+                                    @if($configured && $acc->status !== 'terminated')
+                                        <a href="{{ route('admin.whm.accounts.cpanel', $acc) }}" target="_blank" rel="noopener" class="btn btn-sm btn-warning-transparent">cPanel</a>
+                                    @endif
+                                </td>
+                            </tr>
+                        @empty
+                            <tr>
+                                <td colspan="5" class="text-center text-muted py-4">
+                                    لا توجد حسابات مرتبطة —
+                                    <a href="{{ route('admin.whm.accounts.index') }}">اربط حساباً من قائمة WHM</a>.
+                                </td>
+                            </tr>
+                        @endforelse
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <div class="card custom-card mb-4">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <span class="fw-semibold">النطاقات</span>
+                <a href="{{ route('admin.domains.index', ['user_id' => $client->id]) }}" class="btn btn-sm btn-outline-primary">مركز النطاقات</a>
+            </div>
+            <div class="table-responsive">
+                <table class="table table-hover mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th>النطاق</th>
+                            <th>المصادر</th>
+                            <th>الحالة</th>
+                            <th>الانتهاء</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @forelse($clientDomains as $row)
+                            <tr class="{{ ($row['expiring_soon'] ?? false) ? 'table-warning' : '' }}">
+                                <td dir="ltr"><strong>{{ $row['display_name'] }}</strong></td>
+                                <td>
+                                    <div class="d-flex flex-wrap gap-1">
+                                        @foreach($row['sources'] ?? [] as $src)
+                                            <span class="badge {{ $src['badge'] }} small">{{ $src['label'] }}</span>
+                                        @endforeach
+                                    </div>
+                                </td>
+                                <td><span class="badge {{ $row['status_badge'] }}">{{ $row['status_label'] }}</span></td>
+                                <td class="small">{{ $row['expires_formatted'] }}</td>
+                            </tr>
+                        @empty
+                            <tr><td colspan="4" class="text-center text-muted py-3">لا نطاقات — <a href="{{ route('admin.domains.index') }}">اربط من مركز النطاقات</a></td></tr>
+                        @endforelse
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <div class="card custom-card mb-4">
+            <div class="card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
+                <span class="fw-semibold">فريق Coolify</span>
+                @if($coolifyConfigured ?? false)
+                    <a href="{{ route('admin.coolify.teams.index') }}" class="btn btn-sm btn-outline-secondary">إدارة الفرق</a>
+                @endif
+            </div>
+            <div class="card-body">
+                @if($coolifyTeamLink ?? null)
+                    <p class="mb-2">
+                        <strong>{{ $coolifyTeamLink->team_name ?: 'فريق #'.$coolifyTeamLink->coolify_team_id }}</strong>
+                        <span class="text-muted">(معرّف {{ $coolifyTeamLink->coolify_team_id }})</span>
+                    </p>
+                    <p class="mb-2">
+                        توكن API:
+                        @if($coolifyTeamLink->hasApiToken())
+                            <span class="badge bg-success-transparent">مضبوط</span>
+                        @else
+                            <span class="badge bg-warning-transparent">مطلوب للتحقق من المشاريع</span>
+                        @endif
+                    </p>
+                    <a href="{{ route('admin.coolify.teams.show', $coolifyTeamLink->coolify_team_id) }}" class="btn btn-sm btn-primary-light">تفاصيل الفريق</a>
+                @else
+                    <p class="text-muted mb-2">لم يُربط فريق Coolify بهذا العميل بعد.</p>
+                    @if($coolifyConfigured ?? false)
+                        <a href="{{ route('admin.coolify.teams.index') }}" class="btn btn-sm btn-primary">ربط فريق</a>
+                    @else
+                        <span class="small text-muted">اضبط إعدادات Coolify أولاً.</span>
+                    @endif
+                @endif
+            </div>
+        </div>
+
+        <div class="card custom-card mb-4">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <span class="fw-semibold">مشاريع Coolify</span>
+                <a href="{{ route('admin.coolify.projects.index', ['user_id' => $client->id]) }}" class="btn btn-sm btn-outline-secondary">قائمة المشاريع</a>
+            </div>
+            <div class="table-responsive">
+                <table class="table table-hover mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th>المشروع</th>
+                            <th>UUID</th>
+                            <th class="text-center">إجراء</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @forelse($clientProjects as $proj)
+                            <tr>
+                                <td>{{ $proj['name'] }}</td>
+                                <td><code class="small" dir="ltr">{{ $proj['uuid'] }}</code></td>
+                                <td class="text-center">
+                                    <a href="{{ route('admin.coolify.projects.show', $proj['uuid']) }}" class="btn btn-sm btn-primary-light">عرض</a>
+                                </td>
+                            </tr>
+                        @empty
+                            <tr><td colspan="3" class="text-center text-muted py-3">لا مشاريع — <a href="{{ route('admin.coolify.projects.index') }}">اربط مشروعاً</a></td></tr>
+                        @endforelse
+                    </tbody>
+                </table>
+            </div>
+        </div>
     </div>
 </div>
-<!-- End::app-content -->
+
+@include('admin.partials.impersonate-client-modal')
 @endsection

@@ -156,7 +156,7 @@
         <div class="main-content app-content">
             <div class="container-fluid">
                 @php
-                    $whmcsMeta = (isset($whmcsConnected) && $whmcsConnected)
+                    $whmMeta = (isset($whmConnected) && $whmConnected)
                         ? '<span class="text-success fw-semibold">متصل</span>'
                         : '<span class="text-danger fw-semibold">غير متصل</span>';
                     $coolifyMeta = !empty($coolifyStats['connected'])
@@ -170,7 +170,7 @@
                         ['url' => route('admin.reports.index'), 'accent' => 'secondary', 'icon' => 'fe-bar-chart-2', 'title' => 'التقارير', 'meta' => 'لوحة التقارير'],
                         ['url' => route('users.index'), 'accent' => 'primary', 'icon' => 'fe-user', 'title' => 'المستخدمين', 'meta' => ($stats['total_users'] ?? 0).' مستخدم'],
                         ['url' => route('roles.index'), 'accent' => 'danger', 'icon' => 'fe-shield', 'title' => 'الصلاحيات', 'meta' => ($stats['total_roles'] ?? 0).' دور'],
-                        ['url' => route('admin.whmcs.test'), 'accent' => 'info', 'icon' => 'fe-settings', 'title' => 'إعدادات WHMCS', 'meta' => $whmcsMeta, 'meta_html' => true],
+                        ['url' => route('admin.whm.settings.index'), 'accent' => 'info', 'icon' => 'fe-settings', 'title' => 'WHM / cPanel', 'meta' => $whmMeta, 'meta_html' => true],
                         ['url' => route('admin.coolify.overview'), 'accent' => 'teal', 'icon' => 'fe-server', 'title' => 'Coolify', 'meta' => $coolifyMeta, 'meta_html' => true],
                         ['url' => route('admin.coolify.applications.index'), 'accent' => 'purple', 'icon' => 'fe-box', 'title' => 'تطبيقات Coolify', 'meta' => ($coolifyStats['applications'] ?? 0).' تطبيق'],
                     ];

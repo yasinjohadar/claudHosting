@@ -166,6 +166,7 @@
 						</div>
 					</div>
 					<div class="col-xl-8">
+						@include('admin.pages.users.partials.whm-accounts', ['user' => $user, 'whmConfigured' => $whmConfigured ?? false])
 						<div class="row row-sm">
 							<div class="col-sm-12 col-xl-4 col-lg-12 col-md-12">
 								<div class="card ">
