@@ -26,12 +26,6 @@
                     <i class="fe fe-external-link"></i> عرض في الموقع
                 </a>
                 @endif
-                <form action="{{ route('admin.products.sync', $product->id) }}" method="POST" class="d-inline">
-                    @csrf
-                    <button type="submit" class="btn btn-info">
-                        <i class="fe fe-refresh-cw"></i> مزامنة من WHMCS
-                    </button>
-                </form>
                 <a href="{{ route('admin.products.edit', $product->id) }}" class="btn btn-warning">
                     <i class="fe fe-edit"></i> تعديل
                 </a>
@@ -99,10 +93,12 @@
                                     <span class="badge bg-secondary-transparent">{{ $product->status ?? '-' }}</span>
                                 @endif
                             </li>
+                            @if($product->whmcs_id)
                             <li class="mb-3 d-flex justify-content-between">
-                                <span class="fw-semibold">معرف WHMCS:</span>
-                                <span class="text-muted">{{ $product->whmcs_id ?? '-' }}</span>
+                                <span class="fw-semibold">معرف خارجي (قديم):</span>
+                                <span class="text-muted">{{ $product->whmcs_id }}</span>
                             </li>
+                            @endif
                             @php
                                 $pricing = $product->pricing;
                                 $firstCurrency = is_array($pricing) ? reset($pricing) : null;

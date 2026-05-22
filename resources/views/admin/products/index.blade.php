@@ -23,9 +23,6 @@
                 <a href="{{ route('admin.products.create') }}" class="btn btn-primary">
                     <i class="fe fe-plus"></i> إضافة منتج جديد
                 </a>
-                <button type="button" class="btn btn-success" id="syncAllProducts">
-                    <i class="fe fe-refresh-cw"></i> مزامنة مع WHMCS
-                </button>
             </div>
         </div>
         <!-- End Page Header -->
@@ -154,30 +151,6 @@
                 form.attr('action', '/admin/products/' + id);
                 form.submit();
             }
-        });
-
-        // Sync All Products
-        $('#syncAllProducts').click(function() {
-            var btn = $(this);
-            btn.prop('disabled', true).html('<i class="fe fe-loader fa-spin"></i> جاري المزامنة...');
-            
-            $.ajax({
-                url: '{{ route("admin.products.syncAll") }}',
-                type: 'POST',
-                data: {
-                    _token: '{{ csrf_token() }}'
-                },
-                success: function(response) {
-                    alert('تم مزامنة المنتجات بنجاح');
-                    location.reload();
-                },
-                error: function() {
-                    alert('حدث خطأ أثناء المزامنة');
-                },
-                complete: function() {
-                    btn.prop('disabled', false).html('<i class="fe fe-refresh-cw"></i> مزامنة مع WHMCS');
-                }
-            });
         });
     });
 </script>

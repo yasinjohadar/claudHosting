@@ -151,7 +151,7 @@
                     <div class="card-body">
                         <div class="alert alert-info">
                             <i class="fe fe-info me-2"></i>
-                            سيتم إنشاء المنتج في قاعدة البيانات المحلية ويمكنك مزامنته لاحقاً مع WHMCS.
+                            سيتم إنشاء المنتج وإدارته محلياً في النظام (بدون ربط بـ WHMCS).
                         </div>
                         <p class="text-muted">الحقول المميزة بـ <span class="text-danger">*</span> مطلوبة.</p>
                     </div>
