@@ -1159,12 +1159,19 @@ ul {
 .pricing-card-desc {
     font-size: 0.86rem;
     color: var(--clr-text-secondary);
-    line-height: 1.55;
-    margin: 0 0 1rem;
-    flex: 1;
+    line-height: 1.5;
+    margin: 0 0 0.75rem;
+    flex: 0 0 auto;
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 3;
+    overflow: hidden;
+    max-height: calc(1.5em * 3);
 }
 
-.pricing-card-features {
+.pricing-card-features,
+.package-features-list.pricing-card-features,
+.package-features-list.package-features-list--card {
     list-style: none;
     padding: 0;
     margin: 0;
@@ -1173,12 +1180,42 @@ ul {
     gap: 0.55rem;
 }
 
-.pricing-card-features li {
+.pricing-card-features li,
+.package-features-list--card .package-feature-item {
     display: flex;
-    align-items: center;
+    align-items: flex-start;
     gap: 0.65rem;
     font-size: 0.84rem;
     color: var(--clr-text-secondary);
+}
+
+/* بطاقة الباقة: حتى 10 بنود بمسافات مضغوطة */
+.package-features-list--card {
+    flex: 1 1 auto;
+    gap: 0.38rem;
+    min-height: 0;
+}
+
+.package-features-list--card .package-feature-item {
+    font-size: 0.78rem;
+    line-height: 1.35;
+    gap: 0.5rem;
+}
+
+.package-features-list--card .package-feature-icon {
+    width: 22px;
+    height: 22px;
+    border-radius: 6px;
+    font-size: 0.62rem;
+    margin-top: 0.1rem;
+}
+
+.package-features-list--card .package-feature-text {
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+    overflow: hidden;
+    line-height: 1.35;
 }
 
 .pricing-card-check {

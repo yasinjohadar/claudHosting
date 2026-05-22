@@ -258,6 +258,56 @@ class ProductController extends Controller
     }
 
     /**
+     * نسخ منتج مع جميع بياناته ثم التوجيه للتعديل.
+     *
+     * @param  int  $id
+     * @return \Illuminate\Http\RedirectResponse
+     */
+    public function duplicate($id)
+    {
+        $product = Product::findOrFail($id);
+
+        DB::beginTransaction();
+
+        try {
+            $copy = $product->replicate([
+                'sales_count',
+                'synced_at',
+                'whmcs_id',
+            ]);
+            $copy->name = $this->duplicateProductName($product->name);
+            $copy->whmcs_id = null;
+            $copy->sales_count = 0;
+            $copy->synced_at = null;
+            $copy->save();
+
+            DB::commit();
+
+            return redirect()->route('admin.products.edit', $copy->id)
+                ->with('success', 'تم نسخ المنتج. عدّل الاسم أو أي حقل ثم احفظ.');
+        } catch (\Exception $e) {
+            DB::rollBack();
+
+            return redirect()->route('admin.products.index')
+                ->with('error', 'فشل نسخ المنتج: '.$e->getMessage());
+        }
+    }
+
+    protected function duplicateProductName(string $name): string
+    {
+        $base = 'نسخة من '.trim($name);
+        $candidate = $base;
+        $n = 2;
+
+        while (Product::where('name', $candidate)->exists()) {
+            $candidate = $base.' ('.$n.')';
+            $n++;
+        }
+
+        return $candidate;
+    }
+
+    /**
      * حذف المنتج
      *
      * @param  int  $id

@@ -29,6 +29,13 @@
                 <a href="{{ route('admin.products.edit', $product->id) }}" class="btn btn-warning">
                     <i class="fe fe-edit"></i> تعديل
                 </a>
+                <form action="{{ route('admin.products.duplicate', $product->id) }}" method="POST" class="d-inline"
+                    onsubmit="return confirm('نسخ هذا المنتج مع كل بياناته؟');">
+                    @csrf
+                    <button type="submit" class="btn btn-success">
+                        <i class="ri-file-copy-line"></i> نسخ
+                    </button>
+                </form>
                 <a href="{{ route('admin.products.index') }}" class="btn btn-secondary">
                     <i class="fe fe-arrow-left"></i> العودة
                 </a>

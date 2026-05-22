@@ -34,7 +34,7 @@
             <div class="row g-4 align-items-stretch">
                 @foreach($products as $index => $product)
                 <div class="col-lg-4 col-md-6 d-flex">
-                    @include('frontend.partials.package-card', ['product' => $product, 'index' => $index, 'descriptionLimit' => 120, 'showAvailability' => true])
+                    @include('frontend.partials.package-card', ['product' => $product, 'index' => $index, 'featureLimit' => 10, 'showAvailability' => true])
                 </div>
                 @endforeach
             </div>

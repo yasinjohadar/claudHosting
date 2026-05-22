@@ -22,8 +22,16 @@
     ];
     $icon = $iconMap[strtolower($product->type ?? '')] ?? 'fa-cloud';
     $featureItems = $product->resolvedPackageFeatures();
-    $desc = Str::limit(strip_tags($product->description ?? ''), $descriptionLimit ?? 100) ?: (count($featureItems) ? '' : 'باقة استضافة مناسبة لاحتياجاتك.');
-    $featureLimit = $featureLimit ?? 4;
+    $plainDesc = trim(strip_tags($product->description ?? ''));
+    if (count($featureItems) > 0 && $plainDesc !== '') {
+        if (preg_match('/[•·●]|^\s*[\-\*]/mu', $plainDesc) || mb_strlen($plainDesc) > 120) {
+            $plainDesc = '';
+        }
+    }
+    $desc = $plainDesc !== ''
+        ? $plainDesc
+        : (count($featureItems) ? '' : 'باقة استضافة مناسبة لاحتياجاتك.');
+    $featureLimit = $featureLimit ?? 10;
 @endphp
 <a href="{{ route('frontend.package-detail', $product->id) }}" class="pricing-card-link animate-on-scroll animate-delay-{{ ($index % 3) + 1 }}">
     <article class="pricing-card glass-panel {{ $isFeatured ? 'pricing-card--featured' : '' }}">
@@ -42,6 +50,7 @@
                 @include('frontend.partials.package-features-list', [
                     'product' => $product,
                     'limit' => $featureLimit,
+                    'class' => 'package-features-list--card',
                 ])
             @else
             <ul class="pricing-card-features">

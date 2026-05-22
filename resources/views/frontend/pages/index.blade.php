@@ -148,7 +148,7 @@
             <div class="row g-4 align-items-stretch">
                 @foreach($featuredPackages as $index => $product)
                 <div class="col-lg-4 col-md-6 d-flex">
-                    @include('frontend.partials.package-card', ['product' => $product, 'index' => $index, 'descriptionLimit' => 80])
+                    @include('frontend.partials.package-card', ['product' => $product, 'index' => $index, 'featureLimit' => 10])
                 </div>
                 @endforeach
             </div>

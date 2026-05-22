@@ -94,10 +94,17 @@
                                                 <a href="{{ route('admin.products.show', $product->id) }}" class="btn btn-icon btn-sm btn-info-transparent rounded-pill">
                                                     <i class="ri-eye-line"></i>
                                                 </a>
-                                                <a href="{{ route('admin.products.edit', $product->id) }}" class="btn btn-icon btn-sm btn-warning-transparent rounded-pill">
+                                                <a href="{{ route('admin.products.edit', $product->id) }}" class="btn btn-icon btn-sm btn-warning-transparent rounded-pill" title="تعديل">
                                                     <i class="ri-edit-line"></i>
                                                 </a>
-                                                <button type="button" class="btn btn-icon btn-sm btn-danger-transparent rounded-pill delete-product" data-id="{{ $product->id }}">
+                                                <form action="{{ route('admin.products.duplicate', $product->id) }}" method="POST" class="d-inline"
+                                                    onsubmit="return confirm('نسخ هذا المنتج مع كل بياناته (التسعير، الميزات، WHM)؟');">
+                                                    @csrf
+                                                    <button type="submit" class="btn btn-icon btn-sm btn-success-transparent rounded-pill" title="نسخ">
+                                                        <i class="ri-file-copy-line"></i>
+                                                    </button>
+                                                </form>
+                                                <button type="button" class="btn btn-icon btn-sm btn-danger-transparent rounded-pill delete-product" data-id="{{ $product->id }}" title="حذف">
                                                     <i class="ri-delete-bin-line"></i>
                                                 </button>
                                             </div>
