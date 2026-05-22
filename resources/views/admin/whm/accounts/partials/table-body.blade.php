@@ -8,6 +8,14 @@
         </td>
         @include('admin.whm.accounts.partials.email-cell', ['account' => $a])
         <td class="text-center align-middle text-nowrap text-muted small">{{ $a->joined_at?->format('Y-m-d') ?? '—' }}</td>
+        <td class="text-center align-middle text-nowrap">
+            @if($a->subscription_ends_at)
+                <span class="badge {{ $a->subscription_status_badge }}">{{ $a->subscription_ends_at->format('Y-m-d') }}</span>
+                <div class="small text-muted">{{ $a->subscription_status_label }}</div>
+            @else
+                <span class="text-muted">—</span>
+            @endif
+        </td>
         <td class="text-center align-middle">
             @if($a->package)
                 <span class="badge bg-primary-transparent text-primary">{{ $a->package }}</span>
@@ -30,7 +38,7 @@
     </tr>
 @empty
     <tr>
-        <td colspan="8" class="text-center text-muted py-5">
+        <td colspan="9" class="text-center text-muted py-5">
             <i class="fe fe-inbox d-block mb-2 fs-2 opacity-50"></i>
             لا توجد نتائج — غيّر البحث أو زامن من WHM.
         </td>

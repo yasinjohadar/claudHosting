@@ -55,6 +55,7 @@ use App\Http\Controllers\Admin\Cloudflare\CloudflareRegistrarController;
 use App\Http\Controllers\Admin\Namecom\NamecomSettingsController;
 use App\Http\Controllers\Admin\Namecom\NamecomDomainController;
 use App\Http\Controllers\Admin\Domain\DomainHubController;
+use App\Http\Controllers\Admin\Domain\DomainSettingsController;
 use App\Http\Controllers\Admin\Domain\DomainSearchController;
 use App\Http\Controllers\Admin\Coolify\CoolifyHetznerController;
 use App\Http\Controllers\Admin\AIBlogPostController;
@@ -119,6 +120,9 @@ Route::redirect('/customer/{path}', '/client/{path}')->where('path', '.*');
 Route::middleware(['auth'])->group(function () {
     Route::prefix('client')->name('client.')->group(function () {
         Route::get('/', [\App\Http\Controllers\Client\ClientPortalController::class, 'dashboard'])->name('dashboard');
+        Route::get('/services', [\App\Http\Controllers\Client\ClientPortalController::class, 'services'])->name('services');
+        Route::get('/invoices', [\App\Http\Controllers\Client\ClientPortalController::class, 'invoices'])->name('invoices.index');
+        Route::get('/invoices/{invoice}', [\App\Http\Controllers\Client\ClientPortalController::class, 'invoiceShow'])->name('invoices.show');
         Route::post('/impersonate/stop', [\App\Http\Controllers\Client\ClientImpersonationController::class, 'stop'])
             ->name('impersonate.stop');
     });
@@ -439,6 +443,8 @@ Route::middleware(['auth', 'admin.panel'])->group(function () {
 
         // ========== النطاقات ==========
         Route::prefix('domains')->name('domains.')->group(function () {
+            Route::get('/settings', [DomainSettingsController::class, 'index'])->name('settings.index');
+            Route::put('/settings', [DomainSettingsController::class, 'update'])->name('settings.update');
             Route::get('/', [DomainHubController::class, 'index'])->name('index');
             Route::post('/assign-client', [DomainHubController::class, 'assignClient'])->name('assign-client');
             Route::get('/{domain}/whm-dns', [DomainHubController::class, 'whmDns'])
@@ -488,6 +494,7 @@ Route::middleware(['auth', 'admin.panel'])->group(function () {
                 Route::post('/{account}/update-email', [WhmAccountController::class, 'updateEmail'])->name('update-email');
                 Route::post('/{account}/update-password', [WhmAccountController::class, 'updatePassword'])->name('update-password');
                 Route::post('/{account}/rename-user', [WhmAccountController::class, 'renameUser'])->name('rename-user');
+                Route::post('/{account}/renew', [WhmAccountController::class, 'renew'])->name('renew');
             });
         });
 

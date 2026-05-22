@@ -12,7 +12,7 @@
                     <h3 class="card-title">معلومات الفاتورة</h3>
                 </div>
                 <div class="card-body">
-                    <p><strong>رقم الفاتورة:</strong> {{ $invoice->invoicenum }}</p>
+                    <p><strong>رقم الفاتورة:</strong> {{ $invoice->invoice_number }}</p>
                     <p><strong>التاريخ:</strong> {{ $invoice->date }}</p>
                     <p><strong>تاريخ الاستحقاق:</strong> {{ $invoice->duedate }}</p>
                     <p><strong>العملة:</strong> {{ $invoice->currency }}</p>
@@ -34,7 +34,6 @@
                             <span class="badge badge-info">{{ $invoice->status }}</span>
                         @endif
                     </p>
-                    <p><strong>معرف WHMCS:</strong> {{ $invoice->whmcs_id }}</p>
                 </div>
             </div>
             
@@ -61,19 +60,13 @@
                             <i class="fas fa-edit"></i> تعديل
                         </a>
                         @if ($invoice->status != 'Paid' && $invoice->status != 'Cancelled')
-                            <form action="{{ route('admin.invoices.mark-paid', $invoice->id) }}" method="POST" style="display: inline-block;">
+                            <form action="{{ route('admin.invoices.markPaid', $invoice->id) }}" method="POST" style="display: inline-block;">
                                 @csrf
                                 <button type="submit" class="btn btn-success btn-sm" onclick="return confirm('هل أنت متأكد من رغبتك في تعليم هذه الفاتورة كمدفوعة؟')">
                                     <i class="fas fa-check"></i> تعليم كمدفوعة
                                 </button>
                             </form>
                         @endif
-                        <form action="{{ route('admin.invoices.sync.single', $invoice->id) }}" method="POST" style="display: inline-block;">
-                            @csrf
-                            <button type="submit" class="btn btn-primary btn-sm">
-                                <i class="fas fa-sync"></i> مزامنة من WHMCS
-                            </button>
-                        </form>
                         <a href="{{ route('admin.invoices.index') }}" class="btn btn-default btn-sm">
                             <i class="fas fa-arrow-left"></i> العودة
                         </a>
@@ -87,16 +80,19 @@
                     <h3 class="card-title">معلومات العميل</h3>
                 </div>
                 <div class="card-body">
-                    <p><strong>الاسم:</strong> {{ $invoice->customer->firstname }} {{ $invoice->customer->lastname }}</p>
+                    @if($invoice->customer)
+                    <p><strong>الاسم:</strong> {{ $invoice->customer->full_name }}</p>
                     <p><strong>البريد الإلكتروني:</strong> {{ $invoice->customer->email }}</p>
-                    <p><strong>الشركة:</strong> {{ $invoice->customer->companyname ?? '-' }}</p>
-                    <p><strong>رقم الهاتف:</strong> {{ $invoice->customer->phonenumber ?? '-' }}</p>
-                    <p><strong>العنوان:</strong> {{ $invoice->customer->address1 ?? '-' }}, {{ $invoice->customer->city ?? '-' }}, {{ $invoice->customer->state ?? '-' }}, {{ $invoice->customer->country ?? '-' }}</p>
+                    <p><strong>الشركة:</strong> {{ $invoice->customer->companyname ?? '—' }}</p>
+                    <p><strong>رقم الهاتف:</strong> {{ $invoice->customer->phonenumber ?? '—' }}</p>
                     <div class="btn-group mt-2">
                         <a href="{{ route('admin.customers.show', $invoice->customer->id) }}" class="btn btn-info btn-sm">
                             <i class="fas fa-user"></i> عرض العميل
                         </a>
                     </div>
+                    @else
+                    <p class="text-muted">لم يُربط عميل بهذه الفاتورة.</p>
+                    @endif
                 </div>
             </div>
             
@@ -206,7 +202,7 @@
                     <span aria-hidden="true">&times;</span>
                 </button>
             </div>
-            <form action="{{ route('admin.invoices.add-payment', $invoice->id) }}" method="POST">
+            <form action="{{ route('admin.invoices.addPayment', $invoice->id) }}" method="POST">
                 @csrf
                 <div class="modal-body">
                     <div class="form-group">

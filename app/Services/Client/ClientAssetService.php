@@ -9,6 +9,7 @@ use App\Models\WhmAccount;
 use App\Services\Coolify\CoolifyTeamService;
 use App\Services\CoolifyApiService;
 use App\Services\Domain\DomainCommandCenterService;
+use App\Services\Domain\DomainSubscriptionBillingService;
 use Illuminate\Support\Collection;
 
 class ClientAssetService
@@ -16,7 +17,8 @@ class ClientAssetService
     public function __construct(
         protected DomainCommandCenterService $domainCenter,
         protected CoolifyApiService $coolify,
-        protected CoolifyTeamService $teamService
+        protected CoolifyTeamService $teamService,
+        protected DomainSubscriptionBillingService $domainBilling
     ) {}
 
     /**
@@ -52,9 +54,9 @@ class ClientAssetService
     }
 
     /**
-     * @return array{success: bool, message: string, domain?: ClientDomain}
+     * @return array{success: bool, message: string, domain?: ClientDomain, invoice?: \App\Models\Invoice}
      */
-    public function assignDomain(?int $userId, string $domainName): array
+    public function assignDomain(?int $userId, string $domainName, ?float $amountOverride = null): array
     {
         $name = ClientDomain::normalizeName($domainName);
         if ($name === '') {
@@ -65,15 +67,43 @@ class ClientAssetService
             return ['success' => false, 'message' => 'المستخدم غير موجود'];
         }
 
+        $existing = ClientDomain::query()->where('domain_name', $name)->first();
+        $previousUserId = $existing?->user_id;
+
         $record = ClientDomain::updateOrCreate(
             ['domain_name' => $name],
             ['user_id' => $userId]
         );
 
+        $record = $record->fresh()->load('client');
+
+        if ($userId === null) {
+            return [
+                'success' => true,
+                'message' => 'تم إلغاء ربط النطاق',
+                'domain' => $record,
+            ];
+        }
+
+        $assignmentChanged = (int) $previousUserId !== (int) $userId;
+        $message = 'تم ربط النطاق بالعميل';
+        $invoice = null;
+
+        if ($assignmentChanged) {
+            $billing = $this->domainBilling->createLinkInvoice($record, $amountOverride);
+            if ($billing['success'] ?? false) {
+                $invoice = $billing['invoice'] ?? null;
+                $message .= '. '.$billing['message'];
+            } else {
+                $message .= '. '.$billing['message'];
+            }
+        }
+
         return [
             'success' => true,
-            'message' => $userId ? 'تم ربط النطاق بالعميل' : 'تم إلغاء ربط النطاق',
-            'domain' => $record->fresh()->load('client'),
+            'message' => $message,
+            'domain' => $record,
+            'invoice' => $invoice,
         ];
     }
 

@@ -55,21 +55,29 @@ class DomainHubController extends Controller
         $validated = $request->validate([
             'domain_name' => 'required|string|max:253',
             'user_id' => 'nullable|exists:users,id',
+            'amount' => 'nullable|numeric|min:0',
         ]);
 
         $userId = isset($validated['user_id']) && $validated['user_id'] !== ''
             ? (int) $validated['user_id']
             : null;
 
-        $result = $this->clientAssets->assignDomain($userId, $validated['domain_name']);
+        $amount = isset($validated['amount']) && $validated['amount'] !== ''
+            ? (float) $validated['amount']
+            : null;
+
+        $result = $this->clientAssets->assignDomain($userId, $validated['domain_name'], $amount);
 
         if ($request->wantsJson() || $request->ajax()) {
             $client = $result['domain']?->client;
+            $invoice = $result['invoice'] ?? null;
 
             return response()->json([
                 'success' => $result['success'],
                 'message' => $result['message'],
                 'client_label' => $client ? $client->name : null,
+                'invoice_id' => $invoice?->id,
+                'invoice_url' => $invoice ? route('admin.invoices.show', $invoice->id) : null,
                 'html' => view('admin.domains.partials.client-cell', [
                     'row' => [
                         'name' => \App\Models\ClientDomain::normalizeName($validated['domain_name']),

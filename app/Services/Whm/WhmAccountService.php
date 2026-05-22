@@ -8,13 +8,15 @@ use App\Models\Product;
 use App\Models\User;
 use App\Models\WhmAccount;
 use Carbon\Carbon;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 
 class WhmAccountService
 {
     public function __construct(
         protected WhmApiService $api,
-        protected WhmSettingsService $settings
+        protected WhmSettingsService $settings,
+        protected WhmSubscriptionBillingService $billing
     ) {}
 
     /**
@@ -40,7 +42,7 @@ class WhmAccountService
 
             $status = $this->resolveAccountStatusFromWhm($acct);
 
-            WhmAccount::updateOrCreate(
+            $account = WhmAccount::updateOrCreate(
                 ['username' => $username],
                 [
                     'domain' => $domain,
@@ -51,6 +53,8 @@ class WhmAccountService
                     'metadata' => $acct,
                 ]
             );
+
+            $this->billing->ensureSubscriptionDates($account);
             $synced++;
         }
 
@@ -126,7 +130,7 @@ class WhmAccountService
 
         $account = WhmAccount::create([
             'user_id' => $userId,
-            'customer_id' => $customerId,
+            'customer_id' => $customerId ?? null,
             'username' => $username,
             'domain' => $domain,
             'email' => $this->extractEmailFromWhm($meta) ?? ($order->email ? strtolower($order->email) : null),
@@ -144,11 +148,81 @@ class WhmAccountService
             'status' => PackageOrderRequest::STATUS_CONVERTED,
         ]);
 
+        $bootstrap = $this->bootstrapNewAccountSubscription($account);
+        $message = "تم إنشاء حساب cPanel ({$username}@{$domain})";
+        if (! empty($bootstrap['invoice'])) {
+            $message .= ' — تم إنشاء فاتورة الاشتراك';
+        } elseif (str_contains($bootstrap['message'] ?? '', 'فاتورة')) {
+            $message .= ' — '.$bootstrap['message'];
+        }
+
         return [
             'success' => true,
-            'message' => "تم إنشاء حساب cPanel ({$username}@{$domain})",
-            'account' => $account,
+            'message' => $message,
+            'account' => $bootstrap['account'] ?? $account->fresh(),
+            'invoice' => $bootstrap['invoice'] ?? null,
         ];
+    }
+
+    /**
+     * @return array{success: bool, message: string, account?: WhmAccount, invoice?: \App\Models\Invoice}
+     */
+    public function bootstrapNewAccountSubscription(WhmAccount $account, ?float $amountOverride = null): array
+    {
+        return $this->billing->bootstrapNewAccount($account, $amountOverride);
+    }
+
+    /**
+     * @return array{success: bool, message: string, account?: WhmAccount, invoice?: \App\Models\Invoice}
+     */
+    public function renewSubscription(WhmAccount $account, ?float $amountOverride = null): array
+    {
+        if ($account->status === 'terminated') {
+            return ['success' => false, 'message' => 'لا يمكن تجديد اشتراك حساب محذوف'];
+        }
+
+        if ($this->billing->resolveCustomer($account) === null) {
+            return [
+                'success' => false,
+                'message' => 'اربط الحساب بعميل له ملف customer قبل التجديد لإنشاء الفاتورة',
+            ];
+        }
+
+        try {
+            $invoice = DB::transaction(function () use ($account, $amountOverride) {
+                $this->billing->ensureSubscriptionDates($account);
+
+                $endsAt = $this->billing->extendSubscriptionEnd($account->fresh());
+                $account->update([
+                    'subscription_ends_at' => $endsAt,
+                    'last_renewed_at' => now(),
+                ]);
+
+                $invoiceResult = $this->billing->createSubscriptionInvoice(
+                    $account->fresh(),
+                    'renewal',
+                    $amountOverride
+                );
+
+                if (! ($invoiceResult['success'] ?? false)) {
+                    throw new \RuntimeException($invoiceResult['message'] ?? 'فشل إنشاء الفاتورة');
+                }
+
+                return $invoiceResult['invoice'];
+            });
+
+            return [
+                'success' => true,
+                'message' => 'تم تجديد الاشتراك وإنشاء الفاتورة',
+                'account' => $account->fresh(),
+                'invoice' => $invoice,
+            ];
+        } catch (\Throwable $e) {
+            return [
+                'success' => false,
+                'message' => $e->getMessage(),
+            ];
+        }
     }
 
     /**
@@ -271,6 +345,7 @@ class WhmAccountService
 
                     if ($changes !== []) {
                         $account->update($changes);
+                        $this->billing->ensureSubscriptionDates($account->fresh());
                         $updated++;
                     }
                 }
@@ -495,7 +570,18 @@ class WhmAccountService
             }
         }
 
-        $account->update(['user_id' => $userId]);
+        $updates = ['user_id' => $userId];
+
+        if ($userId !== null) {
+            $user = User::with('customer')->find($userId);
+            if ($user?->customer) {
+                $updates['customer_id'] = $user->customer->id;
+            }
+        } else {
+            $updates['customer_id'] = null;
+        }
+
+        $account->update($updates);
 
         $account = $account->fresh()->load('client');
 

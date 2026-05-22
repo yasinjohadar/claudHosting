@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class WhmAccount extends Model
 {
@@ -14,6 +15,8 @@ class WhmAccount extends Model
         'domain',
         'email',
         'joined_at',
+        'subscription_ends_at',
+        'last_renewed_at',
         'package',
         'status',
         'metadata',
@@ -22,7 +25,70 @@ class WhmAccount extends Model
     protected $casts = [
         'metadata' => 'array',
         'joined_at' => 'datetime',
+        'subscription_ends_at' => 'datetime',
+        'last_renewed_at' => 'datetime',
     ];
+
+    public function invoices(): HasMany
+    {
+        return $this->hasMany(Invoice::class);
+    }
+
+    public function getIsSubscriptionExpiredAttribute(): bool
+    {
+        if ($this->subscription_ends_at === null) {
+            return false;
+        }
+
+        return $this->subscription_ends_at->isPast();
+    }
+
+    public function getSubscriptionDaysRemainingAttribute(): ?int
+    {
+        if ($this->subscription_ends_at === null) {
+            return null;
+        }
+
+        return (int) now()->startOfDay()->diffInDays($this->subscription_ends_at->startOfDay(), false);
+    }
+
+    public function getSubscriptionStatusBadgeAttribute(): string
+    {
+        $days = $this->subscription_days_remaining;
+
+        if ($days === null) {
+            return 'bg-secondary-transparent';
+        }
+
+        if ($days < 0) {
+            return 'bg-danger-transparent';
+        }
+
+        if ($days <= 30) {
+            return 'bg-warning-transparent';
+        }
+
+        return 'bg-success-transparent';
+    }
+
+    public function getSubscriptionStatusLabelAttribute(): string
+    {
+        $days = $this->subscription_days_remaining;
+
+        if ($days === null) {
+            return '—';
+        }
+
+        if ($days < 0) {
+            return 'منتهي';
+        }
+
+        if ($days <= 30) {
+            return 'ينتهي قريباً';
+        }
+
+        return 'ساري';
+    }
 
     public function getSiteUrlAttribute(): ?string
     {

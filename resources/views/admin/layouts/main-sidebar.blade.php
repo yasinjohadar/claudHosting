@@ -327,6 +327,7 @@
                             <ul class="slide-menu child1">
                                 <li class="slide"><a href="{{ route('admin.domains.index') }}" class="side-menu__item {{ request()->routeIs('admin.domains.index') ? 'active' : '' }}">مركز تحكم النطاقات</a></li>
                                 <li class="slide"><a href="{{ route('admin.domains.search') }}" class="side-menu__item {{ request()->routeIs('admin.domains.search') ? 'active' : '' }}">البحث عن نطاق</a></li>
+                                <li class="slide"><a href="{{ route('admin.domains.settings.index') }}" class="side-menu__item {{ request()->routeIs('admin.domains.settings.*') ? 'active' : '' }}">فوترة النطاقات</a></li>
                                 <li class="slide"><a href="{{ route('admin.cloudflare.zones.index') }}" class="side-menu__item {{ request()->routeIs('admin.cloudflare.zones.*') ? 'active' : '' }}">جميع نطاقات CF (Zones)</a></li>
                                 <li class="slide"><a href="{{ route('admin.cloudflare.registrar.index') }}" class="side-menu__item {{ request()->routeIs('admin.cloudflare.registrar.*') ? 'active' : '' }}">مسجّل عند CF فقط</a></li>
                                 <li class="slide"><a href="{{ route('admin.cloudflare.settings.index') }}" class="side-menu__item {{ request()->routeIs('admin.cloudflare.settings.*') ? 'active' : '' }}">إعدادات Cloudflare</a></li>

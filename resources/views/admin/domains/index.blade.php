@@ -44,6 +44,7 @@
                 </a>
                 <a href="{{ route('admin.cloudflare.settings.index') }}" class="btn btn-outline-primary btn-sm">Cloudflare</a>
                 <a href="{{ route('admin.namecom.settings.index') }}" class="btn btn-outline-success btn-sm">name.com</a>
+                <a href="{{ route('admin.domains.settings.index') }}" class="btn btn-outline-secondary btn-sm">فوترة النطاقات</a>
             </div>
         </div>
 

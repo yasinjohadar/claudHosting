@@ -71,6 +71,27 @@
                                     </div>
                                 </div>
                             </div>
+                            @php $billing = $form['billing'] ?? []; @endphp
+                            <hr class="my-4">
+                            <h6 class="mb-3">الاشتراك والفواتير</h6>
+                            <div class="row">
+                                <div class="col-md-4 mb-3">
+                                    <label class="form-label">مبلغ الاشتراك / التجديد (ر.س)</label>
+                                    <input type="number" name="renewal_amount" class="form-control" min="0" step="0.01"
+                                        value="{{ old('renewal_amount', $billing['renewal_amount'] ?? 0) }}">
+                                    <div class="form-text">يُستخدم عند إنشاء حساب أو تجديد الاشتراك</div>
+                                </div>
+                                <div class="col-md-4 mb-3">
+                                    <label class="form-label">أيام استحقاق الفاتورة</label>
+                                    <input type="number" name="invoice_due_days" class="form-control" min="1" max="90"
+                                        value="{{ old('invoice_due_days', $billing['invoice_due_days'] ?? 7) }}">
+                                </div>
+                                <div class="col-md-4 mb-3">
+                                    <label class="form-label">مدة الاشتراك (سنوات)</label>
+                                    <input type="number" name="subscription_years" class="form-control" min="1" max="10"
+                                        value="{{ old('subscription_years', $billing['subscription_years'] ?? 1) }}">
+                                </div>
+                            </div>
                             <button type="submit" class="btn btn-primary">حفظ</button>
                             <a href="{{ route('admin.whm.accounts.index') }}" class="btn btn-light">حسابات الاستضافة</a>
                         </form>

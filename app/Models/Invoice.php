@@ -16,8 +16,12 @@ class Invoice extends Model
      * @var array
      */
     protected $fillable = [
+        'customer_id',
+        'whm_account_id',
+        'client_domain_id',
         'whmcs_id',
         'whmcs_client_id',
+        'invoice_number',
         'invoicenum',
         'date',
         'duedate',
@@ -61,7 +65,41 @@ class Invoice extends Model
      */
     public function customer()
     {
-        return $this->belongsTo(Customer::class, 'whmcs_client_id', 'whmcs_id');
+        return $this->belongsTo(Customer::class, 'customer_id');
+    }
+
+    public function whmAccount()
+    {
+        return $this->belongsTo(WhmAccount::class, 'whm_account_id');
+    }
+
+    public function clientDomain()
+    {
+        return $this->belongsTo(ClientDomain::class, 'client_domain_id');
+    }
+
+    /**
+     * رقم الفاتورة للعرض (محلي أو قديم من WHMCS).
+     */
+    public function getInvoiceNumberAttribute(): string
+    {
+        return $this->attributes['invoice_number']
+            ?? $this->invoicenum
+            ?? ('#' . $this->id);
+    }
+
+    /**
+     * عملة العرض.
+     */
+    public function getCurrencyAttribute(): string
+    {
+        $code = $this->customer?->currency;
+
+        return match ($code) {
+            'SAR', 'ر.س' => 'ر.س',
+            'USD' => 'USD',
+            default => $code ?: 'ر.س',
+        };
     }
 
     /**

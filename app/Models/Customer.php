@@ -63,7 +63,7 @@ class Customer extends Model
      */
     public function invoices()
     {
-        return $this->hasMany(Invoice::class, 'whmcs_client_id', 'whmcs_id');
+        return $this->hasMany(Invoice::class, 'customer_id');
     }
 
     /**

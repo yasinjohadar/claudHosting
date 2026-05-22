@@ -52,6 +52,9 @@ class WhmSettingsController extends Controller
             'default_domain_suffix' => 'nullable|string|max:253',
             'timeout' => 'nullable|integer|min:10|max:180',
             'verify_ssl' => 'nullable|boolean',
+            'renewal_amount' => 'nullable|numeric|min:0',
+            'invoice_due_days' => 'nullable|integer|min:1|max:90',
+            'subscription_years' => 'nullable|integer|min:1|max:10',
         ]);
 
         $existing = $this->settings->getFormSettings();
@@ -67,6 +70,9 @@ class WhmSettingsController extends Controller
             'default_domain_suffix' => $validated['default_domain_suffix'] ?? '',
             'timeout' => $validated['timeout'] ?? 60,
             'verify_ssl' => $request->boolean('verify_ssl'),
+            'renewal_amount' => $validated['renewal_amount'] ?? 0,
+            'invoice_due_days' => $validated['invoice_due_days'] ?? 7,
+            'subscription_years' => $validated['subscription_years'] ?? 1,
         ]);
 
         $this->whm->refreshConnection();

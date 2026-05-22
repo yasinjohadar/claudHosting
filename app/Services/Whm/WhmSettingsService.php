@@ -12,6 +12,8 @@ class WhmSettingsService
 
     protected const CACHE_KEY = 'whm_connection_config';
 
+    protected const BILLING_CACHE_KEY = 'whm_billing_config';
+
     /**
      * @return array{
      *   host: string,
@@ -73,7 +75,31 @@ class WhmSettingsService
             'default_domain_suffix' => $config['default_domain_suffix'],
             'timeout' => $config['timeout'],
             'has_token' => $config['token_configured'],
+            'billing' => $this->getBillingConfig(),
         ];
+    }
+
+    /**
+     * @return array{renewal_amount: float, invoice_due_days: int, subscription_years: int}
+     */
+    public function getBillingConfig(): array
+    {
+        return Cache::remember(self::BILLING_CACHE_KEY, 300, function () {
+            $this->initializeDefaults();
+
+            $keys = config('whm.keys');
+            $defaults = config('whm.defaults');
+            $stored = SystemSetting::query()
+                ->where('group', self::GROUP)
+                ->pluck('value', 'key')
+                ->toArray();
+
+            return [
+                'renewal_amount' => max(0, (float) ($stored[$keys['renewal_amount']] ?? $defaults['renewal_amount'])),
+                'invoice_due_days' => max(1, (int) ($stored[$keys['invoice_due_days']] ?? $defaults['invoice_due_days'])),
+                'subscription_years' => max(1, (int) ($stored[$keys['subscription_years']] ?? $defaults['subscription_years'])),
+            ];
+        });
     }
 
     public function updateSettings(array $data): void
@@ -113,12 +139,25 @@ class WhmSettingsService
             );
         }
 
+        if (array_key_exists('renewal_amount', $data)) {
+            SystemSetting::set($keys['renewal_amount'], (string) max(0, (float) $data['renewal_amount']), 'string', self::GROUP);
+        }
+
+        if (array_key_exists('invoice_due_days', $data)) {
+            SystemSetting::set($keys['invoice_due_days'], (string) max(1, (int) $data['invoice_due_days']), 'integer', self::GROUP);
+        }
+
+        if (array_key_exists('subscription_years', $data)) {
+            SystemSetting::set($keys['subscription_years'], (string) max(1, (int) $data['subscription_years']), 'integer', self::GROUP);
+        }
+
         $this->clearCache();
     }
 
     public function clearCache(): void
     {
         Cache::forget(self::CACHE_KEY);
+        Cache::forget(self::BILLING_CACHE_KEY);
     }
 
     public function initializeDefaults(): void

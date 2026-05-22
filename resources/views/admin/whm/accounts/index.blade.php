@@ -186,6 +186,7 @@
                             <th>النطاق</th>
                             <th class="text-center">البريد (WHM)</th>
                             <th class="text-center">تاريخ الانضمام</th>
+                            <th class="text-center">نهاية الاشتراك</th>
                             <th class="text-center">الباقة</th>
                             <th class="text-center">الحالة</th>
                             <th>العميل</th>

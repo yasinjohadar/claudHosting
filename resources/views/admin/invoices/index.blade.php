@@ -23,9 +23,6 @@
                 <a href="{{ route('admin.invoices.create') }}" class="btn btn-primary">
                     <i class="fe fe-plus"></i> إنشاء فاتورة
                 </a>
-                <button type="button" class="btn btn-success" id="syncAllInvoices">
-                    <i class="fe fe-refresh-cw"></i> مزامنة من WHMCS
-                </button>
             </div>
         </div>
         <!-- End Page Header -->
@@ -59,9 +56,9 @@
                                         <td>{{ $invoice->invoice_number ?? $invoice->id }}</td>
                                         <td>
                                             @if($invoice->customer)
-                                                {{ $invoice->customer->fullname }}
+                                                {{ $invoice->customer->full_name }}
                                             @else
-                                                -
+                                                —
                                             @endif
                                         </td>
                                         <td>{{ $invoice->date ? $invoice->date->format('Y-m-d') : '-' }}</td>
@@ -162,29 +159,6 @@
             }
         });
 
-        // Sync All Invoices
-        $('#syncAllInvoices').click(function() {
-            var btn = $(this);
-            btn.prop('disabled', true).html('<i class="fe fe-loader fa-spin"></i> جاري المزامنة...');
-            
-            $.ajax({
-                url: '{{ route("admin.invoices.syncAll") }}',
-                type: 'POST',
-                data: {
-                    _token: '{{ csrf_token() }}'
-                },
-                success: function(response) {
-                    alert('تم مزامنة الفواتير بنجاح');
-                    location.reload();
-                },
-                error: function() {
-                    alert('حدث خطأ أثناء المزامنة');
-                },
-                complete: function() {
-                    btn.prop('disabled', false).html('<i class="fe fe-refresh-cw"></i> مزامنة من WHMCS');
-                }
-            });
-        });
     });
 </script>
 @endsection

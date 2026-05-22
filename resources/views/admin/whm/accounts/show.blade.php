@@ -96,6 +96,9 @@
         @if(session('success'))
             <div class="alert alert-success alert-dismissible fade show" role="alert">
                 {{ session('success') }}
+                @if(session('invoice_id'))
+                    <a href="{{ route('admin.invoices.show', session('invoice_id')) }}" class="alert-link ms-1">عرض الفاتورة</a>
+                @endif
                 <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
             </div>
         @endif
@@ -126,11 +129,25 @@
                             {{ $account->domain }}
                         @endif
                     </h4>
-                    <p class="text-muted small mb-0">
+                    <p class="text-muted small mb-2">
                         <span dir="ltr" id="whm-display-email">{{ $account->display_email ?: '—' }}</span>
                         <span class="mx-2">·</span>
                         انضم {{ $account->joined_at?->format('Y-m-d') ?? '—' }}
                     </p>
+                    <div class="d-flex flex-wrap gap-2">
+                        @if($account->subscription_ends_at)
+                            <span class="whm-meta-chip">
+                                <i class="fe fe-calendar"></i>
+                                ينتهي {{ $account->subscription_ends_at->format('Y-m-d') }}
+                                <span class="badge {{ $account->subscription_status_badge }} ms-1">{{ $account->subscription_status_label }}</span>
+                            </span>
+                            @if($account->subscription_days_remaining !== null && $account->subscription_days_remaining >= 0)
+                                <span class="whm-meta-chip text-muted">{{ $account->subscription_days_remaining }} يوم متبقي</span>
+                            @endif
+                        @else
+                            <span class="whm-meta-chip text-warning">لم يُضبط تاريخ نهاية الاشتراك</span>
+                        @endif
+                    </div>
                 </div>
                 <div class="d-flex flex-wrap gap-2 align-items-center flex-shrink-0">
                     @include('admin.whm.accounts.partials.cpanel-link', ['account' => $account, 'configured' => $configured ?? true])
@@ -189,6 +206,47 @@
                     <div class="card-body pt-3">
                         <div class="tab-content">
                             <div class="tab-pane fade show active" id="whm-tab-overview" role="tabpanel">
+                                <div class="whm-section">
+                                    <div class="whm-section-title">الاشتراك والفواتير</div>
+                                    <dl class="row small mb-3">
+                                        <dt class="col-sm-4">نهاية الاشتراك</dt>
+                                        <dd class="col-sm-8">{{ $account->subscription_ends_at?->format('Y-m-d') ?? '—' }}</dd>
+                                        <dt class="col-sm-4">آخر تجديد</dt>
+                                        <dd class="col-sm-8">{{ $account->last_renewed_at?->format('Y-m-d H:i') ?? '—' }}</dd>
+                                        <dt class="col-sm-4">مبلغ الفاتورة الافتراضي</dt>
+                                        <dd class="col-sm-8">{{ number_format($billing['renewal_amount'] ?? 0, 2) }} ر.س</dd>
+                                    </dl>
+                                    @if($account->status !== 'terminated')
+                                    <form action="{{ route('admin.whm.accounts.renew', $account) }}" method="POST" class="row g-2 align-items-end"
+                                        onsubmit="return confirm('تجديد الاشتراك لمدة {{ $billing['subscription_years'] ?? 1 }} سنة وإنشاء فاتورة؟');">
+                                        @csrf
+                                        <div class="col-md-4">
+                                            <label class="form-label small">مبلغ الفاتورة (اختياري)</label>
+                                            <input type="number" name="amount" class="form-control form-control-sm" min="0" step="0.01"
+                                                placeholder="{{ $billing['renewal_amount'] ?? 0 }}">
+                                        </div>
+                                        <div class="col-md-auto">
+                                            <button type="submit" class="btn btn-success btn-sm">
+                                                <i class="fe fe-refresh-cw me-1"></i>تجديد الاشتراك
+                                            </button>
+                                        </div>
+                                    </form>
+                                    @endif
+                                    @if($account->invoices->isNotEmpty())
+                                    <div class="mt-3">
+                                        <div class="small text-muted mb-1">آخر الفواتير</div>
+                                        <ul class="list-unstyled small mb-0">
+                                            @foreach($account->invoices as $inv)
+                                            <li class="mb-1">
+                                                <a href="{{ route('admin.invoices.show', $inv) }}">{{ $inv->invoice_number }}</a>
+                                                — {{ number_format($inv->total, 2) }} ر.س
+                                                <span class="badge bg-{{ $inv->status === 'Paid' ? 'success' : 'warning' }}-transparent">{{ $inv->status_name }}</span>
+                                            </li>
+                                            @endforeach
+                                        </ul>
+                                    </div>
+                                    @endif
+                                </div>
                                 <div class="whm-section">
                                     <div class="whm-section-title">حالة الحساب</div>
                                     @include('admin.whm.accounts.partials.status-toggle', ['account' => $account])

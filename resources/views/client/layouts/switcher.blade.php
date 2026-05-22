@@ -39,22 +39,22 @@
                         </div>
                     </div>
                     <div class="">
-                        <p class="switcher-style-head">Directions:</p>
+                        <p class="switcher-style-head">اتجاه الواجهة:</p>
                         <div class="row switcher-style gx-0">
-                            <div class="col-4">
-                                <div class="form-check switch-select">
-                                    <label class="form-check-label" for="switcher-ltr">
-                                        LTR
-                                    </label>
-                                    <input class="form-check-input" type="radio" name="direction" id="switcher-ltr" checked>
-                                </div>
-                            </div>
                             <div class="col-4">
                                 <div class="form-check switch-select">
                                     <label class="form-check-label" for="switcher-rtl">
                                         RTL
                                     </label>
-                                    <input class="form-check-input" type="radio" name="direction" id="switcher-rtl">
+                                    <input class="form-check-input" type="radio" name="direction" id="switcher-rtl" checked>
+                                </div>
+                            </div>
+                            <div class="col-4">
+                                <div class="form-check switch-select">
+                                    <label class="form-check-label" for="switcher-ltr">
+                                        LTR
+                                    </label>
+                                    <input class="form-check-input" type="radio" name="direction" id="switcher-ltr">
                                 </div>
                             </div>
                         </div>

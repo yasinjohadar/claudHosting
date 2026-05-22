@@ -7,8 +7,7 @@
 <!-- Main Theme Js -->
 <script src="{{ asset('assets/js/main.js') }}"></script>
 
-<!-- Bootstrap Css -->
-<link id="style" href="{{ asset('assets/libs/bootstrap/css/bootstrap.min.css') }}" rel="stylesheet">
+<!-- Bootstrap Css (يتبدّل تلقائياً عبر custom-switcher حسب RTL/LTR) -->
 <link id="style" href="{{ asset('assets/libs/bootstrap/css/bootstrap.rtl.min.css') }}" rel="stylesheet">
 
 <!-- Style Css -->

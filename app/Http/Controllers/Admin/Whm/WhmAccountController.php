@@ -148,8 +148,15 @@ class WhmAccountController extends Controller
             ? strtolower($validated['contactemail'])
             : $this->accounts->extractEmailFromWhm($meta);
 
-        WhmAccount::create([
+        $customerId = null;
+        if (! empty($validated['user_id'])) {
+            $user = User::with('customer')->find($validated['user_id']);
+            $customerId = $user?->customer?->id;
+        }
+
+        $account = WhmAccount::create([
             'user_id' => $validated['user_id'] ?? null,
+            'customer_id' => $customerId,
             'username' => $validated['username'],
             'domain' => $validated['domain'],
             'email' => $email,
@@ -159,13 +166,24 @@ class WhmAccountController extends Controller
             'metadata' => $meta,
         ]);
 
-        return redirect()->route('admin.whm.accounts.index')
-            ->with('success', 'تم إنشاء حساب cPanel بنجاح');
+        $bootstrap = $this->accounts->bootstrapNewAccountSubscription($account);
+        $message = 'تم إنشاء حساب cPanel بنجاح';
+        if (! empty($bootstrap['invoice'])) {
+            $message .= ' وتم إنشاء فاتورة الاشتراك';
+        }
+
+        $redirect = redirect()->route('admin.whm.accounts.show', $account)->with('success', $message);
+
+        if (! empty($bootstrap['invoice'])) {
+            $redirect->with('invoice_id', $bootstrap['invoice']->id);
+        }
+
+        return $redirect;
     }
 
     public function show(WhmAccount $account)
     {
-        $account->load('client');
+        $account->load(['client', 'invoices' => fn ($q) => $q->latest('date')->limit(5)]);
         $configured = $this->whmApi->isConfigured();
         $clientUsers = User::query()->orderBy('name')->select(['id', 'name', 'email'])->limit(500)->get();
         $packages = $configured ? $this->accounts->listPackagesForForms() : [];
@@ -204,6 +222,8 @@ class WhmAccountController extends Controller
             ? $this->serverStatus->getStatus($account->status !== 'terminated' ? $account->username : null)
             : null;
 
+        $billing = app(\App\Services\Whm\WhmSubscriptionBillingService::class)->billingConfig();
+
         return view('admin.whm.accounts.show', compact(
             'account',
             'configured',
@@ -212,8 +232,31 @@ class WhmAccountController extends Controller
             'summary',
             'summarySyncedAt',
             'sslBadge',
-            'serverStatus'
+            'serverStatus',
+            'billing'
         ));
+    }
+
+    public function renew(Request $request, WhmAccount $account)
+    {
+        $validated = $request->validate([
+            'amount' => 'nullable|numeric|min:0',
+        ]);
+
+        $amount = isset($validated['amount']) ? (float) $validated['amount'] : null;
+        $result = $this->accounts->renewSubscription($account, $amount);
+
+        if (! ($result['success'] ?? false)) {
+            return back()->with('error', $result['message']);
+        }
+
+        $redirect = back()->with('success', $result['message']);
+
+        if (! empty($result['invoice'])) {
+            $redirect->with('invoice_id', $result['invoice']->id);
+        }
+
+        return $redirect;
     }
 
     public function refreshSummary(WhmAccount $account)
