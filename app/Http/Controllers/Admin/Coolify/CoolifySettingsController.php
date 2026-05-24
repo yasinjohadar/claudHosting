@@ -4,7 +4,10 @@ namespace App\Http\Controllers\Admin\Coolify;
 
 use App\Http\Controllers\Admin\Coolify\Concerns\HandlesCoolifyResponses;
 use App\Http\Controllers\Controller;
+use App\Models\ClientCoolifyProject;
 use App\Models\CoolifyActivityLog;
+use App\Models\CoolifyCatalogItem;
+use App\Models\CoolifyWordpressSite;
 use App\Models\AppStorageConfig;
 use App\Services\Coolify\CoolifySettingsService;
 use App\Services\Coolify\CoolifySnapshotStorageService;
@@ -181,17 +184,32 @@ class CoolifySettingsController extends Controller
             ->with('success', $message);
     }
 
-    public function overview()
+    public function overview(Request $request)
     {
+        if ($request->boolean('refresh')) {
+            $this->coolify->clearDashboardCache();
+        }
+
         $stats = $this->coolify->getDashboardStats();
         $configured = $this->coolify->isConfigured();
         $connected = $configured && ($stats['connected'] ?? false);
 
+        $apiVersion = null;
+        if ($connected && $request->boolean('refresh')) {
+            $versionRes = $this->coolify->getVersion();
+            if ($versionRes['success'] ?? false) {
+                $data = $versionRes['data'] ?? null;
+                $apiVersion = is_array($data)
+                    ? ($data['version'] ?? $data['coolify_version'] ?? json_encode($data))
+                    : (string) $data;
+            }
+        }
+
         $recentDeployments = [];
         $failedDeployments = [];
+        $failedCount = 0;
         if ($connected) {
             $allDeployments = $this->coolifyList($this->coolify->listDeployments());
-            $recentDeployments = array_slice($allDeployments, 0, 5);
             $failedDeployments = array_values(array_filter(
                 $allDeployments,
                 fn (array $d) => in_array(
@@ -200,19 +218,82 @@ class CoolifySettingsController extends Controller
                     true
                 )
             ));
+            $failedCount = count($failedDeployments);
             $failedDeployments = array_slice($failedDeployments, 0, 5);
+            $recentDeployments = array_slice($allDeployments, 0, 8);
         }
 
         $activityLogs = [];
         try {
-            $activityLogs = CoolifyActivityLog::with('user')->latest()->limit(10)->get();
+            $activityLogs = CoolifyActivityLog::with('user')->latest()->limit(12)->get();
         } catch (\Throwable) {
             // migration may not be run
         }
 
+        $localStats = [
+            'wordpress_sites' => $this->safeModelCount(CoolifyWordpressSite::class),
+            'catalog_items' => $this->safeModelCount(CoolifyCatalogItem::class),
+            'client_projects' => $this->safeModelCount(ClientCoolifyProject::class),
+            'activity_today' => $this->safeActivityTodayCount(),
+        ];
+
+        $apiWidgets = [
+            ['key' => 'servers', 'label' => 'السيرفرات', 'desc' => 'عقد الاستضافة المتصلة', 'route' => 'admin.coolify.servers.index', 'icon' => 'fe-server', 'accent' => 'primary'],
+            ['key' => 'projects', 'label' => 'المشاريع', 'desc' => 'بيئات العمل والفرق', 'route' => 'admin.coolify.projects.index', 'icon' => 'fe-layers', 'accent' => 'info'],
+            ['key' => 'applications', 'label' => 'التطبيقات', 'desc' => 'تطبيقات ونشر Git', 'route' => 'admin.coolify.applications.index', 'icon' => 'fe-box', 'accent' => 'success'],
+            ['key' => 'databases', 'label' => 'قواعد البيانات', 'desc' => 'MySQL · Postgres · Redis', 'route' => 'admin.coolify.databases.index', 'icon' => 'fe-database', 'accent' => 'warning'],
+            ['key' => 'services', 'label' => 'الخدمات', 'desc' => 'حاويات وخدمات Docker', 'route' => 'admin.coolify.services.index', 'icon' => 'fe-grid', 'accent' => 'secondary'],
+            ['key' => 'deployments', 'label' => 'النشرات', 'desc' => 'سجل النشر والحالة', 'route' => 'admin.coolify.deployments.index', 'icon' => 'fe-upload-cloud', 'accent' => 'danger'],
+        ];
+
+        $panelWidgets = [
+            ['label' => 'مواقع WordPress', 'count' => $localStats['wordpress_sites'], 'route' => 'admin.coolify.wordpress-sites.index', 'icon' => 'fab fa-wordpress', 'accent' => 'primary', 'desc' => 'توفير وإدارة'],
+            ['label' => 'كتالوج التطبيقات', 'count' => $localStats['catalog_items'], 'route' => 'admin.coolify.catalog.index', 'icon' => 'fe-package', 'accent' => 'info', 'desc' => 'قوالب جاهزة'],
+            ['label' => 'مشاريع العملاء', 'count' => $localStats['client_projects'], 'route' => 'admin.coolify.teams.index', 'icon' => 'fe-users', 'accent' => 'success', 'desc' => 'ربط بالعملاء'],
+            ['label' => 'كل الموارد', 'count' => null, 'route' => 'admin.coolify.resources.index', 'icon' => 'fe-list', 'accent' => 'secondary', 'desc' => 'عرض موحّد'],
+            ['label' => 'النسخ الاحتياطي', 'count' => null, 'route' => 'admin.coolify.backups.index', 'icon' => 'fe-hard-drive', 'accent' => 'warning', 'desc' => 'مشاريع وقواعد'],
+            ['label' => 'جاهزية الاستضافة', 'count' => null, 'route' => 'admin.coolify.readiness.index', 'icon' => 'fe-check-circle', 'accent' => 'success', 'desc' => 'فحص المتطلبات'],
+        ];
+
+        $quickActions = [
+            ['label' => 'إضافة مورد', 'route' => 'admin.coolify.catalog.index', 'icon' => 'fe-plus-circle', 'class' => 'btn-primary'],
+            ['label' => 'مركز العمليات', 'route' => 'admin.coolify.operations.index', 'icon' => 'fe-activity', 'class' => 'btn-outline-warning'],
+            ['label' => 'الإعدادات', 'route' => 'admin.coolify.settings.index', 'icon' => 'fe-settings', 'class' => 'btn-outline-primary'],
+            ['label' => 'النظام', 'route' => 'admin.coolify.system.index', 'icon' => 'fe-cpu', 'class' => 'btn-outline-secondary'],
+        ];
+
         return view('admin.coolify.overview', compact(
-            'stats', 'configured', 'connected', 'recentDeployments', 'failedDeployments', 'activityLogs'
+            'stats',
+            'configured',
+            'connected',
+            'recentDeployments',
+            'failedDeployments',
+            'failedCount',
+            'activityLogs',
+            'localStats',
+            'apiWidgets',
+            'panelWidgets',
+            'quickActions',
+            'apiVersion',
         ));
+    }
+
+    protected function safeModelCount(string $modelClass): int
+    {
+        try {
+            return $modelClass::query()->count();
+        } catch (\Throwable) {
+            return 0;
+        }
+    }
+
+    protected function safeActivityTodayCount(): int
+    {
+        try {
+            return CoolifyActivityLog::query()->whereDate('created_at', today())->count();
+        } catch (\Throwable) {
+            return 0;
+        }
     }
 
     public function testConnection(Request $request): JsonResponse

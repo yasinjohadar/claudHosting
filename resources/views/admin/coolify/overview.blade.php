@@ -1,99 +1,279 @@
 @extends('admin.layouts.master')
 @section('page-title') لوحة Coolify @stop
+
 @section('content')
+@include('admin.coolify.partials.overview-styles')
 <div class="main-content app-content">
     <div class="container-fluid">
-        <div class="d-md-flex justify-content-between my-4">
-            <div>
-                <h4 class="mb-0">لوحة Coolify</h4>
-                <p class="text-muted mb-0">تحكم كامل في البنية التحتية</p>
-            </div>
-            <div class="d-flex flex-wrap gap-2">
-                @if($configured ?? false)
-                <a href="{{ route('admin.coolify.catalog.index') }}" class="btn btn-primary"><i class="fe fe-plus-circle"></i> إضافة مورد</a>
-                @endif
-                <a href="{{ route('admin.coolify.operations.index') }}" class="btn btn-outline-warning">مركز العمليات</a>
-                <a href="{{ route('admin.coolify.settings.index') }}" class="btn btn-outline-primary"><i class="fe fe-settings"></i> الإعدادات</a>
-                <a href="{{ route('admin.coolify.system.index') }}" class="btn btn-outline-secondary">النظام</a>
+        {{-- Hero --}}
+        <div class="coolify-dash-hero mb-4">
+            <div class="d-md-flex align-items-center justify-content-between gap-3">
+                <div>
+                    <h4 class="mb-1 fw-bold">لوحة Coolify</h4>
+                    <p class="text-muted mb-2 mb-md-0">تحكم تفاعلي في السيرفرات، المشاريع، التطبيقات، والنشر</p>
+                    <div class="d-flex flex-wrap align-items-center gap-2">
+                        @if($configured ?? false)
+                            <span class="coolify-api-pill {{ ($connected ?? false) ? 'coolify-api-pill--on' : '' }}">
+                                @if($connected ?? false)<span class="coolify-pulse" aria-hidden="true"></span>@endif
+                                API: {{ ($connected ?? false) ? 'متصل' : 'غير متصل' }}
+                            </span>
+                        @else
+                            <span class="coolify-api-pill text-warning">API غير مضبوط</span>
+                        @endif
+                        @if(!empty($apiVersion))
+                            <span class="coolify-api-pill text-muted small" dir="ltr">v{{ $apiVersion }}</span>
+                        @endif
+                        @if(($localStats['activity_today'] ?? 0) > 0)
+                            <span class="coolify-api-pill">{{ $localStats['activity_today'] }} نشاط اليوم</span>
+                        @endif
+                    </div>
+                </div>
+                <div class="d-flex flex-wrap gap-2">
+                    @foreach($quickActions ?? [] as $action)
+                        @if(($action['route'] ?? '') === 'admin.coolify.catalog.index' && !($configured ?? false))
+                            @continue
+                        @endif
+                        <a href="{{ route($action['route']) }}" class="btn btn-sm {{ $action['class'] ?? 'btn-outline-primary' }}">
+                            <i class="{{ $action['icon'] ?? 'fe fe-link' }}"></i> {{ $action['label'] }}
+                        </a>
+                    @endforeach
+                    @if($configured ?? false)
+                        <a href="{{ route('admin.coolify.overview', ['refresh' => 1]) }}" class="btn btn-sm btn-light" title="تحديث الإحصائيات من API">
+                            <i class="fe fe-refresh-cw"></i> تحديث
+                        </a>
+                    @endif
+                </div>
             </div>
         </div>
+
         @include('admin.coolify.partials.alerts')
-        @if(!$configured)
-            <div class="alert alert-warning">يرجى <a href="{{ route('admin.coolify.settings.index') }}">ضبط إعدادات اتصال Coolify</a>.</div>
+
+        @if(!($configured ?? false))
+            <div class="alert alert-warning">
+                يرجى <a href="{{ route('admin.coolify.settings.index') }}" class="alert-link">ضبط إعدادات اتصال Coolify</a> لعرض الإحصائيات الحية.
+            </div>
         @endif
-        <div class="row mb-4">
-            @php $cards = [
-                ['label' => 'السيرفرات', 'count' => $stats['servers'], 'route' => 'admin.coolify.servers.index', 'icon' => 'fe-server'],
-                ['label' => 'المشاريع', 'count' => $stats['projects'], 'route' => 'admin.coolify.projects.index', 'icon' => 'fe-layers'],
-                ['label' => 'التطبيقات', 'count' => $stats['applications'], 'route' => 'admin.coolify.applications.index', 'icon' => 'fe-box'],
-                ['label' => 'قواعد البيانات', 'count' => $stats['databases'], 'route' => 'admin.coolify.databases.index', 'icon' => 'fe-database'],
-                ['label' => 'الخدمات', 'count' => $stats['services'], 'route' => 'admin.coolify.services.index', 'icon' => 'fe-grid'],
-                ['label' => 'النشرات', 'count' => $stats['deployments'], 'route' => 'admin.coolify.deployments.index', 'icon' => 'fe-upload-cloud'],
-            ]; @endphp
-            @foreach($cards as $card)
-            <div class="col-xl-4 col-lg-4 col-md-6 mb-3">
-                <a href="{{ route($card['route']) }}" class="text-decoration-none">
-                    <div class="card custom-card border-0 shadow-sm h-100">
-                        <div class="card-body d-flex align-items-center">
-                            <i class="fe {{ $card['icon'] }} fs-24 text-primary me-3"></i>
-                            <div><h6 class="mb-0">{{ $card['label'] }}</h6><p class="mb-0 text-muted">{{ $card['count'] }}</p></div>
+
+        @if(($failedCount ?? 0) > 0)
+            <div class="alert alert-danger d-flex flex-wrap align-items-center justify-content-between gap-2 mb-4">
+                <div>
+                    <strong><i class="fe fe-alert-triangle me-1"></i> {{ $failedCount }} نشرة فاشلة أو ملغاة</strong>
+                    <span class="d-block small mt-1 opacity-75">راجع التفاصيل من مركز النشرات</span>
+                </div>
+                <a href="{{ route('admin.coolify.deployments.index', ['status' => 'failed']) }}" class="btn btn-sm btn-danger">عرض النشرات الفاشلة</a>
+            </div>
+        @endif
+
+        {{-- API stats --}}
+        <div class="mb-2">
+            <h6 class="text-muted text-uppercase small fw-bold mb-3">موارد Coolify (API)</h6>
+        </div>
+        <div class="row g-3 mb-4">
+            @foreach($apiWidgets ?? [] as $w)
+                <div class="col-xl-4 col-lg-4 col-md-6">
+                    @include('admin.coolify.partials.stat-widget', array_merge($w, ['stats' => $stats]))
+                </div>
+            @endforeach
+        </div>
+
+        {{-- Panel / local --}}
+        <div class="mb-2">
+            <h6 class="text-muted text-uppercase small fw-bold mb-3">اللوحة والأدوات</h6>
+        </div>
+        <div class="row g-3 mb-4">
+            @foreach($panelWidgets ?? [] as $w)
+                <div class="col-xl-4 col-lg-4 col-md-6">
+                    @include('admin.coolify.partials.stat-widget', [
+                        'count' => $w['count'],
+                        'route' => $w['route'],
+                        'label' => $w['label'],
+                        'desc' => $w['desc'],
+                        'icon' => $w['icon'],
+                        'accent' => $w['accent'],
+                        'linkClass' => 'coolify-panel-widget',
+                    ])
+                </div>
+            @endforeach
+        </div>
+
+        @if($connected ?? false)
+        <div class="row g-3 mb-4">
+            <div class="col-12">
+                <div class="card custom-card">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <div class="card-title mb-0"><i class="fe fe-activity me-1"></i> حمل السيرفرات (مباشر)</div>
+                        <button type="button" class="btn btn-sm btn-outline-primary" id="coolify-metrics-refresh">
+                            <i class="fe fe-refresh-cw"></i> تحديث المقاييس
+                        </button>
+                    </div>
+                    <div class="card-body">
+                        <div id="coolify-metrics-host" class="row g-3">
+                            <div class="col-12 text-center text-muted py-3">
+                                <span class="spinner-border spinner-border-sm me-2"></span> جاري جلب مقاييس السيرفرات…
+                            </div>
                         </div>
                     </div>
-                </a>
+                </div>
             </div>
-            @endforeach
-        </div>
-        <p>API: @if($connected ?? false)<span class="badge bg-success">متصل</span>@else<span class="badge bg-secondary">غير متصل</span>@endif</p>
-        @if(!empty($failedDeployments))
-        <div class="alert alert-danger">
-            <strong>نشرات فاشلة أو ملغاة:</strong>
-            <ul class="mb-0 mt-2">
-            @foreach($failedDeployments as $d)
-                <li><code>{{ $d['uuid'] ?? '' }}</code> — @include('admin.coolify.partials.status-badges', ['item' => $d])
-                    <a href="{{ route('admin.coolify.deployments.show', $d['uuid'] ?? '') }}" class="ms-2">عرض</a>
-                </li>
-            @endforeach
-            </ul>
-            <a href="{{ route('admin.coolify.deployments.index', ['status' => 'failed']) }}" class="alert-link">كل النشرات الفاشلة</a>
         </div>
         @endif
-        <div class="row">
-            <div class="col-lg-6 mb-3">
+
+        <div class="row g-3">
+            <div class="col-lg-7">
                 <div class="card custom-card h-100">
-                    <div class="card-header"><div class="card-title">آخر النشرات</div></div>
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <div class="card-title mb-0">آخر النشرات</div>
+                        <a href="{{ route('admin.coolify.deployments.index') }}" class="btn btn-sm btn-outline-primary">كل النشرات</a>
+                    </div>
                     <div class="card-body p-0">
-                        <ul class="list-group list-group-flush">
                         @forelse($recentDeployments as $d)
-                            <li class="list-group-item d-flex justify-content-between">
-                                <code class="small">{{ $d['uuid'] ?? '' }}</code>
+                            @php
+                                $depUuid = $d['uuid'] ?? $d['deployment_uuid'] ?? '';
+                                $depName = $d['application_name'] ?? $d['name'] ?? $d['fqdn'] ?? null;
+                            @endphp
+                            <a href="{{ $depUuid ? route('admin.coolify.deployments.show', $depUuid) : '#' }}"
+                               class="coolify-feed-item d-flex justify-content-between align-items-center text-decoration-none text-body">
+                                <div class="min-w-0 me-2">
+                                    @if($depName)
+                                        <div class="fw-semibold small text-truncate">{{ $depName }}</div>
+                                    @endif
+                                    <code class="small text-muted">{{ Str::limit($depUuid, 18) }}</code>
+                                </div>
                                 @include('admin.coolify.partials.status-badges', ['item' => $d])
-                            </li>
+                            </a>
                         @empty
-                            <li class="list-group-item text-muted">لا توجد</li>
+                            <div class="p-4 text-center text-muted">لا توجد نشرات حديثة</div>
                         @endforelse
-                        </ul>
                     </div>
                 </div>
             </div>
-            <div class="col-lg-6 mb-3">
+            <div class="col-lg-5">
                 <div class="card custom-card h-100">
-                    <div class="card-header"><div class="card-title">سجل النشاط (اللوحة)</div></div>
-                    <div class="card-body p-0">
-                        <ul class="list-group list-group-flush">
+                    <div class="card-header">
+                        <div class="card-title mb-0">سجل النشاط</div>
+                    </div>
+                    <div class="card-body p-0" style="max-height: 420px; overflow-y: auto;">
                         @forelse($activityLogs as $log)
-                            <li class="list-group-item small">
-                                <strong>{{ $log->action }}</strong> — {{ $log->resource_type }}
-                                @if($log->resource_name) ({{ $log->resource_name }}) @endif
-                                <br><span class="text-muted">{{ $log->created_at?->diffForHumans() }} — {{ $log->user?->name ?? 'نظام' }}</span>
-                            </li>
+                            <div class="coolify-feed-item">
+                                <div class="d-flex align-items-start gap-2">
+                                    <span class="badge bg-primary-transparent rounded-circle p-2">
+                                        <i class="fe fe-zap small"></i>
+                                    </span>
+                                    <div class="min-w-0 flex-grow-1">
+                                        <div class="fw-semibold small">
+                                            {{ $log->action }} — {{ $log->resource_type }}
+                                            @if($log->resource_name)
+                                                <span class="text-muted fw-normal">({{ Str::limit($log->resource_name, 40) }})</span>
+                                            @endif
+                                        </div>
+                                        <div class="text-muted small">
+                                            {{ $log->created_at?->diffForHumans() }}
+                                            · {{ $log->user?->name ?? 'نظام' }}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
                         @empty
-                            <li class="list-group-item text-muted">لا يوجد سجل بعد</li>
+                            <div class="p-4 text-center text-muted">لا يوجد سجل بعد</div>
                         @endforelse
-                        </ul>
                     </div>
                 </div>
             </div>
         </div>
+
+        @if(!empty($failedDeployments))
+        <div class="card custom-card border-danger mt-3">
+            <div class="card-header bg-danger-transparent">
+                <div class="card-title text-danger mb-0">نشرات تحتاج انتباهك</div>
+            </div>
+            <div class="card-body p-0">
+                <ul class="list-group list-group-flush">
+                    @foreach($failedDeployments as $d)
+                        <li class="list-group-item d-flex justify-content-between align-items-center">
+                            <code class="small">{{ $d['uuid'] ?? '' }}</code>
+                            <div class="d-flex align-items-center gap-2">
+                                @include('admin.coolify.partials.status-badges', ['item' => $d])
+                                <a href="{{ route('admin.coolify.deployments.show', $d['uuid'] ?? '') }}" class="btn btn-sm btn-outline-danger">عرض</a>
+                            </div>
+                        </li>
+                    @endforeach
+                </ul>
+            </div>
+        </div>
+        @endif
     </div>
 </div>
 @endsection
+
+@push('scripts')
+@if($connected ?? false)
+<script>
+(function () {
+    const metricsUrl = @json(route('admin.coolify.metrics.overview'));
+    const host = document.getElementById('coolify-metrics-host');
+    const refreshBtn = document.getElementById('coolify-metrics-refresh');
+
+    function barColor(pct) {
+        if (pct >= 90) return '#ef4444';
+        if (pct >= 75) return '#f59e0b';
+        return '#22c55e';
+    }
+
+    function renderMetrics(data) {
+        if (!host) return;
+        const servers = data.servers || [];
+        if (!servers.length) {
+            host.innerHTML = '<div class="col-12 text-muted text-center py-2">لا توجد سيرفرات أو تعذّر جلب المقاييس.</div>';
+            return;
+        }
+        host.innerHTML = servers.map(s => {
+            const m = s.metrics || {};
+            const ok = m.success;
+            const srv = m.server || {};
+            const cpu = srv.cpu_percent ?? srv.cpu ?? null;
+            const mem = srv.ram_percent ?? srv.memory_percent ?? null;
+            const name = s.name || s.uuid;
+            const serverUrl = @json(url('/admin/coolify/servers')) + '/' + encodeURIComponent(s.uuid);
+            if (!ok) {
+                return `<div class="col-md-6 col-xl-4"><div class="coolify-server-card">
+                    <div class="fw-semibold mb-1">${name}</div>
+                    <span class="text-muted small">${m.message || 'المقاييس غير متاحة (SSH)'}</span>
+                    <a href="${serverUrl}" class="btn btn-sm btn-outline-secondary mt-2 w-100">فتح السيرفر</a>
+                </div></div>`;
+            }
+            const cpuPct = cpu !== null ? Math.min(100, Math.round(Number(cpu))) : null;
+            const memPct = mem !== null ? Math.min(100, Math.round(Number(mem))) : null;
+            let bars = '';
+            if (cpuPct !== null) {
+                bars += `<div class="mb-2"><div class="d-flex justify-content-between small mb-1"><span>CPU</span><span dir="ltr">${cpuPct}%</span></div>
+                    <div class="coolify-metric-bar"><span style="width:${cpuPct}%;background:${barColor(cpuPct)}"></span></div></div>`;
+            }
+            if (memPct !== null) {
+                bars += `<div class="mb-2"><div class="d-flex justify-content-between small mb-1"><span>RAM</span><span dir="ltr">${memPct}%</span></div>
+                    <div class="coolify-metric-bar"><span style="width:${memPct}%;background:${barColor(memPct)}"></span></div></div>`;
+            }
+            if (!bars) bars = '<p class="text-muted small mb-0">لا تتوفر نسب CPU/RAM</p>';
+            return `<div class="col-md-6 col-xl-4"><a href="${serverUrl}" class="text-decoration-none text-body">
+                <div class="coolify-server-card h-100">
+                    <div class="fw-semibold mb-2">${name}</div>${bars}
+                    <div class="small text-primary mt-2">عرض التفاصيل <i class="fe fe-arrow-left"></i></div>
+                </div></a></div>`;
+        }).join('');
+    }
+
+    function loadMetrics(refresh) {
+        if (!host) return;
+        host.innerHTML = '<div class="col-12 text-center text-muted py-3"><span class="spinner-border spinner-border-sm me-2"></span> جاري التحميل…</div>';
+        const url = metricsUrl + (refresh ? '?refresh=1' : '');
+        fetch(url, { headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' } })
+            .then(r => r.json())
+            .then(renderMetrics)
+            .catch(() => { host.innerHTML = '<div class="col-12 text-danger small">تعذّر تحميل المقاييس</div>'; });
+    }
+
+    loadMetrics(false);
+    refreshBtn?.addEventListener('click', () => loadMetrics(true));
+})();
+</script>
+@endif
+@endpush
