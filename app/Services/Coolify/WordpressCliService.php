@@ -6,9 +6,11 @@ use App\Models\CoolifyWordpressSite;
 
 class WordpressCliService
 {
-    protected const WP_PHAR_PATH = '/tmp/wp-cli.phar';
+    protected const WP_PHAR_BASENAME = '.wp-cli.phar';
 
     protected const WPCLI_IMAGE = 'wpcli/wp-cli:php8.3';
+
+    protected const WPCLI_PHAR_URL = 'https://raw.githubusercontent.com/wp-cli/builds/gh-pages/phar/wp-cli.phar';
 
     /** @var array<string, string> */
     protected array $pathCache = [];
@@ -41,24 +43,32 @@ class WordpressCliService
         }
 
         $path = $this->resolveWordpressPath($site, $host, $containerId);
-        $composeTimeout = $longRunning ? $timeout : min($timeout, 45);
-        $sidecarTimeout = $longRunning ? $timeout : min($timeout, 90);
+        $appTimeout = $longRunning ? $timeout : min($timeout, 120);
+        $sidecarTimeout = $longRunning ? $timeout : min($timeout, 180);
         $methods = [
-            fn () => $this->runViaDockerExec($host, $containerId, $wpArgs, $path, $composeTimeout),
-            fn () => $this->runViaWpCliSidecar($host, $containerId, $wpArgs, $path, $sidecarTimeout),
-            fn () => $this->runViaComposeLabels($host, $containerId, $wpArgs, $path, $composeTimeout),
-            fn () => $this->runViaComposePaths($site, $host, $wpArgs, $path, $composeTimeout),
+            fn () => $this->runViaWpCliSidecar($host, $containerId, $wpArgs, $path, $sidecarTimeout, true),
+            fn () => $this->runViaWpCliSidecar($host, $containerId, $wpArgs, $path, $sidecarTimeout, false),
+            fn () => $this->runViaDockerExec($host, $containerId, $wpArgs, $path, $appTimeout),
+            fn () => $this->runViaComposeLabels($host, $containerId, $wpArgs, $path, $appTimeout),
+            fn () => $this->runViaComposePaths($site, $host, $wpArgs, $path, $appTimeout),
         ];
 
         $last = ['success' => false, 'output' => '', 'exit_code' => 1];
+        $attemptLogs = [];
         foreach ($methods as $method) {
             $last = $method();
             if ($last['success'] ?? false) {
                 return $last;
             }
+            $snippet = trim($last['output'] ?? '');
+            if ($snippet !== '') {
+                $attemptLogs[] = $snippet;
+            }
         }
 
-        if (trim($last['output'] ?? '') === '') {
+        if ($attemptLogs !== []) {
+            $last['output'] = implode("\n---\n", array_slice($attemptLogs, -3));
+        } elseif (trim($last['output'] ?? '') === '') {
             $last['output'] = 'فشل WP-CLI بكل الطرق. اضغط «تشخيص الاتصال» وانسخ التقرير.';
         }
 
@@ -165,11 +175,22 @@ class WordpressCliService
         $lines[] = '[docker exec] exit='.($exec['exit_code'] ?? '?').' success='.(($exec['success'] ?? false) ? 'yes' : 'no');
         $lines[] = trim($exec['output'] ?? '') ?: '(empty)';
 
-        if (! ($exec['success'] ?? false) && $composeDir !== null) {
-            $sidecar = $this->runViaWpCliSidecar($host, $containerId, 'core version', $path, 60);
-            $lines[] = '[sidecar wpcli] exit='.($sidecar['exit_code'] ?? '?').' success='.(($sidecar['success'] ?? false) ? 'yes' : 'no');
-            $lines[] = trim($sidecar['output'] ?? '') ?: '(empty)';
+        $sidecar = $this->runViaWpCliSidecar($host, $containerId, 'core version', $path, 90, true);
+        $lines[] = '[sidecar wpcli +network] exit='.($sidecar['exit_code'] ?? '?').' success='.(($sidecar['success'] ?? false) ? 'yes' : 'no');
+        $lines[] = trim($sidecar['output'] ?? '') ?: '(empty)';
+        if (! ($sidecar['success'] ?? false)) {
+            $sidecar2 = $this->runViaWpCliSidecar($host, $containerId, 'core version', $path, 90, false);
+            $lines[] = '[sidecar wpcli] exit='.($sidecar2['exit_code'] ?? '?').' success='.(($sidecar2['success'] ?? false) ? 'yes' : 'no');
+            $lines[] = trim($sidecar2['output'] ?? '') ?: '(empty)';
         }
+
+        $lines[] = '';
+        $lines[] = '=== PHP / phar في الحاوية ===';
+        $phpCheck = $this->ssh->run($host, 'docker exec '.escapeshellarg($containerId).' sh -c '.escapeshellarg('command -v php; php -v 2>&1 | head -1'), 25);
+        $lines[] = trim($phpCheck['output'] ?? '') ?: '(no php)';
+        $pharPath = $this->wpPharPath($path);
+        $pharCheck = $this->ssh->run($host, 'docker exec '.escapeshellarg($containerId).' test -f '.escapeshellarg($pharPath).' && echo phar-exists', 15);
+        $lines[] = 'phar '.$pharPath.': '.(str_contains($pharCheck['output'] ?? '', 'phar-exists') ? 'yes' : 'no');
 
         return implode("\n", $lines);
     }
@@ -229,12 +250,18 @@ class WordpressCliService
     /**
      * @return array{success: bool, output: string, exit_code: int}
      */
-    protected function runViaWpCliSidecar(string $host, string $containerId, string $wpArgs, string $path, int $timeout): array
+    protected function runViaWpCliSidecar(string $host, string $containerId, string $wpArgs, string $path, int $timeout, bool $shareNetwork = true): array
     {
-        $inner = $this->wpExecInnerCommand($wpArgs, $path);
+        $this->ensureWpCliImage($host);
+
+        $inner = $this->wpExecInnerCommandSidecar($wpArgs, $path);
+        $network = $shareNetwork
+            ? sprintf('--network container:%s ', escapeshellarg($containerId))
+            : '';
+
         $cmd = sprintf(
-            'docker run --rm --network container:%s --volumes-from %s %s sh -c %s',
-            escapeshellarg($containerId),
+            'docker run --rm %s--volumes-from %s %s sh -c %s',
+            $network,
             escapeshellarg($containerId),
             self::WPCLI_IMAGE,
             escapeshellarg($inner)
@@ -243,45 +270,71 @@ class WordpressCliService
         return $this->ssh->run($host, $cmd, $timeout);
     }
 
+    protected function ensureWpCliImage(string $host): void
+    {
+        $this->ssh->run(
+            $host,
+            'docker image inspect '.self::WPCLI_IMAGE.' >/dev/null 2>&1 || docker pull '.self::WPCLI_IMAGE,
+            300
+        );
+    }
+
     /**
      * @return array{success: bool, output: string, exit_code: int}
      */
     protected function runViaDockerExec(string $host, string $containerId, string $wpArgs, string $path, int $timeout): array
     {
-        $inner = $this->wpExecInnerCommand($wpArgs, $path);
+        $inner = $this->wpExecInnerCommandAppContainer($wpArgs, $path);
+        $last = ['success' => false, 'output' => '', 'exit_code' => 1];
 
-        $remote = sprintf(
-            'docker exec %s sh -c %s',
-            escapeshellarg($containerId),
-            escapeshellarg($inner)
-        );
-        $result = $this->ssh->run($host, $remote, $timeout);
-        if ($result['success'] ?? false) {
-            return $result;
+        foreach (['-u root ', ''] as $userFlag) {
+            $remote = sprintf(
+                'docker exec %s%s sh -c %s',
+                $userFlag,
+                escapeshellarg($containerId),
+                escapeshellarg($inner)
+            );
+            $last = $this->ssh->run($host, $remote, $timeout);
+            if ($last['success'] ?? false) {
+                return $last;
+            }
         }
 
-        $remoteRoot = sprintf('docker exec -u root %s sh -c %s', escapeshellarg($containerId), escapeshellarg($inner));
-
-        return $this->ssh->run($host, $remoteRoot, $timeout);
+        return $last;
     }
 
     /**
-     * Shell snippet: wp binary, or php wp-cli.phar (download if missing).
+     * داخل حاوية WordPress: لا نستخدم أمر wp (غالباً غير موجود) — فقط php + phar.
      */
-    protected function wpExecInnerCommand(string $wpArgs, string $path): string
+    protected function wpExecInnerCommandAppContainer(string $wpArgs, string $path): string
+    {
+        $flags = $this->wpFlags($path, true);
+        $phar = $this->wpPharPath($path);
+        $url = self::WPCLI_PHAR_URL;
+
+        return sprintf(
+            'PHAR=%s; PHP=$(command -v php 2>/dev/null || command -v php83 2>/dev/null || command -v php8 2>/dev/null || echo php); run() { "$PHP" "$PHAR" %s %s; }; if [ ! -f "$PHAR" ]; then (curl -fsSL -o "$PHAR" %s || wget -qO "$PHAR" %s); fi; run',
+            escapeshellarg($phar),
+            $flags,
+            $wpArgs,
+            escapeshellarg($url),
+            escapeshellarg($url)
+        );
+    }
+
+    /**
+     * حاوية wpcli/wp-cli — الأمر wp مضمّن.
+     */
+    protected function wpExecInnerCommandSidecar(string $wpArgs, string $path): string
     {
         $flags = $this->wpFlags($path, true);
 
-        return sprintf(
-            'PHAR=%s; if command -v wp >/dev/null 2>&1; then wp %s %s; elif [ -f "$PHAR" ]; then php "$PHAR" %s %s; else (curl -fsSL -o "$PHAR" https://raw.githubusercontent.com/wp-cli/builds/gh-pages/phar/wp-cli.phar || wget -qO "$PHAR" https://raw.githubusercontent.com/wp-cli/builds/gh-pages/phar/wp-cli.phar) && php "$PHAR" %s %s; fi',
-            self::WP_PHAR_PATH,
-            $flags,
-            $wpArgs,
-            $flags,
-            $wpArgs,
-            $flags,
-            $wpArgs
-        );
+        return "wp {$flags} {$wpArgs}";
+    }
+
+    protected function wpPharPath(string $wordpressPath): string
+    {
+        return rtrim($wordpressPath, '/').'/'.self::WP_PHAR_BASENAME;
     }
 
     /**
@@ -295,7 +348,7 @@ class WordpressCliService
 
         $dirQ = escapeshellarg($dir);
         $svc = escapeshellarg($serviceName);
-        $inner = $this->wpExecInnerCommand($wpArgs, $path);
+        $inner = $this->wpExecInnerCommandAppContainer($wpArgs, $path);
 
         $last = ['success' => false, 'output' => '', 'exit_code' => 1];
         foreach ([
