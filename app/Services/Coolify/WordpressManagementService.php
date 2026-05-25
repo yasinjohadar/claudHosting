@@ -186,28 +186,32 @@ class WordpressManagementService
             'image' => $resolved['image'] ?? ($metadata['wp_container_image'] ?? null),
         ];
 
-        $coreVersion = $this->cli->run($site, 'core version', 45);
+        $coreVersion = $this->cli->run($site, 'core version', 120);
         if (! ($coreVersion['success'] ?? false)) {
+            $hint = trim($coreVersion['output'] ?? $coreVersion['message'] ?? 'فشل WP-CLI');
+            if (str_contains(strtolower($hint), 'wp: not found') || str_contains(strtolower($hint), 'not found')) {
+                $hint = 'WP-CLI غير مثبت في الحاوية — سيتم استخدام wp-cli.phar تلقائياً؛ إن استمر الخطأ: '.$hint;
+            }
+
             return [
                 'success' => false,
-                'message' => Str::limit(trim($coreVersion['output'] ?? $coreVersion['message'] ?? 'فشل WP-CLI'), 500)
-                    .' — جرّب «تشخيص الاتصال».',
+                'message' => Str::limit($hint, 500).' — جرّب «تشخيص الاتصال».',
             ];
         }
 
-        $coreUpdate = $this->cli->run($site, 'core check-update --format=json', 45);
+        $coreUpdate = $this->cli->run($site, 'core check-update --format=json', 90);
         $plugins = $this->cli->run(
             $site,
             'plugin list --format=json --fields=name,status,version,update,update_version',
-            60
+            120
         );
         $themes = $this->cli->run(
             $site,
             'theme list --format=json --fields=name,status,version,update,update_version',
-            60
+            120
         );
-        $users = $this->cli->run($site, 'user list --format=json', 45);
-        $cliInfo = $this->cli->run($site, 'cli info --format=json', 45);
+        $users = $this->cli->run($site, 'user list --format=json', 90);
+        $cliInfo = $this->cli->run($site, 'cli info --format=json', 90);
 
         $pluginList = $this->parseJsonLines($plugins['output'] ?? '');
         $themeList = $this->parseJsonLines($themes['output'] ?? '');

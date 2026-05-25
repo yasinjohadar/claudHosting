@@ -44,10 +44,10 @@ class WordpressCliService
         $composeTimeout = $longRunning ? $timeout : min($timeout, 45);
         $sidecarTimeout = $longRunning ? $timeout : min($timeout, 90);
         $methods = [
-            fn () => $this->runViaComposeLabels($host, $containerId, $wpArgs, $path, $composeTimeout),
-            fn () => $this->runViaComposePaths($site, $host, $wpArgs, $path, $composeTimeout),
             fn () => $this->runViaDockerExec($host, $containerId, $wpArgs, $path, $composeTimeout),
             fn () => $this->runViaWpCliSidecar($host, $containerId, $wpArgs, $path, $sidecarTimeout),
+            fn () => $this->runViaComposeLabels($host, $containerId, $wpArgs, $path, $composeTimeout),
+            fn () => $this->runViaComposePaths($site, $host, $wpArgs, $path, $composeTimeout),
         ];
 
         $last = ['success' => false, 'output' => '', 'exit_code' => 1];
@@ -55,9 +55,6 @@ class WordpressCliService
             $last = $method();
             if ($last['success'] ?? false) {
                 return $last;
-            }
-            if (trim($last['output'] ?? '') !== '') {
-                break;
             }
         }
 
@@ -234,10 +231,10 @@ class WordpressCliService
      */
     protected function runViaWpCliSidecar(string $host, string $containerId, string $wpArgs, string $path, int $timeout): array
     {
-        $flags = $this->wpFlags($path, true);
-        $inner = "wp {$flags} {$wpArgs}";
+        $inner = $this->wpExecInnerCommand($wpArgs, $path);
         $cmd = sprintf(
-            'docker run --rm --volumes-from %s %s sh -c %s',
+            'docker run --rm --network container:%s --volumes-from %s %s sh -c %s',
+            escapeshellarg($containerId),
             escapeshellarg($containerId),
             self::WPCLI_IMAGE,
             escapeshellarg($inner)
@@ -251,15 +248,7 @@ class WordpressCliService
      */
     protected function runViaDockerExec(string $host, string $containerId, string $wpArgs, string $path, int $timeout): array
     {
-        $flags = $this->wpFlags($path, true);
-        $inner = sprintf(
-            'set -e; PHAR=%s; if ! command -v wp >/dev/null 2>&1; then if [ ! -f "$PHAR" ]; then curl -fsSL -o "$PHAR" https://raw.githubusercontent.com/wp-cli/builds/gh-pages/phar/wp-cli.phar 2>/dev/null || wget -qO "$PHAR" https://raw.githubusercontent.com/wp-cli/builds/gh-pages/phar/wp-cli.phar; fi; php "$PHAR" %s %s; else wp %s %s; fi',
-            self::WP_PHAR_PATH,
-            $flags,
-            $wpArgs,
-            $flags,
-            $wpArgs
-        );
+        $inner = $this->wpExecInnerCommand($wpArgs, $path);
 
         $remote = sprintf(
             'docker exec %s sh -c %s',
@@ -277,6 +266,25 @@ class WordpressCliService
     }
 
     /**
+     * Shell snippet: wp binary, or php wp-cli.phar (download if missing).
+     */
+    protected function wpExecInnerCommand(string $wpArgs, string $path): string
+    {
+        $flags = $this->wpFlags($path, true);
+
+        return sprintf(
+            'PHAR=%s; if command -v wp >/dev/null 2>&1; then wp %s %s; elif [ -f "$PHAR" ]; then php "$PHAR" %s %s; else (curl -fsSL -o "$PHAR" https://raw.githubusercontent.com/wp-cli/builds/gh-pages/phar/wp-cli.phar || wget -qO "$PHAR" https://raw.githubusercontent.com/wp-cli/builds/gh-pages/phar/wp-cli.phar) && php "$PHAR" %s %s; fi',
+            self::WP_PHAR_PATH,
+            $flags,
+            $wpArgs,
+            $flags,
+            $wpArgs,
+            $flags,
+            $wpArgs
+        );
+    }
+
+    /**
      * @return array{success: bool, output: string, exit_code: int}
      */
     protected function execCompose(string $host, string $dir, ?string $serviceName, string $wpArgs, string $path, int $timeout): array
@@ -287,8 +295,7 @@ class WordpressCliService
 
         $dirQ = escapeshellarg($dir);
         $svc = escapeshellarg($serviceName);
-        $flags = $this->wpFlags($path, true);
-        $inner = "wp {$flags} {$wpArgs}";
+        $inner = $this->wpExecInnerCommand($wpArgs, $path);
 
         $last = ['success' => false, 'output' => '', 'exit_code' => 1];
         foreach ([
