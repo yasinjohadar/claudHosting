@@ -290,4 +290,19 @@
     border-radius: 0.5rem;
 }
 .wp-pt-row-busy { opacity: 0.55; pointer-events: none; }
+.wp-pass-suggestions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.35rem;
+}
+.wp-pass-suggestion {
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+    font-size: 0.72rem;
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+#wpPassResult .wp-pass-result-label {
+    margin-bottom: 0.35rem;
+}
 </style>

@@ -118,8 +118,10 @@
         const rows = items.map(row => `<tr>${cols.map(c => `<td>${c.render(row)}</td>`).join('')}</tr>`).join('');
         el.innerHTML = `<table class="table table-sm mb-0"><thead><tr>${headers}</tr></thead><tbody>${rows}</tbody></table>`;
         bindRowActions(el);
-        el.querySelectorAll('.wp-user-role, .wp-user-delete').forEach(btn => {
-            if (btn.classList.contains('wp-user-role')) {
+        el.querySelectorAll('.wp-user-reset, .wp-user-role, .wp-user-delete').forEach(btn => {
+            if (btn.classList.contains('wp-user-reset')) {
+                btn.addEventListener('click', () => openPasswordModal(btn.dataset.login || ''));
+            } else if (btn.classList.contains('wp-user-role')) {
                 btn.addEventListener('click', () => {
                     const role = prompt('الدور الجديد (administrator, editor, author, subscriber):', 'subscriber');
                     if (!role) return;
@@ -202,7 +204,8 @@
                 const id = r.ID || r.id;
                 const login = r.user_login || r.login || '';
                 if (!wpExec || !id) return '—';
-                return `<button type="button" class="btn btn-link btn-sm p-0 me-1 wp-user-role" data-login="${login}">دور</button>
+                return `<button type="button" class="btn btn-link btn-sm p-0 me-1 text-warning wp-user-reset" data-login="${login}">كلمة مرور</button>
+                    <button type="button" class="btn btn-link btn-sm p-0 me-1 wp-user-role" data-login="${login}">دور</button>
                     <button type="button" class="btn btn-link btn-sm p-0 text-danger wp-user-delete" data-id="${id}" data-login="${login}">حذف</button>`;
             }},
         ]);
@@ -345,8 +348,8 @@
             routeOutput(job.action, job.output);
         }
         if (job.generated_password) {
-            const pr = document.getElementById('wpPassResult') || document.getElementById('wpUserCreateResult');
-            if (pr) { pr.textContent = 'كلمة المرور لـ ' + (job.login || '') + ': ' + job.generated_password; pr.classList.remove('d-none'); }
+            const passTarget = job.action === 'user_create' ? 'wpUserCreateResult' : 'wpPassResult';
+            showGeneratedPassword(job.login, job.generated_password, passTarget);
         }
         setTablesLoading(false);
         if (job.action === 'refresh_info') {
@@ -417,8 +420,8 @@
             }
             if (d.output) routeOutput(action, d.output);
             if (d.generated_password) {
-                const pr = document.getElementById('wpPassResult') || document.getElementById('wpUserCreateResult');
-                if (pr) { pr.textContent = 'كلمة المرور: ' + d.generated_password; pr.classList.remove('d-none'); }
+                const passTarget = action === 'user_create' ? 'wpUserCreateResult' : 'wpPassResult';
+                showGeneratedPassword(d.login, d.generated_password, passTarget);
             }
             if (d.success && action !== 'diagnose' && !d.data) {
                 await fetchInfo(false);
@@ -451,13 +454,166 @@
     document.querySelectorAll('.wp-action').forEach(btn => btn.addEventListener('click', () => {
         runAction(btn.dataset.action, {}, btn.dataset.confirm || '');
     }));
-    document.getElementById('wpBtnResetPass')?.addEventListener('click', () => {
-        const login = document.getElementById('wpResetLogin')?.value || '';
-        const password = document.getElementById('wpResetPass')?.value || '';
-        if (!login) { alert('أدخل اسم المستخدم'); return; }
-        if (!confirm('إعادة تعيين كلمة مرور «' + login + '»؟')) return;
+    const wpPassSymbols = '!@#$%^&*-_+=?';
+
+    function randomChar(pool) {
+        return pool[Math.floor(Math.random() * pool.length)];
+    }
+
+    function shuffleArray(arr) {
+        for (let i = arr.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [arr[i], arr[j]] = [arr[j], arr[i]];
+        }
+        return arr;
+    }
+
+    function generateStrongPassword(length = 16) {
+        const upper = 'ABCDEFGHJKLMNPQRSTUVWXYZ';
+        const lower = 'abcdefghjkmnpqrstuvwxyz';
+        const digits = '23456789';
+        const len = Math.max(12, Math.min(32, length));
+        const chars = [
+            randomChar(upper),
+            randomChar(lower),
+            randomChar(digits),
+            randomChar(wpPassSymbols),
+        ];
+        const all = upper + lower + digits + wpPassSymbols;
+        while (chars.length < len) {
+            chars.push(randomChar(all));
+        }
+        return shuffleArray(chars).join('');
+    }
+
+    function buildPasswordSuggestions() {
+        return [
+            generateStrongPassword(14),
+            generateStrongPassword(18),
+            generateStrongPassword(20),
+        ];
+    }
+
+    async function copyPasswordText(text, feedbackEl) {
+        const value = (text || '').trim();
+        if (!value) {
+            alert('لا توجد كلمة مرور للنسخ');
+            return false;
+        }
+        try {
+            await navigator.clipboard.writeText(value);
+            if (feedbackEl) {
+                feedbackEl.classList.remove('d-none');
+                setTimeout(() => feedbackEl.classList.add('d-none'), 2000);
+            }
+            return true;
+        } catch (e) {
+            alert('تعذر النسخ — انسخ يدوياً من الحقل');
+            return false;
+        }
+    }
+
+    function renderPasswordSuggestions(suggestions) {
+        const wrap = document.getElementById('wpPassSuggestions');
+        if (!wrap) return;
+        wrap.innerHTML = suggestions.map((pwd, i) =>
+            `<button type="button" class="btn btn-outline-secondary btn-sm wp-pass-suggestion" data-password="${encodeURIComponent(pwd)}" title="استخدام هذا الاقتراح">#${i + 1} ${pwd}</button>`
+        ).join('');
+        wrap.querySelectorAll('.wp-pass-suggestion').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const input = document.getElementById('wpPassInput');
+                if (input) input.value = decodeURIComponent(btn.dataset.password || '');
+            });
+        });
+    }
+
+    function getPasswordModal() {
+        const el = document.getElementById('wpPasswordModal');
+        if (!el || typeof bootstrap === 'undefined') return null;
+        return bootstrap.Modal.getOrCreateInstance(el);
+    }
+
+    function openPasswordModal(login) {
+        if (!login) return;
+        if (!wpExec) { alert('اضبط مفتاح SSH في إعدادات Coolify أولاً'); return; }
+        const loginHidden = document.getElementById('wpPassModalLogin');
+        const title = document.getElementById('wpPasswordModalLabel');
+        const input = document.getElementById('wpPassInput');
+        const feedback = document.getElementById('wpPassCopyFeedback');
+        if (loginHidden) loginHidden.value = login;
+        if (title) title.textContent = 'تغيير كلمة مرور — ' + login;
+        const suggestions = buildPasswordSuggestions();
+        renderPasswordSuggestions(suggestions);
+        if (input) {
+            input.value = suggestions[0] || generateStrongPassword(16);
+            input.type = 'password';
+        }
+        if (feedback) feedback.classList.add('d-none');
+        getPasswordModal()?.show();
+    }
+
+    function hidePasswordModal() {
+        getPasswordModal()?.hide();
+    }
+
+    function showGeneratedPassword(login, password, containerId = 'wpPassResult') {
+        const target = document.getElementById(containerId) || document.getElementById('wpPassResult');
+        if (!target || !password) return;
+        const userLabel = login ? ('«' + login + '»') : '';
+        const labelHtml = '<div class="wp-pass-result-label fw-semibold">كلمة المرور' +
+            (userLabel ? ' للمستخدم ' + userLabel : '') + '</div>';
+        const inputId = 'wpPassResultInput';
+        target.innerHTML = labelHtml +
+            '<div class="input-group input-group-sm">' +
+            '<input type="text" class="form-control font-monospace" id="' + inputId + '" dir="ltr" readonly value="">' +
+            '<button type="button" class="btn btn-outline-success wp-pass-result-copy">نسخ</button></div>';
+        const inp = document.getElementById(inputId);
+        if (inp) inp.value = password;
+        target.querySelector('.wp-pass-result-copy')?.addEventListener('click', () => {
+            copyPasswordText(password, null);
+        });
+        target.classList.remove('d-none');
+        if (containerId === 'wpPassResult') hidePasswordModal();
+    }
+
+    document.getElementById('wpPassGenerate')?.addEventListener('click', () => {
+        const input = document.getElementById('wpPassInput');
+        if (input) input.value = generateStrongPassword(16);
+    });
+    document.getElementById('wpPassCopy')?.addEventListener('click', () => {
+        const input = document.getElementById('wpPassInput');
+        copyPasswordText(input?.value || '', document.getElementById('wpPassCopyFeedback'));
+    });
+    document.getElementById('wpPassToggleVis')?.addEventListener('click', () => {
+        const input = document.getElementById('wpPassInput');
+        const icon = document.querySelector('#wpPassToggleVis i');
+        if (!input) return;
+        if (input.type === 'password') {
+            input.type = 'text';
+            if (icon) { icon.classList.remove('fe-eye'); icon.classList.add('fe-eye-off'); }
+        } else {
+            input.type = 'password';
+            if (icon) { icon.classList.remove('fe-eye-off'); icon.classList.add('fe-eye'); }
+        }
+    });
+    document.getElementById('wpPassApply')?.addEventListener('click', () => {
+        const login = document.getElementById('wpPassModalLogin')?.value || '';
+        const password = document.getElementById('wpPassInput')?.value || '';
+        if (!login) return;
+        if (!confirm('تطبيق كلمة المرور على المستخدم «' + login + '»؟')) return;
         runAction('user_reset_password', { login, password });
     });
+    document.getElementById('wpPasswordModal')?.addEventListener('hidden.bs.modal', () => {
+        const input = document.getElementById('wpPassInput');
+        const loginHidden = document.getElementById('wpPassModalLogin');
+        const feedback = document.getElementById('wpPassCopyFeedback');
+        if (input) { input.value = ''; input.type = 'password'; }
+        if (loginHidden) loginHidden.value = '';
+        if (feedback) feedback.classList.add('d-none');
+        const icon = document.querySelector('#wpPassToggleVis i');
+        if (icon) { icon.classList.remove('fe-eye-off'); icon.classList.add('fe-eye'); }
+    });
+
     document.getElementById('wpBtnCreateUser')?.addEventListener('click', () => {
         const login = document.getElementById('wpNewLogin')?.value || '';
         const email = document.getElementById('wpNewEmail')?.value || '';

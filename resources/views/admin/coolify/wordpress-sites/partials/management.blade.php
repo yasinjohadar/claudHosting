@@ -97,22 +97,39 @@
                 @include('admin.coolify.wordpress-sites.partials.wp-plugins-themes-panel')
             </div>
             <div class="tab-pane fade" id="wpTabUsers">
-                <div id="wpUsersTable" class="table-responsive small mb-2"></div>
-                <h6 class="small text-muted">إعادة تعيين كلمة المرور</h6>
-                <div class="row g-2 align-items-end mb-3">
-                    <div class="col-md-4">
-                        <label class="form-label small">اسم المستخدم</label>
-                        <input type="text" id="wpResetLogin" class="form-control form-control-sm" dir="ltr" placeholder="admin">
-                    </div>
-                    <div class="col-md-4">
-                        <label class="form-label small">كلمة مرور (فارغ = توليد)</label>
-                        <input type="text" id="wpResetPass" class="form-control form-control-sm" dir="ltr">
-                    </div>
-                    <div class="col-md-4">
-                        <button type="button" class="btn btn-warning btn-sm wp-action-btn" id="wpBtnResetPass" @disabled(!$wpExec)>إعادة تعيين</button>
+                <div id="wpPassResult" class="alert alert-success py-2 small d-none mb-3" role="status"></div>
+                <div id="wpUsersTable" class="table-responsive small mb-3"></div>
+
+                <div class="modal fade" id="wpPasswordModal" tabindex="-1" aria-labelledby="wpPasswordModalLabel" aria-hidden="true">
+                    <div class="modal-dialog modal-dialog-centered">
+                        <div class="modal-content">
+                            <div class="modal-header">
+                                <h5 class="modal-title" id="wpPasswordModalLabel">تغيير كلمة المرور</h5>
+                                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="إغلاق"></button>
+                            </div>
+                            <div class="modal-body">
+                                <input type="hidden" id="wpPassModalLogin" value="">
+                                <label class="form-label small" for="wpPassInput">كلمة المرور الجديدة</label>
+                                <div class="input-group mb-2">
+                                    <input type="password" id="wpPassInput" class="form-control font-monospace" dir="ltr" autocomplete="new-password" placeholder="أدخل أو ولّد كلمة مرور">
+                                    <button type="button" class="btn btn-outline-secondary" id="wpPassToggleVis" title="إظهار/إخفاء"><i class="fe fe-eye"></i></button>
+                                </div>
+                                <div class="d-flex flex-wrap gap-2 mb-3">
+                                    <button type="button" class="btn btn-outline-primary btn-sm" id="wpPassGenerate"><i class="fe fe-refresh-cw me-1"></i> توليد قوي</button>
+                                    <button type="button" class="btn btn-outline-secondary btn-sm" id="wpPassCopy"><i class="fe fe-copy me-1"></i> نسخ</button>
+                                    <span id="wpPassCopyFeedback" class="small text-success align-self-center d-none">تم النسخ</span>
+                                </div>
+                                <p class="small text-muted mb-2">اقتراحات (اضغط لاستخدامها):</p>
+                                <div id="wpPassSuggestions" class="wp-pass-suggestions"></div>
+                                <p class="small text-muted mb-0 mt-2">اترك الحقل فارغاً عند التطبيق لتوليد كلمة مرور تلقائياً على السيرفر.</p>
+                            </div>
+                            <div class="modal-footer">
+                                <button type="button" class="btn btn-light" data-bs-dismiss="modal">إلغاء</button>
+                                <button type="button" class="btn btn-warning" id="wpPassApply" @disabled(!$wpExec)>تطبيق على WordPress</button>
+                            </div>
+                        </div>
                     </div>
                 </div>
-                <div id="wpPassResult" class="alert alert-success py-2 small d-none mb-3"></div>
                 <h6 class="small text-muted">مستخدم جديد</h6>
                 <div class="row g-2 align-items-end">
                     <div class="col-md-3">
