@@ -65,6 +65,7 @@ use App\Http\Controllers\Admin\AIModelController;
 use App\Http\Controllers\Admin\AIContentController;
 use App\Http\Controllers\Admin\AISettingsController;
 use App\Http\Controllers\Admin\SettingController;
+use App\Http\Controllers\Admin\SystemDatabaseController;
 
 /*
 |--------------------------------------------------------------------------
@@ -193,6 +194,14 @@ Route::middleware(['auth', 'admin.panel'])->group(function () {
         // إعدادات الموقع (تواصل، سوشيال، عام)
         Route::get('/settings', [SettingController::class, 'index'])->name('settings.index');
         Route::put('/settings', [SettingController::class, 'update'])->name('settings.update');
+
+        Route::prefix('system-database')->name('system-database.')->group(function () {
+            Route::get('/', [SystemDatabaseController::class, 'index'])->name('index');
+            Route::post('/refresh', [SystemDatabaseController::class, 'refresh'])->name('refresh');
+            Route::get('/tables/{table}', [SystemDatabaseController::class, 'table'])
+                ->where('table', '[a-zA-Z0-9_]+')
+                ->name('table');
+        });
 
         // إدارة الفواتير
         Route::prefix('invoices')->name('invoices.')->group(function () {

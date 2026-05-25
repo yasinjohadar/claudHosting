@@ -158,10 +158,22 @@
 
     document.getElementById('btnTestTerminalBridge')?.addEventListener('click', function () {
         const el = document.getElementById('terminalBridgeTestResult');
-        el.innerHTML = '<span class="text-muted">جاري الاختبار (الإعدادات المحفوظة)...</span>';
+        const enabled = document.getElementById('terminalBridgeEnabled')?.checked ?? false;
+        const url = document.querySelector('input[name="terminal_bridge_url"]')?.value?.trim() || '';
+        const secret = document.querySelector('input[name="terminal_bridge_secret"]')?.value?.trim() || '';
+        el.innerHTML = '<span class="text-muted">جاري الاختبار...</span>';
         fetch('{{ route('admin.coolify.settings.test-terminal-bridge') }}', {
             method: 'POST',
-            headers: { 'X-CSRF-TOKEN': '{{ csrf_token() }}', 'Accept': 'application/json' }
+            headers: {
+                'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                'Accept': 'application/json',
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                terminal_bridge_enabled: enabled,
+                terminal_bridge_url: url,
+                terminal_bridge_secret: secret
+            })
         }).then(r => r.json()).then(d => {
             el.innerHTML = d.success
                 ? '<div class="alert alert-success mb-0 py-1">' + (d.message || 'OK') + '</div>'

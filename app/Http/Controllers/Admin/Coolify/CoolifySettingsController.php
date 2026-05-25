@@ -423,38 +423,55 @@ class CoolifySettingsController extends Controller
         return response()->json($result);
     }
 
-    public function testTerminalBridge(): JsonResponse
+    public function testTerminalBridge(Request $request): JsonResponse
     {
+        $validated = $request->validate([
+            'terminal_bridge_enabled' => 'nullable|boolean',
+            'terminal_bridge_url' => 'nullable|url|max:500',
+        ]);
+
         $bridge = $this->settings->getTerminalBridgeConfig();
 
-        if (! ($bridge['enabled'] ?? false)) {
+        $enabled = array_key_exists('terminal_bridge_enabled', $validated)
+            ? filter_var($validated['terminal_bridge_enabled'], FILTER_VALIDATE_BOOLEAN)
+            : (bool) ($bridge['enabled'] ?? false);
+
+        if (! $enabled) {
             return response()->json([
                 'success' => false,
-                'message' => 'Terminal Bridge معطّل في الإعدادات — فعّل المفتاح ثم احفظ.',
+                'message' => 'فعّل «تفعيل Terminal في لوحة مواقع WordPress» ثم اضغط «حفظ الإعدادات» قبل استخدام التبويب في المواقع.',
             ]);
         }
 
-        $url = rtrim((string) ($bridge['url'] ?? ''), '/');
+        $url = isset($validated['terminal_bridge_url']) && trim((string) $validated['terminal_bridge_url']) !== ''
+            ? rtrim(trim((string) $validated['terminal_bridge_url']), '/')
+            : rtrim((string) ($bridge['url'] ?? ''), '/');
+
         if ($url === '') {
             return response()->json([
                 'success' => false,
-                'message' => 'عنوان الجسر غير مضبوط.',
+                'message' => 'أدخل عنوان HTTP للجسر (مثال: http://127.0.0.1:3099).',
             ]);
         }
 
-        if (! ($bridge['secret_configured'] ?? false)) {
-            return response()->json([
-                'success' => false,
-                'message' => 'سر JWT غير مضبوط — أضفه واحفظ قبل الاختبار.',
-            ]);
-        }
+        $inlineSecret = trim((string) $request->input('terminal_bridge_secret', ''));
+        $secretReady = ($bridge['secret_configured'] ?? false) || $inlineSecret !== '';
 
         try {
             $response = Http::timeout(8)->get($url.'/health');
             if ($response->successful() && ($response->json('ok') === true || $response->json('ok') === 1)) {
+                $message = 'الجسر يعمل: '.$url.'/health';
+                if (! ($bridge['enabled'] ?? false)) {
+                    $message .= ' — لم يُحفظ التفعيل بعد: اضغط «حفظ الإعدادات».';
+                } elseif (! ($bridge['secret_configured'] ?? false)) {
+                    $message .= $secretReady
+                        ? ' — احفظ الإعدادات لتثبيت السر.'
+                        : ' — أضف سر JWT واحفظ لتشغيل Terminal في المواقع.';
+                }
+
                 return response()->json([
                     'success' => true,
-                    'message' => 'الجسر يعمل: '.$url.'/health',
+                    'message' => $message,
                 ]);
             }
 
@@ -465,7 +482,7 @@ class CoolifySettingsController extends Controller
         } catch (\Throwable $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'تعذّر الاتصال بـ '.$url.' — '.$e->getMessage().' تأكد أن خدمة terminal-bridge تعمل على المنفذ المضبوط.',
+                'message' => 'تعذّر الاتصال بـ '.$url.' — '.$e->getMessage().' تأكد أن خدمة terminal-bridge تعمل (مثال: cd services/terminal-bridge && npm start).',
             ]);
         }
     }

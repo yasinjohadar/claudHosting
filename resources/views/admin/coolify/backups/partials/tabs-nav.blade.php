@@ -1,21 +1,24 @@
+@once
+    @push('styles')
+        @include('admin.coolify.backups.partials.hub-styles')
+    @endpush
+@endonce
 @php
     $tab = $tab ?? request('tab', 'hub');
+    $tabs = [
+        'hub' => ['label' => 'نظرة عامة', 'icon' => 'fe fe-home', 'route' => route('admin.coolify.backups.index')],
+        'databases' => ['label' => 'قواعد البيانات', 'icon' => 'fe fe-database', 'route' => route('admin.coolify.backups.index', ['tab' => 'databases'])],
+        'projects' => ['label' => 'لقطات المشاريع', 'icon' => 'fe fe-layers', 'route' => route('admin.coolify.backups.projects.index')],
+        'schedules' => ['label' => 'الجداول الدورية', 'icon' => 'fe fe-calendar', 'route' => route('admin.coolify.backups.schedules.index')],
+        'snapshots' => ['label' => 'سجل اللقطات', 'icon' => 'fe fe-book-open', 'route' => route('admin.coolify.backups.snapshots.index')],
+    ];
 @endphp
-<ul class="nav nav-tabs mb-4">
-    <li class="nav-item">
-        <a class="nav-link {{ $tab === 'hub' ? 'active' : '' }}" href="{{ route('admin.coolify.backups.index') }}">نظرة عامة</a>
-    </li>
-    <li class="nav-item">
-        <a class="nav-link {{ $tab === 'databases' ? 'active' : '' }}" href="{{ route('admin.coolify.backups.index', ['tab' => 'databases']) }}">قواعد البيانات</a>
-    </li>
-    <li class="nav-item">
-        <a class="nav-link {{ $tab === 'projects' ? 'active' : '' }}" href="{{ route('admin.coolify.backups.projects.index') }}">لقطات المشاريع</a>
-    </li>
-    <li class="nav-item">
-        <a class="nav-link {{ $tab === 'schedules' ? 'active' : '' }}" href="{{ route('admin.coolify.backups.schedules.index') }}">الجداول الدورية</a>
-    </li>
-    <li class="nav-item">
-        <a class="nav-link {{ $tab === 'snapshots' ? 'active' : '' }}" href="{{ route('admin.coolify.backups.snapshots.index') }}">سجل اللقطات</a>
-    </li>
+<ul class="nav backup-hub-tabs mb-4" role="tablist">
+    @foreach($tabs as $key => $item)
+        <li class="nav-item" role="presentation">
+            <a class="nav-link {{ $tab === $key ? 'active' : '' }}" href="{{ $item['route'] }}" role="tab">
+                <i class="{{ $item['icon'] }} me-1"></i> {{ $item['label'] }}
+            </a>
+        </li>
+    @endforeach
 </ul>
-

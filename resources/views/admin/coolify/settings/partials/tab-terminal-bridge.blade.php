@@ -51,7 +51,7 @@
         <button type="button" class="btn btn-sm btn-outline-primary" id="btnTestTerminalBridge">
             <i class="fe fe-wifi"></i> اختبار اتصال الجسر
         </button>
-        <span class="small text-muted">يستخدم العنوان المحفوظ — احفظ أولاً إن غيّرت الحقول.</span>
+        <span class="small text-muted">يختبر العنوان والتفعيل من الحقول أعلاه؛ اضغط «حفظ الإعدادات» لتفعيل Terminal في المواقع.</span>
     </div>
     <div id="terminalBridgeTestResult" class="small mt-2"></div>
 </div>

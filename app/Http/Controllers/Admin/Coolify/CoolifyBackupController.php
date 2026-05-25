@@ -4,7 +4,10 @@ namespace App\Http\Controllers\Admin\Coolify;
 
 use App\Http\Controllers\Admin\Coolify\Concerns\HandlesCoolifyResponses;
 use App\Http\Controllers\Controller;
+use App\Models\CoolifyProjectSnapshot;
+use App\Models\CoolifySnapshotSchedule;
 use App\Services\Coolify\CoolifyBackupService;
+use App\Services\Coolify\CoolifySettingsService;
 use App\Services\CoolifyApiService;
 use Illuminate\Http\Request;
 
@@ -14,7 +17,8 @@ class CoolifyBackupController extends Controller
 
     public function __construct(
         protected CoolifyApiService $coolify,
-        protected CoolifyBackupService $backups
+        protected CoolifyBackupService $backups,
+        protected CoolifySettingsService $settings
     ) {
         $this->middleware('auth');
     }
@@ -25,7 +29,16 @@ class CoolifyBackupController extends Controller
         $configured = $this->backups->isConfigured();
 
         if ($tab === 'hub') {
-            return view('admin.coolify.backups.hub', compact('configured'));
+            $readiness = $this->settings->getSnapshotReadiness();
+            $hubStats = [
+                'snapshots_total' => CoolifyProjectSnapshot::query()->count(),
+                'snapshots_running' => CoolifyProjectSnapshot::query()->whereIn('status', ['pending', 'running'])->count(),
+                'snapshots_failed' => CoolifyProjectSnapshot::query()->whereIn('status', ['failed', 'partial'])->count(),
+                'schedules_total' => CoolifySnapshotSchedule::query()->count(),
+                'schedules_enabled' => CoolifySnapshotSchedule::query()->where('enabled', true)->count(),
+            ];
+
+            return view('admin.coolify.backups.hub', compact('configured', 'readiness', 'hubStats'));
         }
 
         if (! $configured) {

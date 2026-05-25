@@ -268,7 +268,8 @@
                                 || request()->routeIs('admin.backup-storage.*')
                                 || request()->routeIs('admin.storage-disk-mappings.*')
                                 || request()->routeIs('admin.ai.*')
-                                || request()->routeIs('admin.coolify.backups.*');
+                                || request()->routeIs('admin.coolify.backups.*')
+                                || request()->routeIs('admin.system-database.*');
                         @endphp
                         <li class="slide has-sub {{ $settingsMenuActive ? 'open' : '' }}">
                             <a href="javascript:void(0);" class="side-menu__item {{ $settingsMenuActive ? 'active' : '' }}">
@@ -279,6 +280,11 @@
                             <ul class="slide-menu child1">
                                 <li class="slide">
                                     <a href="{{ route('admin.settings.index') }}" class="side-menu__item {{ request()->routeIs('admin.settings.*') ? 'active' : '' }}">إعدادات الموقع</a>
+                                </li>
+                                <li class="slide">
+                                    <a href="{{ route('admin.system-database.index') }}" class="side-menu__item {{ request()->routeIs('admin.system-database.*') ? 'active' : '' }}">
+                                        <i class="fe fe-database me-1"></i> قاعدة بيانات النظام
+                                    </a>
                                 </li>
                                 <li class="slide divider"></li>
                                 <li class="slide">
