@@ -300,6 +300,9 @@ Route::middleware(['auth', 'admin.panel'])->group(function () {
                 Route::post('/', [CoolifyWordpressSiteController::class, 'store'])->name('store');
                 Route::get('/{uuid}/status', [CoolifyWordpressSiteController::class, 'status'])->name('status');
                 Route::get('/{uuid}/wp-info', [CoolifyWordpressSiteController::class, 'wpInfo'])->name('wp-info');
+                Route::get('/{uuid}/wp-directory/plugins', [CoolifyWordpressSiteController::class, 'wpDirectoryPlugins'])->name('wp-directory.plugins');
+                Route::get('/{uuid}/wp-directory/themes', [CoolifyWordpressSiteController::class, 'wpDirectoryThemes'])->name('wp-directory.themes');
+                Route::get('/{uuid}/wp-directory/plugins/{slug}', [CoolifyWordpressSiteController::class, 'wpDirectoryPluginInfo'])->name('wp-directory.plugin');
                 Route::post('/{uuid}/wp-action', [CoolifyWordpressSiteController::class, 'wpAction'])->name('wp-action');
                 Route::get('/{uuid}/wp-job', [CoolifyWordpressSiteController::class, 'wpJob'])->name('wp-job');
                 Route::get('/{uuid}/files/list', [CoolifyWordpressSiteFilesController::class, 'list'])->name('files.list');

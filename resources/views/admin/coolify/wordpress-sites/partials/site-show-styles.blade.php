@@ -305,4 +305,62 @@
 #wpPassResult .wp-pass-result-label {
     margin-bottom: 0.35rem;
 }
+.wp-directory-type-tabs .nav-link {
+    font-size: 0.82rem;
+    font-weight: 600;
+    border-radius: 2rem;
+    padding: 0.35rem 0.9rem;
+}
+.wp-directory-results {
+    min-height: 4rem;
+}
+.wp-directory-card {
+    border: 1px solid var(--default-border);
+    border-radius: 0.75rem;
+    padding: 0.85rem;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    background: var(--custom-white, #fff);
+    transition: box-shadow 0.2s ease, border-color 0.2s ease;
+}
+.wp-directory-card:hover {
+    border-color: rgba(var(--primary-rgb, 132, 90, 223), 0.35);
+    box-shadow: 0 8px 22px rgba(15, 23, 42, 0.08);
+}
+.wp-directory-card-icon {
+    width: 48px;
+    height: 48px;
+    border-radius: 0.5rem;
+    object-fit: cover;
+    background: rgba(var(--primary-rgb, 132, 90, 223), 0.08);
+}
+.wp-directory-card-title {
+    font-size: 0.88rem;
+    font-weight: 700;
+    line-height: 1.25;
+    margin-bottom: 0.25rem;
+}
+.wp-directory-card-desc {
+    font-size: 0.72rem;
+    color: var(--text-muted);
+    flex-grow: 1;
+    margin-bottom: 0.5rem;
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+.wp-directory-card-meta {
+    font-size: 0.7rem;
+    color: var(--text-muted);
+}
+.wp-directory-card-actions {
+    margin-top: auto;
+    padding-top: 0.5rem;
+}
+.wp-directory-card--busy {
+    opacity: 0.6;
+    pointer-events: none;
+}
 </style>
