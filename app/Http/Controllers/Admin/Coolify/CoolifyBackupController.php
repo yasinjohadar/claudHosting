@@ -61,6 +61,7 @@ class CoolifyBackupController extends Controller
 
         return view('admin.coolify.backups.index', [
             'tab' => 'databases',
+            'backupConfigured' => $configured,
             'rows' => $dashboard['rows'],
             'stats' => $dashboard['stats'],
             'error' => $dashboard['error'],
