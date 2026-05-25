@@ -1,4 +1,6 @@
 <div class="tab-pane fade show active" id="siteTabOverview" role="tabpanel">
+    @include('admin.coolify.wordpress-sites.partials.provisioning-progress-card')
+
     @if($site->error_message)
     <div id="siteError" class="alert alert-danger d-flex gap-2 align-items-start border-0 shadow-sm" role="alert">
         <i class="fe fe-alert-circle mt-1"></i>

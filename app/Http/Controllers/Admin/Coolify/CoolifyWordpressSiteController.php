@@ -9,6 +9,7 @@ use App\Models\CoolifyWordpressSite;
 use App\Services\Coolify\CoolifySettingsService;
 use App\Services\Coolify\WordpressCloudflareService;
 use App\Services\Coolify\WordpressManagementService;
+use App\Services\Coolify\WordpressProvisioningProgress;
 use App\Services\Coolify\WordpressSiteProvisioningService;
 use App\Services\CoolifyApiService;
 use Illuminate\Http\JsonResponse;
@@ -25,7 +26,8 @@ class CoolifyWordpressSiteController extends Controller
         protected CoolifySettingsService $settings,
         protected WordpressSiteProvisioningService $provisioning,
         protected WordpressManagementService $wpManagement,
-        protected WordpressCloudflareService $wordpressCloudflare
+        protected WordpressCloudflareService $wordpressCloudflare,
+        protected WordpressProvisioningProgress $provisioningProgress
     ) {
         $this->middleware('auth');
     }
@@ -136,15 +138,20 @@ class CoolifyWordpressSiteController extends Controller
             'metadata' => [
                 'cloudflare_enabled' => $cloudflareEnabled,
                 'security_preset' => $securityPreset,
+                'job_dispatched_at' => now()->toIso8601String(),
             ],
             'created_by' => Auth::id(),
         ]);
 
         ProvisionWordpressSiteJob::dispatch($site->id);
 
+        $queue = $this->settings->getWordpressProvisionQueue();
+        $mgmt = $this->settings->getWordpressManagementQueue();
+        $backup = $this->settings->getBackupQueue();
+
         return redirect()
             ->route('admin.coolify.wordpress-sites.show', $site->uuid)
-            ->with('success', 'تم بدء إنشاء الموقع في الخلفية. تأكد من تشغيل queue worker.');
+            ->with('success', 'تم إرسال إنشاء الموقع للطابور. على السيرفر شغّل: php artisan queue:work --queue='.$queue.','.$mgmt.','.$backup.' --tries=1 --timeout=3600');
     }
 
     public function show(string $uuid)
@@ -382,29 +389,11 @@ class CoolifyWordpressSiteController extends Controller
 
         $payload['provisioning_step'] = $metadata['provisioning_step'] ?? $payload['provisioning_step'];
         $payload['provision_log'] = $metadata['provision_log'] ?? $payload['provision_log'];
-        $payload['queue_stale_hint'] = $this->queueStaleHint($site);
+        $payload['queue'] = $this->provisioningProgress->getQueueDiagnostics($site);
+        $payload['progress'] = $this->provisioningProgress->buildProgress($site);
+        $payload['queue_stale_hint'] = $this->provisioningProgress->staleHint($site);
 
         return response()->json($payload);
-    }
-
-    protected function queueStaleHint(CoolifyWordpressSite $site): ?string
-    {
-        if (! in_array($site->status, ['pending', 'provisioning'], true)) {
-            return null;
-        }
-
-        $log = $site->metadata['provision_log'] ?? [];
-        $updatedMinutesAgo = $site->updated_at?->diffInMinutes(now()) ?? 0;
-
-        if ($log === [] && $updatedMinutesAgo >= 2) {
-            return 'يبدو أن الطابور متوقف. شغّل: php artisan queue:work --queue=coolify-provision';
-        }
-
-        if ($updatedMinutesAgo >= 5 && in_array($site->metadata['provisioning_step'] ?? '', ['start', ''], true)) {
-            return 'لم يبدأ الـ job بعد. تحقق من queue worker.';
-        }
-
-        return null;
     }
 
     public function edit(string $uuid)

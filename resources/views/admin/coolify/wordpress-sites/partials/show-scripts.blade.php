@@ -93,11 +93,67 @@
         `).join('');
     }
 
+    function formatLogLines(log) {
+        if (!log || !log.length) return '';
+        return log.map(e => `[${e.at || ''}] ${e.step || ''}: ${e.message || ''}`).join('\n');
+    }
+
     function renderProvisionLog(log) {
+        const text = formatLogLines(log);
         const el = document.getElementById('provisionLog');
-        if (!el || !log) return;
-        el.textContent = log.map(e => `[${e.at || ''}] ${e.step || ''}: ${e.message || ''}`).join('\n');
-        el.scrollTop = el.scrollHeight;
+        if (el) {
+            el.textContent = text || 'في انتظار أول سطر في السجل...';
+            el.scrollTop = el.scrollHeight;
+        }
+        const live = document.getElementById('provisionLogLive');
+        if (live && log) {
+            const tail = log.slice(-8);
+            live.textContent = formatLogLines(tail) || 'في انتظار بدء العامل...';
+            live.scrollTop = live.scrollHeight;
+        }
+    }
+
+    function renderProvisionProgress(d) {
+        const card = document.getElementById('siteProvisionCard');
+        if (!card || !d.progress) return;
+
+        const p = d.progress;
+        const bar = document.getElementById('provisionProgressBar');
+        const pctText = document.getElementById('provisionPercentText');
+        const subtitle = document.getElementById('provisionProgressSubtitle');
+        if (bar) {
+            bar.style.width = (p.percent || 0) + '%';
+            bar.classList.toggle('progress-bar-animated', !['running', 'failed'].includes(d.status));
+        }
+        if (pctText) pctText.textContent = String(p.percent ?? 0);
+        if (subtitle) subtitle.textContent = (p.current_step_label || '—') + ' — ' + (p.percent ?? 0) + '%';
+
+        const list = document.getElementById('provisionStepsList');
+        if (list && p.steps) {
+            list.innerHTML = p.steps.map(s => `
+                <li class="site-provision-step site-provision-step--${s.state}" data-step="${s.key}">
+                    <span class="site-provision-step__icon"></span>
+                    <span>${s.label}</span>
+                </li>
+            `).join('');
+        }
+
+        if (d.progress.log_tail) renderProvisionLog(d.progress.log_tail);
+
+        const badge = document.getElementById('queueWorkerBadge');
+        const hint = document.getElementById('queueCommandHint');
+        if (d.queue && badge) {
+            badge.textContent = d.queue.worker_label || '—';
+            badge.className = 'site-provision-queue-badge site-provision-queue-badge--' + (d.queue.worker_state || 'unknown');
+        }
+        if (hint && d.queue) {
+            const show = ['waiting_worker', 'stalled', 'failed_job'].includes(d.queue.worker_state);
+            hint.classList.toggle('d-none', !show);
+            if (show && d.queue.command_hint) {
+                const code = hint.querySelector('code');
+                if (code) code.textContent = d.queue.command_hint;
+            }
+        }
     }
 
     function renderContainerLogs(logs) {
@@ -161,10 +217,13 @@
 
         renderComponents(d.components);
         renderProvisionLog(d.provision_log);
+        renderProvisionProgress(d);
         renderContainerLogs(d.container_logs);
     }
 
-    const poll = () => fetch(statusUrl, { headers: { 'Accept': 'application/json' } })
+    const pollIntervalMs = 2000;
+
+    const poll = () => fetch(statusUrl, { headers: { 'Accept': 'application/json' }, cache: 'no-store' })
         .then(r => r.json())
         .then(d => {
             if (!d.success) return;
@@ -179,17 +238,23 @@
                 return;
             }
             if (d.status === 'failed') {
-                if (hint) hint.textContent = d.error_message || '';
-                if (pollActive) setTimeout(poll, 3000);
+                if (hint) hint.textContent = d.error_message || 'فشل الإنشاء';
+                if (pollActive) setTimeout(poll, pollIntervalMs);
                 return;
             }
-            if (hint) hint.textContent = 'جاري الإنشاء — تحديث مباشر كل 3 ثوانٍ';
-            setTimeout(poll, 3000);
-        });
+            const qLabel = d.queue?.worker_label ? ' | ' + d.queue.worker_label : '';
+            if (hint) hint.textContent = 'مباشر كل ' + (pollIntervalMs / 1000) + ' ث' + qLabel;
+            setTimeout(poll, pollIntervalMs);
+        })
+        .catch(() => setTimeout(poll, pollIntervalMs));
+
+    document.getElementById('btnJumpInfraTab')?.addEventListener('click', () => {
+        activateTab('site-tab-infra-btn');
+    });
 
     if (pollActive) {
         const hint = document.getElementById('siteStatusHint');
-        if (hint) hint.textContent = 'جاري الإنشاء — مزامنة مع Coolify...';
+        if (hint) hint.textContent = 'جاري الإنشاء — مزامنة مباشرة...';
         poll();
     } else if (@json($hasServiceUuid)) {
         fetch(statusUrl, { headers: { 'Accept': 'application/json' } })

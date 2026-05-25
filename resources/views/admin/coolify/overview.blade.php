@@ -54,6 +54,17 @@
 
         @include('admin.coolify.partials.alerts')
 
+        @if($apiListEmpty ?? false)
+            <div class="alert alert-info border-0 shadow-sm mb-4">
+                <strong><i class="fe fe-info me-1"></i> API متصل — لا توجد موارد على هذا التثبيت/الفريق</strong>
+                <p class="small mb-0 mt-2">
+                    التشخيص أظهر HTTP 200 لكن 0 سيرفرات و0 خدمات. افتح لوحة Coolify مباشرة وتأكد أن السيرفرات موجودة <strong>نفس الرابط</strong> في إعدادات API.
+                    إن كانت موجودة في الواجهة فقط: أنشئ <strong>API Token</strong> من الفريق النشط (الذي يظهر في أعلى Coolify)، أو غيّر API URL إن كان site1 على سيرفر Coolify آخر.
+                    على السيرفر: <code dir="ltr">php artisan coolify:diagnose-api</code> (يعرض الفريق المرتبط بالتوكن).
+                </p>
+            </div>
+        @endif
+
         @if($apiListBlocked ?? false)
             <div class="alert alert-warning border-0 shadow-sm mb-4">
                 <strong><i class="fe fe-alert-triangle me-1"></i> API متصل لكن قوائم الموارد لا تُجلب (كل العدادات 0)</strong>

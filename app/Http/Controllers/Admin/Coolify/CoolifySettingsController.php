@@ -289,12 +289,14 @@ class CoolifySettingsController extends Controller
             + ($stats['services'] ?? 0)
             + ($stats['deployments'] ?? 0);
         $apiListBlocked = $connected && $apiResourceTotal === 0 && ! empty($stats['api_errors'] ?? []);
+        $apiListEmpty = $connected && $apiResourceTotal === 0 && empty($stats['api_errors'] ?? []);
 
         return view('admin.coolify.overview', compact(
             'stats',
             'configured',
             'connected',
             'apiListBlocked',
+            'apiListEmpty',
             'apiResourceTotal',
             'recentDeployments',
             'failedDeployments',

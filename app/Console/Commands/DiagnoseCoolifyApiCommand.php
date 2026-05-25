@@ -40,6 +40,27 @@ class DiagnoseCoolifyApiCommand extends Command
         }
 
         $this->newLine();
+        $this->info('الفريق المرتبط بالتوكن:');
+        $teamRes = $coolify->getCurrentTeam();
+        if ($teamRes['success'] ?? false) {
+            $team = $teamRes['data'] ?? [];
+            if (is_array($team)) {
+                $this->line('  الاسم: '.($team['name'] ?? $team['team_name'] ?? '—'));
+                $this->line('  UUID: '.($team['uuid'] ?? $team['id'] ?? '—'));
+            } else {
+                $this->line('  '.json_encode($team, JSON_UNESCAPED_UNICODE));
+            }
+        } else {
+            $this->warn('  تعذر جلب teams/current: '.($teamRes['message'] ?? '—'));
+        }
+
+        $teamsRes = $coolify->listTeams();
+        if ($teamsRes['success'] ?? false) {
+            $teams = $coolify->normalizeList($teamsRes['data'] ?? []);
+            $this->line('  عدد الفرق المرئية للتوكن: '.count($teams));
+        }
+
+        $this->newLine();
         $this->info('قوائم الموارد (ما تعتمد عليه لوحة Coolify):');
 
         $endpoints = [
@@ -52,13 +73,18 @@ class DiagnoseCoolifyApiCommand extends Command
         ];
 
         $anyListOk = false;
+        $totalItems = 0;
         foreach ($endpoints as $label => $fn) {
             $res = $fn();
             $count = ($res['success'] ?? false)
                 ? count($coolify->normalizeList($res['data'] ?? []))
                 : 0;
+            $totalItems += $count;
             if ($res['success'] ?? false) {
                 $anyListOk = true;
+                if ($count === 0 && $label === 'servers') {
+                    $this->line('  <fg=yellow>?</> استجابة servers (مقتطف): '.$this->summarizePayload($res['data'] ?? null));
+                }
             }
             $this->printResult($label, $res, $count);
         }
@@ -75,9 +101,39 @@ class DiagnoseCoolifyApiCommand extends Command
             return self::FAILURE;
         }
 
-        $this->info('✓ القوائم تعمل — اضغط «تحديث» في لوحة Coolify أو: php artisan coolify:diagnose-api --clear-cache');
+        if ($totalItems === 0) {
+            $this->warn('API يعمل (HTTP 200) لكن لا توجد موارد لهذا التوكن/الفريق على coolify.claudsoft.com.');
+            $this->line('');
+            $this->line('هذا ليس خطأ Laravel — معناه واحد من التالي:');
+            $this->line('  • لوحة Coolify على هذا الرابط فارغة (تثبيت جديد بدون سيرفرات/خدمات).');
+            $this->line('  • التوكن مربوط بفريق (Team) فارغ — أنشئ التوكن من الفريق الذي فيه السيرفر 194.163.144.165 و site1.');
+            $this->line('  • site1 وُجد على Coolify آخر (لوكال أو IP مختلف) — غيّر API URL أو انقل الموارد.');
+            $this->line('');
+            $this->line('تحقق: افتح https://coolify.claudsoft.com في المتصفح — هل ترى السيرفرات والخدمات هناك؟');
+            $this->line('إن كانت موجودة في الواجهة لكن API = 0 → أنشئ API Token جديداً من نفس الفريق النشط في الشريط العلوي للوحة.');
+
+            return self::FAILURE;
+        }
+
+        $this->info('✓ القوائم تعمل — '.$totalItems.' مورد إجمالاً. حدّث اللوحة: ?refresh=1');
 
         return self::SUCCESS;
+    }
+
+    protected function summarizePayload(mixed $data): string
+    {
+        if ($data === null) {
+            return '(null)';
+        }
+        if (is_array($data)) {
+            if (array_is_list($data)) {
+                return 'مصفوفة ['.count($data).' عنصر]';
+            }
+
+            return 'كائن {'.implode(', ', array_slice(array_keys($data), 0, 8)).'}';
+        }
+
+        return substr((string) $data, 0, 120);
     }
 
     /**
