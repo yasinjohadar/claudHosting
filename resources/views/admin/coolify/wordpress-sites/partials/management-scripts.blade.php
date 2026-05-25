@@ -12,6 +12,20 @@
 
     const dangerousPatterns = [/delete/i, /drop/i, /search-replace/i, /uninstall/i, /remove/i, /flush/i];
 
+    async function fetchJson(url, options = {}, timeoutMs = 120000) {
+        const controller = new AbortController();
+        const timer = setTimeout(() => controller.abort(), timeoutMs);
+        try {
+            const res = await fetch(url, { ...options, signal: controller.signal });
+            if (!res.ok) {
+                throw new Error('HTTP ' + res.status);
+            }
+            return await res.json();
+        } finally {
+            clearTimeout(timer);
+        }
+    }
+
     function slugFromRow(r, type) {
         const raw = r.name || r.plugin || r.theme || '';
         if (type === 'plugin' && raw.includes('/')) return raw.split('/')[0];
@@ -248,15 +262,17 @@
         }
     }
 
-    async function fetchInfo(refresh) {
+    async function fetchInfo(refresh, opts = {}) {
         if (!wpExec) return;
+        const silent = opts.silent === true;
         if (refresh) {
-            setTablesLoading(true);
-            showJobProgress(true, 'جلب قائمة الإضافات والقوالب من السيرفر (WP-CLI)…');
-            showJob('جاري الاتصال بالسيرفر وجلب القائمة… قد يستغرق دقيقة.', 'info');
+            if (!silent) {
+                setTablesLoading(true);
+                showJobProgress(true, 'جلب قائمة الإضافات والقوالب من السيرفر (WP-CLI)…');
+            }
+            showJob('جاري الاتصال بالسيرفر وجلب القائمة…', 'info');
             try {
-                const r = await fetch(wpInfoUrl + '?refresh=1', { headers: { 'Accept': 'application/json' } });
-                const d = await r.json();
+                const d = await fetchJson(wpInfoUrl + '?refresh=1', { headers: { 'Accept': 'application/json' } }, 180000);
                 if (d.async) {
                     if (!d.success) {
                         showJob(d.message || 'تعذر بدء العملية', 'danger');
@@ -274,15 +290,17 @@
                 }
                 return d;
             } catch (e) {
-                showJob('خطأ في الاتصال بالخادم: ' + (e.message || e), 'danger');
+                const msg = e.name === 'AbortError' ? 'انتهت مهلة جلب القائمة — حاول مرة أخرى' : ('خطأ: ' + (e.message || e));
+                showJob(msg, 'danger');
             } finally {
-                setTablesLoading(false);
-                showJobProgress(false);
+                if (!silent) {
+                    setTablesLoading(false);
+                    showJobProgress(false);
+                }
             }
             return;
         }
-        const r = await fetch(wpInfoUrl, { headers: { 'Accept': 'application/json' } });
-        const d = await r.json();
+        const d = await fetchJson(wpInfoUrl, { headers: { 'Accept': 'application/json' } }, 60000);
         if (d.success && d.data) applyInfo(d.data);
         return d;
     }
@@ -293,7 +311,14 @@
         const d = await r.json();
         const job = d.job;
         const isPt = job && pluginThemeActions.includes(job.action);
-        if (!job || job.status === 'running') {
+        if (!job) {
+            clearTimeout(jobPollTimer);
+            jobPollAttempts = 0;
+            showJobProgress(false);
+            setTablesLoading(false);
+            return;
+        }
+        if (job.status === 'running') {
             if (jobPollAttempts >= jobPollMaxAttempts) {
                 clearTimeout(jobPollTimer);
                 setTablesLoading(false);
@@ -327,7 +352,7 @@
         if (job.action === 'refresh_info') {
             fetchInfo(false);
         } else if (pluginThemeActions.includes(job.action)) {
-            fetchInfo(true);
+            fetchInfo(true, { silent: true });
         } else {
             fetchInfo(false);
         }
@@ -355,40 +380,57 @@
             params.confirm_dangerous = '1';
         }
         const isListAction = listMutatingActions.includes(action);
+        const progressLabels = {
+            plugin_update: 'تحديث الإضافة على السيرفر…',
+            theme_update: 'تحديث القالب على السيرفر…',
+            plugin_update_all: 'تحديث كل الإضافات…',
+            theme_update_all: 'تحديث كل القوالب…',
+            plugin_activate: 'تفعيل الإضافة…',
+            plugin_deactivate: 'إيقاف الإضافة…',
+        };
         if (isListAction) {
-            setTablesLoading(true);
-            showJobProgress(true, 'جاري التنفيذ على السيرفر…');
+            showJobProgress(true, progressLabels[action] || 'جاري التنفيذ على السيرفر…');
         }
         showJob('جاري التنفيذ…', 'info');
         try {
             const body = new URLSearchParams({ _token: csrf, action });
             Object.entries(params).forEach(([k, v]) => { if (v !== undefined && v !== null && v !== '') body.append(k, v); });
-            const r = await fetch(wpActionUrl, { method: 'POST', headers: { 'Accept': 'application/json', 'Content-Type': 'application/x-www-form-urlencoded' }, body });
-            const d = await r.json();
+            const d = await fetchJson(wpActionUrl, {
+                method: 'POST',
+                headers: { 'Accept': 'application/json', 'Content-Type': 'application/x-www-form-urlencoded' },
+                body,
+            }, 300000);
             if (d.async) {
                 if (pluginThemeActions.includes(action)) showJobProgress(true, 'إرسال للطابور…');
                 pollJob();
                 return;
             }
-            showJobProgress(false);
             const detail = d.output ? ((d.message || '') + '\n\n' + d.output).trim() : (d.message || '');
-            showJob(d.success ? (detail || 'تم') : (detail || 'فشل'), d.success ? 'success' : 'danger');
+            if (d.success && d.data) {
+                applyInfo(d.data);
+                showJob(detail || 'تم التحديث', 'success');
+            } else {
+                showJob(d.success ? (detail || 'تم') : (detail || 'فشل'), d.success ? 'success' : 'danger');
+                if (d.success && listMutatingActions.includes(action)) {
+                    await fetchInfo(false);
+                }
+            }
             if (d.output) routeOutput(action, d.output);
             if (d.generated_password) {
                 const pr = document.getElementById('wpPassResult') || document.getElementById('wpUserCreateResult');
                 if (pr) { pr.textContent = 'كلمة المرور: ' + d.generated_password; pr.classList.remove('d-none'); }
             }
-            if (d.success && listMutatingActions.includes(action)) {
-                await fetchInfo(true);
-            } else if (d.success && action !== 'diagnose') {
+            if (d.success && action !== 'diagnose' && !d.data) {
                 await fetchInfo(false);
             }
             refreshLog();
         } catch (err) {
-            showJob('خطأ: ' + (err.message || err), 'danger');
+            const msg = err.name === 'AbortError'
+                ? 'انتهت مهلة العملية (أكثر من 5 دقائق) — تحقق من SSH أو جرّب مرة أخرى'
+                : ('خطأ: ' + (err.message || err));
+            showJob(msg, 'danger');
         } finally {
             if (isListAction) {
-                setTablesLoading(false);
                 showJobProgress(false);
                 document.querySelectorAll('.wp-pt-row-busy').forEach(tr => tr.classList.remove('wp-pt-row-busy'));
             }

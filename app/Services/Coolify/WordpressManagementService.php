@@ -282,6 +282,8 @@ class WordpressManagementService
             return $this->dispatchAsync($site, $action, $params, $userId);
         }
 
+        $this->clearWpJobRecord($site);
+
         return $this->runSyncAction($site, $action, $params, $userId);
     }
 
@@ -502,15 +504,21 @@ class WordpressManagementService
     }
 
     /**
-     * @return array{success: bool, message: string, output: string}
+     * @return array{success: bool, message: string, output: string, data?: array<string, mixed>|null}
      */
     protected function finalizeActionResult(CoolifyWordpressSite $site, string $action, bool $success, string $output, ?int $userId): array
     {
         $this->appendLog($site, $action, $success ? 'نجح' : 'فشل', $output);
         $this->recordActivity($site, $action, $success, $userId);
 
+        $data = null;
         if ($success && ! str_starts_with($action, 'raw_cli')) {
-            $this->getSiteInfo($site->fresh(), true);
+            if ($this->shouldRefreshExtensionsOnly($action)) {
+                $data = $this->refreshExtensionListsOnly($site);
+            } elseif ($this->shouldFullRefreshSiteInfo($action)) {
+                $refreshed = $this->getSiteInfo($site->fresh(), true);
+                $data = $refreshed['data'] ?? null;
+            }
         }
 
         $failMessage = 'فشل تنفيذ الإجراء';
@@ -518,11 +526,81 @@ class WordpressManagementService
             $failMessage = Str::limit(trim($output), 400);
         }
 
+        $message = $success ? 'تم تنفيذ الإجراء' : $failMessage;
+        if ($success && $this->shouldRefreshExtensionsOnly($action)) {
+            $message = 'تم التنفيذ وتحديث قائمة الإضافات/القوالب';
+        }
+
         return [
             'success' => $success,
-            'message' => $success ? 'تم تنفيذ الإجراء' : $failMessage,
+            'message' => $message,
             'output' => $output,
+            'data' => $data,
         ];
+    }
+
+    protected function shouldRefreshExtensionsOnly(string $action): bool
+    {
+        return in_array($action, [
+            'plugin_update', 'theme_update', 'plugin_update_all', 'theme_update_all',
+            'plugin_activate', 'plugin_deactivate', 'plugin_delete', 'plugin_install',
+            'theme_activate', 'theme_delete', 'theme_install',
+        ], true);
+    }
+
+    protected function shouldFullRefreshSiteInfo(string $action): bool
+    {
+        return ! $this->shouldRefreshExtensionsOnly($action)
+            && ! in_array($action, ['diagnose', 'bootstrap_mcp'], true);
+    }
+
+    /**
+     * تحديث سريع للإضافات/القوالب فقط (أمران WP-CLI) دون إعادة جلب كل معلومات الموقع.
+     *
+     * @return array<string, mixed>|null
+     */
+    public function refreshExtensionListsOnly(CoolifyWordpressSite $site): ?array
+    {
+        $site->refresh();
+        $metadata = $site->metadata ?? [];
+        $info = is_array($metadata['wp_info'] ?? null) ? $metadata['wp_info'] : [];
+
+        $plugins = $this->cli->run(
+            $site,
+            'plugin list --format=json --fields=name,status,version,update,update_version',
+            120
+        );
+        $themes = $this->cli->run(
+            $site,
+            'theme list --format=json --fields=name,status,version,update,update_version',
+            120
+        );
+
+        $pluginList = ($plugins['success'] ?? false)
+            ? $this->parseJsonLines($plugins['output'] ?? '')
+            : ($info['plugins'] ?? []);
+        $themeList = ($themes['success'] ?? false)
+            ? $this->parseJsonLines($themes['output'] ?? '')
+            : ($info['themes'] ?? []);
+
+        if (! ($plugins['success'] ?? false) && ! ($themes['success'] ?? false)) {
+            return null;
+        }
+
+        $info['plugins'] = $pluginList;
+        $info['themes'] = $themeList;
+        $info['plugins_updates_count'] = $this->countAvailableUpdates($pluginList);
+        $info['themes_updates_count'] = $this->countAvailableUpdates($themeList);
+        $info['fetched_at'] = now()->toIso8601String();
+
+        $site->update([
+            'metadata' => array_merge($metadata, [
+                'wp_info' => $info,
+                'wp_info_fetched_at' => now()->toIso8601String(),
+            ]),
+        ]);
+
+        return $info;
     }
 
     /**

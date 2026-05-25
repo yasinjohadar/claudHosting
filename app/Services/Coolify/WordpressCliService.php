@@ -272,11 +272,12 @@ class WordpressCliService
 
     protected function ensureWpCliImage(string $host): void
     {
-        $this->ssh->run(
-            $host,
-            'docker image inspect '.self::WPCLI_IMAGE.' >/dev/null 2>&1 || docker pull '.self::WPCLI_IMAGE,
-            300
-        );
+        $check = $this->ssh->run($host, 'docker image inspect '.self::WPCLI_IMAGE.' >/dev/null 2>&1', 20);
+        if ($check['success'] ?? false) {
+            return;
+        }
+
+        $this->ssh->run($host, 'docker pull '.self::WPCLI_IMAGE, 300);
     }
 
     /**
