@@ -1190,17 +1190,62 @@ class CoolifyApiService
     /**
      * @return array<int, array{name: string, url: string}>
      */
-    public function buildServiceUrls(string $publicUrl): array
+    public function buildServiceUrls(string $publicUrl, string $containerName = 'wordpress'): array
+    {
+        $url = $this->normalizeServiceUrl($publicUrl);
+        if ($url === '') {
+            return [];
+        }
+
+        return [['name' => $containerName, 'url' => $url]];
+    }
+
+    /**
+     * يبني مصفوفة urls حسب أسماء حاويات الخدمة على Coolify (مطلوب لـ Traefik).
+     *
+     * @param  array<string, mixed>  $service
+     * @return array<int, array{name: string, url: string}>
+     */
+    public function buildServiceUrlsForService(array $service, string $publicUrl): array
+    {
+        $url = $this->normalizeServiceUrl($publicUrl);
+        if ($url === '') {
+            return [];
+        }
+
+        $names = [];
+        foreach ($this->normalizeList($service['applications'] ?? []) as $app) {
+            if (! is_array($app)) {
+                continue;
+            }
+            $name = trim((string) ($app['name'] ?? ''));
+            $fqdn = trim((string) ($app['fqdn'] ?? ''));
+            if ($name !== '' && $fqdn !== '') {
+                $names[] = $name;
+            }
+        }
+
+        if ($names === []) {
+            $names = ['wordpress'];
+        }
+
+        return array_map(
+            static fn (string $name): array => ['name' => $name, 'url' => $url],
+            array_values(array_unique($names))
+        );
+    }
+
+    protected function normalizeServiceUrl(string $publicUrl): string
     {
         $url = trim($publicUrl);
         if ($url === '') {
-            return [];
+            return '';
         }
         if (! str_starts_with($url, 'http://') && ! str_starts_with($url, 'https://')) {
             $url = 'https://'.$url;
         }
 
-        return [['name' => 'primary', 'url' => $url]];
+        return $url;
     }
 
     public function isCoolifyGeneratedHost(string $host): bool

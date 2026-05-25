@@ -14,9 +14,22 @@
     @endif
 
     @if(!empty($site->metadata['domain_warning']))
-    <div class="alert alert-warning small d-flex gap-2 border-0 shadow-sm">
-        <i class="fe fe-alert-triangle"></i>
-        <span>{{ $site->metadata['domain_warning'] }}</span>
+    <div class="alert alert-warning small d-flex gap-2 align-items-start border-0 shadow-sm">
+        <i class="fe fe-alert-triangle mt-1"></i>
+        <div class="flex-grow-1">
+            <span>{{ $site->metadata['domain_warning'] }}</span>
+            @if($site->service_uuid)
+            <div class="mt-2">
+                @include('admin.coolify.wordpress-sites.partials.apply-coolify-domain-form')
+            </div>
+            @endif
+        </div>
+    </div>
+    @elseif($site->service_uuid && $site->status === 'running')
+    <div class="alert alert-info small border-0 shadow-sm mb-3">
+        إذا ظهر <strong>no available server</strong> على النطاق المخصص بينما يعمل رابط sslip.io، استخدم
+        @include('admin.coolify.wordpress-sites.partials.apply-coolify-domain-form')
+        — لا حاجة لإعادة تثبيت WordPress.
     </div>
     @endif
 

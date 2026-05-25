@@ -358,8 +358,9 @@ class WordpressSiteProvisioningService
      */
     protected function applyUrlsToService(string $serviceUuid, string $publicUrl): ?string
     {
+        $service = $this->fetchService($serviceUuid);
         $patch = $this->coolify->updateService($serviceUuid, [
-            'urls' => $this->coolify->buildServiceUrls($publicUrl),
+            'urls' => $this->coolify->buildServiceUrlsForService($service, $publicUrl),
             'force_domain_override' => true,
         ]);
 
@@ -587,8 +588,10 @@ class WordpressSiteProvisioningService
             throw new \RuntimeException('الخدمة غير موجودة بعد');
         }
 
+        $service = $this->fetchService($site->service_uuid);
+
         $response = $this->coolify->updateService($site->service_uuid, [
-            'urls' => $this->coolify->buildServiceUrls($publicUrl),
+            'urls' => $this->coolify->buildServiceUrlsForService($service, $publicUrl),
             'force_domain_override' => true,
         ]);
 
@@ -596,12 +599,44 @@ class WordpressSiteProvisioningService
             throw new \RuntimeException($response['message'] ?? 'فشل تحديث النطاق على Coolify');
         }
 
+        $metadata = $site->metadata ?? [];
+        unset($metadata['domain_warning']);
+
         $site->update([
             'public_url' => $publicUrl,
             'admin_url' => rtrim($publicUrl, '/').'/wp-admin',
+            'metadata' => $metadata,
         ]);
 
+        $this->triggerServiceDeploy($site->service_uuid);
         $this->syncSiteFromCoolify($site);
+    }
+
+    /**
+     * @return array{ok: bool, message?: string}
+     */
+    public function applyCoolifyDomain(CoolifyWordpressSite $site): array
+    {
+        if (! $site->service_uuid) {
+            return ['ok' => false, 'message' => 'لا توجد خدمة Coolify لهذا الموقع'];
+        }
+
+        if (! $this->coolify->isConfigured()) {
+            return ['ok' => false, 'message' => 'إعدادات Coolify غير مضبوطة'];
+        }
+
+        $publicUrl = $site->public_url ?: $this->settings->buildWordpressPublicUrl($site->slug);
+        if ($publicUrl === '') {
+            return ['ok' => false, 'message' => 'لا يوجد رابط عام للموقع'];
+        }
+
+        try {
+            $this->updateSiteDomain($site, $publicUrl);
+
+            return ['ok' => true];
+        } catch (\Throwable $e) {
+            return ['ok' => false, 'message' => $e->getMessage()];
+        }
     }
 
     protected function resolveSitePublicUrl(CoolifyWordpressSite $site, ?string $intendedCustom, array $service): ?string

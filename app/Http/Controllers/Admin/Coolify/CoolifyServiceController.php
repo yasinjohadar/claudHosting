@@ -117,7 +117,9 @@ class CoolifyServiceController extends Controller
         ], fn ($v) => $v !== null);
 
         if (! empty($validated['public_url'])) {
-            $payload['urls'] = $this->coolify->buildServiceUrls($validated['public_url']);
+            $serviceResponse = $this->coolify->getService($uuid);
+            $service = $this->coolifyItem($serviceResponse) ?? [];
+            $payload['urls'] = $this->coolify->buildServiceUrlsForService($service, $validated['public_url']);
             $payload['force_domain_override'] = true;
         }
 

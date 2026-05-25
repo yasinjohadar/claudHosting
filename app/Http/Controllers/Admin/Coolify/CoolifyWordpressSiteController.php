@@ -476,6 +476,25 @@ class CoolifyWordpressSiteController extends Controller
             ->with('success', 'تم حفظ التعديلات');
     }
 
+    public function applyCoolifyDomain(string $uuid)
+    {
+        $site = CoolifyWordpressSite::query()->where('uuid', $uuid)->firstOrFail();
+
+        if (! $this->coolify->isConfigured()) {
+            return $this->coolifyRedirectError('اضبط إعدادات Coolify أولاً.', 'admin.coolify.settings.index');
+        }
+
+        $result = $this->provisioning->applyCoolifyDomain($site);
+
+        if (! ($result['ok'] ?? false)) {
+            return back()->with('error', $result['message'] ?? 'فشل تطبيق النطاق على Coolify');
+        }
+
+        return redirect()
+            ->route('admin.coolify.wordpress-sites.show', $site->uuid)
+            ->with('success', 'تم تطبيق النطاق على Coolify وإعادة تشغيل الخدمة. انتظر دقيقة ثم جرّب الرابط المخصص.');
+    }
+
     public function syncCloudflare(string $uuid)
     {
         $site = CoolifyWordpressSite::query()->where('uuid', $uuid)->firstOrFail();
