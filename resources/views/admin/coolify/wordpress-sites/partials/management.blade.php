@@ -8,7 +8,9 @@
     $wpMcpReady = !empty($site->metadata['wp_mcp_bootstrapped_at']);
     $wpMcpSnippet = $site->metadata['wp_mcp_cursor_snippet'] ?? '';
     $settingsUrl = route('admin.coolify.settings.index');
+    $embeddedInSiteShow = $embeddedInSiteShow ?? false;
 @endphp
+@if(!$embeddedInSiteShow)
 <div class="card custom-card mb-3" id="wpManagementCard">
     <div class="card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
         <div class="card-title mb-0">إدارة WordPress</div>
@@ -21,6 +23,19 @@
         @endif
     </div>
     <div class="card-body">
+@else
+<div id="wpManagementCard" class="site-wp-management">
+    <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
+        <p class="text-muted small mb-0">تحديث Core، إضافات، مستخدمون، WP-CLI، Docker.</p>
+        @if($wpExec)
+        <span class="badge bg-success">SSH + WP-CLI جاهز</span>
+        @elseif($wpUi && !$wpSsh)
+        <span class="badge bg-warning">يتطلب SSH</span>
+        @else
+        <span class="badge bg-secondary">{{ $wpState['message'] ?? 'غير متاح' }}</span>
+        @endif
+    </div>
+@endif
         @if(!$wpUi)
         <p class="text-muted small mb-0">{{ $wpState['message'] ?? 'غير متاح' }} — انتظر تشغيل الحاويات أو حدّث الصفحة.</p>
         @else
@@ -41,8 +56,8 @@
         </div>
         @endif
         <div id="wpJobAlert" class="alert alert-info py-2 small d-none mb-3"></div>
-        <ul class="nav nav-tabs mb-3" role="tablist">
-            <li class="nav-item"><button class="nav-link active" data-bs-toggle="tab" data-bs-target="#wpTabOverview" type="button">نظرة عامة</button></li>
+        <ul class="nav nav-tabs flex-nowrap overflow-auto mb-3 wp-inner-tabs" role="tablist">
+            <li class="nav-item"><button class="nav-link active" data-bs-toggle="tab" data-bs-target="#wpTabOverview" type="button"><i class="fe fe-grid me-1"></i> نظرة عامة</button></li>
             <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#wpTabCore" type="button">النواة (تحديث)</button></li>
             <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#wpTabPlugins" type="button">إضافات وقوالب</button></li>
             <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#wpTabUsers" type="button">المستخدمون</button></li>
@@ -230,8 +245,12 @@
             </div>
         </div>
         @endif
+@if(!$embeddedInSiteShow)
     </div>
 </div>
+@else
+</div>
+@endif
 @if($wpUi)
 @include('admin.coolify.wordpress-sites.partials.management-scripts', ['wpExec' => $wpExec, 'uuid' => $uuid])
 @endif

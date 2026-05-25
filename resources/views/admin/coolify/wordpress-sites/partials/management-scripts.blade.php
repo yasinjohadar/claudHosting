@@ -46,7 +46,13 @@
         const ov = document.getElementById('wpOverviewContent');
         const ver = document.getElementById('wpCoreVersion');
         const img = document.getElementById('wpDockerImage');
+        const verStat = document.getElementById('wpCoreVersionStat');
         if (ver) ver.textContent = data.core_version || '—';
+        if (verStat) {
+            verStat.textContent = data.core_version || '—';
+            const rowVal = verStat.closest('[role="listitem"]')?.querySelector('.coolify-info-row-value.mono');
+            if (rowVal) rowVal.textContent = data.core_version || '—';
+        }
         if (img && data.container) img.textContent = data.container.image || '—';
         if (ov) {
             let updatesHtml = '';
