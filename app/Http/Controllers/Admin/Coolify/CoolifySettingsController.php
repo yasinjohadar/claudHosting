@@ -201,10 +201,7 @@ class CoolifySettingsController extends Controller
         if ($connected) {
             $versionRes = $this->coolify->getVersion();
             if ($versionRes['success'] ?? false) {
-                $data = $versionRes['data'] ?? null;
-                $apiVersion = is_array($data)
-                    ? ($data['version'] ?? $data['coolify_version'] ?? json_encode($data))
-                    : (string) $data;
+                $apiVersion = $this->formatCoolifyVersionLabel($versionRes['data'] ?? null);
             }
             $healthRes = $this->coolify->getHealth();
             if ($healthRes['success'] ?? false) {
@@ -285,10 +282,20 @@ class CoolifySettingsController extends Controller
             ['label' => 'الإعدادات', 'route' => 'admin.coolify.settings.index', 'icon' => 'fe-settings', 'class' => 'btn-outline-primary'],
         ];
 
+        $apiResourceTotal = ($stats['servers'] ?? 0)
+            + ($stats['projects'] ?? 0)
+            + ($stats['applications'] ?? 0)
+            + ($stats['databases'] ?? 0)
+            + ($stats['services'] ?? 0)
+            + ($stats['deployments'] ?? 0);
+        $apiListBlocked = $connected && $apiResourceTotal === 0 && ! empty($stats['api_errors'] ?? []);
+
         return view('admin.coolify.overview', compact(
             'stats',
             'configured',
             'connected',
+            'apiListBlocked',
+            'apiResourceTotal',
             'recentDeployments',
             'failedDeployments',
             'failedCount',
@@ -302,6 +309,26 @@ class CoolifySettingsController extends Controller
             'systemHealth',
             'systemHealthOk',
         ));
+    }
+
+    protected function formatCoolifyVersionLabel(mixed $data): ?string
+    {
+        if (is_string($data) && $data !== '') {
+            return $data;
+        }
+        if (! is_array($data)) {
+            return null;
+        }
+        foreach (['version', 'coolify_version'] as $key) {
+            if (! empty($data[$key]) && is_string($data[$key])) {
+                return $data[$key];
+            }
+        }
+        if (! empty($data['raw']) && is_string($data['raw'])) {
+            return $data['raw'];
+        }
+
+        return null;
     }
 
     protected function safeModelCount(string $modelClass): int

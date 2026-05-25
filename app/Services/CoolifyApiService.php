@@ -1970,42 +1970,68 @@ class CoolifyApiService
     public function getDashboardStats(): array
     {
         return Cache::remember('coolify_dashboard_stats', 60, function () {
-            $stats = [
-                'connected' => false,
-                'servers' => 0,
-                'projects' => 0,
-                'applications' => 0,
-                'databases' => 0,
-                'services' => 0,
-                'deployments' => 0,
-            ];
-
-            if (! $this->isConfigured()) {
-                return $stats;
-            }
-
-            $stats['connected'] = $this->ping();
-
-            if (! $stats['connected']) {
-                return $stats;
-            }
-
-            foreach ([
-                'servers' => fn () => $this->listServers(),
-                'projects' => fn () => $this->listProjects(),
-                'applications' => fn () => $this->listApplications(),
-                'databases' => fn () => $this->listDatabases(),
-                'services' => fn () => $this->listServices(),
-                'deployments' => fn () => $this->listDeployments(),
-            ] as $key => $fn) {
-                $res = $fn();
-                if ($res['success']) {
-                    $stats[$key] = count($this->normalizeList($res['data'] ?? []));
-                }
-            }
-
-            return $stats;
+            return $this->buildDashboardStats();
         });
+    }
+
+    /**
+     * @return array{
+     *   connected: bool,
+     *   servers: int,
+     *   projects: int,
+     *   applications: int,
+     *   databases: int,
+     *   services: int,
+     *   deployments: int,
+     *   api_errors?: array<string, string>
+     * }
+     */
+    public function buildDashboardStats(): array
+    {
+        $stats = [
+            'connected' => false,
+            'servers' => 0,
+            'projects' => 0,
+            'applications' => 0,
+            'databases' => 0,
+            'services' => 0,
+            'deployments' => 0,
+        ];
+
+        if (! $this->isConfigured()) {
+            return $stats;
+        }
+
+        $stats['connected'] = $this->ping();
+
+        if (! $stats['connected']) {
+            return $stats;
+        }
+
+        $errors = [];
+        foreach ([
+            'servers' => fn () => $this->listServers(),
+            'projects' => fn () => $this->listProjects(),
+            'applications' => fn () => $this->listApplications(),
+            'databases' => fn () => $this->listDatabases(),
+            'services' => fn () => $this->listServices(),
+            'deployments' => fn () => $this->listDeployments(),
+        ] as $key => $fn) {
+            $res = $fn();
+            if ($res['success'] ?? false) {
+                $stats[$key] = count($this->normalizeList($res['data'] ?? []));
+            } else {
+                $errors[$key] = ($res['message'] ?? 'فشل الطلب')
+                    .(isset($res['status']) ? ' (HTTP '.$res['status'].')' : '');
+            }
+        }
+
+        if ($errors !== []) {
+            $stats['api_errors'] = $errors;
+            Log::warning('Coolify dashboard stats: list endpoints failed', ['errors' => $errors]);
+        }
+
+        return $stats;
     }
 
     public function clearDashboardCache(): void

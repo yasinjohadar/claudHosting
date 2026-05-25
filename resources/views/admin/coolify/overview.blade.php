@@ -54,6 +54,28 @@
 
         @include('admin.coolify.partials.alerts')
 
+        @if($apiListBlocked ?? false)
+            <div class="alert alert-warning border-0 shadow-sm mb-4">
+                <strong><i class="fe fe-alert-triangle me-1"></i> API متصل لكن قوائم الموارد لا تُجلب (كل العدادات 0)</strong>
+                <p class="small mb-2 mt-2">عادةً التوكن لا يملك صلاحية القراءة، أو <strong>Allowed IPs</strong> في Coolify يحجب سيرفر الاستضافة.</p>
+                <ul class="small mb-2">
+                    <li>في Coolify: <strong>Keys &amp; Tokens → API Tokens</strong> — صلاحية <code>root</code> أو <code>*</code>، و<strong>Allowed IPs</strong> فارغ أو <code>0.0.0.0</code> أو IP خادم <code>hosting.claudsoft.com</code>.</li>
+                    <li>تأكد أن <strong>API URL</strong> في الإعدادات = عنوان لوحة Coolify (وليس موقع Laravel فقط).</li>
+                    <li>على السيرفر: <code dir="ltr">php artisan coolify:diagnose-api --clear-cache</code></li>
+                </ul>
+                @if(!empty($stats['api_errors']))
+                    <details class="small">
+                        <summary>تفاصيل الأخطاء من API</summary>
+                        <ul class="mb-0 mt-2">
+                            @foreach($stats['api_errors'] as $key => $msg)
+                                <li><code>{{ $key }}</code>: {{ $msg }}</li>
+                            @endforeach
+                        </ul>
+                    </details>
+                @endif
+            </div>
+        @endif
+
         @if(!($configured ?? false))
             <div class="alert alert-warning">
                 يرجى <a href="{{ route('admin.coolify.settings.index') }}" class="alert-link">ضبط إعدادات اتصال Coolify</a> لعرض الإحصائيات الحية.
