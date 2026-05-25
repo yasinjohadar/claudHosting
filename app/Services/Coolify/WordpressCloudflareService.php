@@ -134,6 +134,90 @@ class WordpressCloudflareService
         ];
     }
 
+    /**
+     * يقرأ سجل DNS الموجود على Cloudflare ويحدّث metadata دون إنشاء سجل جديد.
+     *
+     * @return array{ok: bool, message?: string, metadata?: array<string, mixed>}
+     */
+    public function syncFromExistingDns(CoolifyWordpressSite $site): array
+    {
+        if (! $this->isEnabledForSite($site)) {
+            return ['ok' => false, 'message' => 'Cloudflare معطّل لهذا الموقع'];
+        }
+
+        if (! $this->settings->getWordpressCloudflareEnabled()) {
+            return ['ok' => false, 'message' => 'Cloudflare معطّل في إعدادات Coolify'];
+        }
+
+        if (! $this->cloudflare->isConfigured()) {
+            return ['ok' => false, 'message' => 'Cloudflare API غير مضبوط — احفظ التوكن من إعدادات Cloudflare'];
+        }
+
+        $baseDomain = strtolower(rtrim($this->settings->getWordpressBaseDomain(), '.'));
+        if ($baseDomain === '') {
+            return ['ok' => false, 'message' => 'لم يُحدَّد النطاق الأساسي في إعدادات WordPress'];
+        }
+
+        $zoneId = $this->resolveZoneId();
+        if ($zoneId === '') {
+            return ['ok' => false, 'message' => 'لم يُحدَّد Zone ID — اختر المنطقة في إعدادات Coolify أو تأكد من صلاحيات التوكن'];
+        }
+
+        $record = $this->findExistingDnsRecord($zoneId, $site->slug, $baseDomain);
+        if ($record === null) {
+            $fqdn = $site->slug.'.'.$baseDomain;
+
+            return [
+                'ok' => false,
+                'message' => 'لم يُعثر على سجل DNS (A أو CNAME) لـ '.$fqdn.' في Cloudflare',
+            ];
+        }
+
+        $this->settings->persistWordpressCloudflareZoneIdIfEmpty($zoneId);
+
+        $recordFqdn = strtolower(rtrim((string) ($record['name'] ?? ''), '.'));
+        if ($recordFqdn !== '' && ! str_contains($recordFqdn, '.')) {
+            $recordFqdn = $recordFqdn.'.'.$baseDomain;
+        }
+
+        $sslMode = $this->settings->getWordpressCloudflareSslMode();
+        $sslResponse = $this->cloudflare->getZoneSsl($zoneId);
+        if ($sslResponse['success'] ?? false) {
+            $sslValue = $sslResponse['data']['result']['value'] ?? null;
+            if (is_string($sslValue) && $sslValue !== '') {
+                $sslMode = $sslValue;
+            }
+        }
+
+        $preset = (string) ($site->metadata['security_preset'] ?? $this->settings->getWordpressSecurityPreset());
+
+        $cloudflareMeta = [
+            'zone_id' => $zoneId,
+            'dns_record_id' => (string) ($record['id'] ?? ''),
+            'record_name' => $site->slug,
+            'fqdn' => $recordFqdn !== '' ? $recordFqdn : ($site->slug.'.'.$baseDomain),
+            'proxied' => (bool) ($record['proxied'] ?? false),
+            'origin' => (string) ($record['content'] ?? ''),
+            'record_type' => strtoupper((string) ($record['type'] ?? '')),
+            'preset' => $preset,
+            'ssl_mode' => $sslMode,
+            'synced_at' => now()->toIso8601String(),
+            'sync_source' => 'dns_lookup',
+        ];
+
+        $merged = array_merge($site->metadata ?? [], [
+            'cloudflare' => $cloudflareMeta,
+        ]);
+        unset($merged['domain_warning']);
+
+        $site->update(['metadata' => $merged]);
+
+        return [
+            'ok' => true,
+            'metadata' => $cloudflareMeta,
+        ];
+    }
+
     public function isEnabledForSite(CoolifyWordpressSite $site): bool
     {
         $meta = $site->metadata ?? [];
@@ -185,5 +269,32 @@ class WordpressCloudflareService
         if ($log !== null) {
             $log($step, $message);
         }
+    }
+
+    /**
+     * @return array<string, mixed>|null
+     */
+    protected function findExistingDnsRecord(string $zoneId, string $slug, string $baseDomain): ?array
+    {
+        $slug = strtolower($slug);
+        $fqdn = $slug.'.'.$baseDomain;
+
+        foreach (['A', 'CNAME'] as $type) {
+            foreach ([$fqdn, $slug] as $name) {
+                $record = $this->cloudflare->findDnsRecordByName($zoneId, $name, $type);
+                if ($record !== null) {
+                    return $record;
+                }
+            }
+        }
+
+        foreach ([$fqdn, $slug] as $name) {
+            $record = $this->cloudflare->findDnsRecordByName($zoneId, $name, null);
+            if ($record !== null) {
+                return $record;
+            }
+        }
+
+        return null;
     }
 }

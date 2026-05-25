@@ -35,12 +35,25 @@
 .site-show-hero .site-url-chip {
     display: inline-flex;
     align-items: center;
+    flex-wrap: wrap;
     gap: 0.35rem;
-    padding: 0.25rem 0.65rem;
+    padding: 0.35rem 0.75rem;
     border-radius: 0.5rem;
     background: var(--custom-white, #fff);
     border: 1px solid var(--default-border);
     font-size: 0.8rem;
+    max-width: 100%;
+}
+.site-show-hero .site-url-chip a {
+    word-break: break-all;
+}
+.site-show-hero .site-url-chip--pending {
+    border-color: rgba(245, 158, 11, 0.35);
+    background: rgba(245, 158, 11, 0.06);
+}
+.site-show-hero .site-url-chip--coolify {
+    border-color: rgba(34, 197, 94, 0.35);
+    background: rgba(34, 197, 94, 0.06);
 }
 .site-show-actions .btn {
     border-radius: 0.5rem;

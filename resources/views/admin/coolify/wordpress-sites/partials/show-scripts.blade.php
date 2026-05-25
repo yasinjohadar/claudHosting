@@ -116,7 +116,25 @@
         el.textContent = parts.join('\n').trim() || 'لا توجد أسطر في السجل.';
     }
 
+    function updateUrlChips(d) {
+        const coolifyUrl = d.coolify_default_url || '';
+        const customUrl = d.custom_public_url || d.public_url || '';
+        const coolifyLink = document.getElementById('siteCoolifyUrl');
+        const customLink = document.getElementById('siteCustomUrl');
+        const missing = document.getElementById('siteCoolifyUrlMissing');
+        if (coolifyLink && coolifyUrl) {
+            coolifyLink.href = coolifyUrl;
+            coolifyLink.textContent = coolifyUrl;
+            if (missing) missing.classList.add('d-none');
+        }
+        if (customLink && customUrl) {
+            customLink.href = customUrl;
+            customLink.textContent = customUrl;
+        }
+    }
+
     function updateLive(d) {
+        updateUrlChips(d);
         const liveBadge = document.getElementById('liveCoolifyBadge');
         const stepOverview = document.getElementById('provisioningStepOverview');
         const liveHint = document.getElementById('liveStatusHint');
@@ -176,7 +194,11 @@
     } else if (@json($hasServiceUuid)) {
         fetch(statusUrl, { headers: { 'Accept': 'application/json' } })
             .then(r => r.json())
-            .then(d => { if (d.success) updateLive(d); });
+            .then(d => {
+                if (!d.success) return;
+                updateUrlChips(d);
+                updateLive(d);
+            });
     }
 
     document.querySelectorAll('.coolify-copy-btn').forEach(btn => {

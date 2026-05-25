@@ -133,6 +133,17 @@ class CoolifySettingsService
         return trim((string) $this->getSettingValue('wordpress_cloudflare_zone_id', ''));
     }
 
+    public function persistWordpressCloudflareZoneIdIfEmpty(string $zoneId): void
+    {
+        $zoneId = trim($zoneId);
+        if ($zoneId === '' || $this->getWordpressCloudflareZoneId() !== '') {
+            return;
+        }
+
+        $keys = config('coolify.keys');
+        SystemSetting::set($keys['wordpress_cloudflare_zone_id'], $zoneId, 'string', self::GROUP);
+    }
+
     public function getWordpressCloudflareProxied(): bool
     {
         return filter_var(

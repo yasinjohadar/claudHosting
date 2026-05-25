@@ -1,3 +1,13 @@
+@php
+    $coolifyDefaultUrl = $site->metadata['coolify_default_url'] ?? null;
+    $coolifyDefaultAdmin = $site->metadata['coolify_default_admin_url'] ?? null;
+    $customUrl = $site->public_url;
+    $cf = $site->metadata['cloudflare'] ?? [];
+    $cfEnabled = filter_var($site->metadata['cloudflare_enabled'] ?? true, FILTER_VALIDATE_BOOLEAN);
+    $customPending = $cfEnabled && (empty($cf) || empty($cf['proxied'] ?? null) || !empty($site->metadata['domain_warning']));
+    $canOpenCustom = $customUrl && $site->status === 'running' && ! $customPending;
+    $canOpenCoolify = $coolifyDefaultUrl && $site->status === 'running';
+@endphp
 <div class="site-show-hero">
     <div class="d-md-flex d-block align-items-start justify-content-between gap-3">
         <div class="flex-grow-1">
@@ -17,23 +27,23 @@
                     <li class="breadcrumb-item active">{{ $site->slug }}</li>
                 </ol>
             </nav>
-            @if($site->public_url)
-            <div class="mt-2">
-                <span class="site-url-chip">
-                    <i class="fe fe-link text-primary"></i>
-                    <a id="sitePublicUrl" href="{{ $site->public_url }}" target="_blank" rel="noopener" dir="ltr" class="text-decoration-none">{{ $site->public_url }}</a>
-                </span>
-            </div>
-            @endif
+            @include('admin.coolify.wordpress-sites.partials.show-url-links')
         </div>
-        <div class="d-flex gap-2 flex-wrap site-show-actions align-items-center">
-            @if($site->public_url && $site->status === 'running')
-            <a href="{{ $site->public_url }}" target="_blank" rel="noopener" class="btn btn-success btn-sm">
-                <i class="fe fe-external-link"></i> فتح الموقع
+        <div class="d-flex gap-2 flex-wrap site-show-actions align-items-center" id="siteOpenActions">
+            @if($canOpenCoolify)
+            <a href="{{ $coolifyDefaultUrl }}" target="_blank" rel="noopener" class="btn btn-success btn-sm" id="btnOpenCoolify">
+                <i class="fe fe-external-link"></i> فتح (Coolify)
             </a>
             @endif
-            @if($site->admin_url && $site->status === 'running')
-            <a href="{{ $site->admin_url }}" target="_blank" rel="noopener" class="btn btn-outline-success btn-sm">لوحة WP</a>
+            @if($customUrl && $site->status === 'running')
+            <a href="{{ $customUrl }}" target="_blank" rel="noopener" class="btn btn-outline-success btn-sm {{ $canOpenCustom ? '' : 'disabled' }}" id="btnOpenCustom" @if(!$canOpenCustom) aria-disabled="true" tabindex="-1" @endif>
+                <i class="fe fe-globe"></i> فتح (نطاق مخصص)
+            </a>
+            @endif
+            @if($canOpenCoolify && $coolifyDefaultAdmin)
+            <a href="{{ $coolifyDefaultAdmin }}" target="_blank" rel="noopener" class="btn btn-outline-success btn-sm" id="btnOpenCoolifyAdmin">لوحة WP (Coolify)</a>
+            @elseif($site->admin_url && $site->status === 'running' && $canOpenCustom)
+            <a href="{{ $site->admin_url }}" target="_blank" rel="noopener" class="btn btn-outline-success btn-sm" id="btnOpenCustomAdmin">لوحة WP</a>
             @endif
             <a href="{{ route('admin.coolify.wordpress-sites.edit', $uuid) }}" class="btn btn-outline-primary btn-sm"><i class="fe fe-edit-2"></i> تعديل</a>
             @if($site->service_uuid)
@@ -41,6 +51,9 @@
             @endif
             @if($site->project_uuid)
             <a href="{{ route('admin.coolify.projects.show', $site->project_uuid) }}" class="btn btn-outline-secondary btn-sm">المشروع</a>
+            @endif
+            @if($cfEnabled && ($site->status === 'running' || empty($cf)))
+            @include('admin.coolify.wordpress-sites.partials.sync-cloudflare-form')
             @endif
             @if($site->status === 'failed')
             <form method="POST" action="{{ route('admin.coolify.wordpress-sites.retry', $uuid) }}" class="d-inline">

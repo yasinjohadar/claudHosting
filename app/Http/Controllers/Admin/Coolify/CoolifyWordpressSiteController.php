@@ -7,6 +7,7 @@ use App\Http\Controllers\Controller;
 use App\Jobs\ProvisionWordpressSiteJob;
 use App\Models\CoolifyWordpressSite;
 use App\Services\Coolify\CoolifySettingsService;
+use App\Services\Coolify\WordpressCloudflareService;
 use App\Services\Coolify\WordpressManagementService;
 use App\Services\Coolify\WordpressSiteProvisioningService;
 use App\Services\CoolifyApiService;
@@ -23,7 +24,8 @@ class CoolifyWordpressSiteController extends Controller
         protected CoolifyApiService $coolify,
         protected CoolifySettingsService $settings,
         protected WordpressSiteProvisioningService $provisioning,
-        protected WordpressManagementService $wpManagement
+        protected WordpressManagementService $wpManagement,
+        protected WordpressCloudflareService $wordpressCloudflare
     ) {
         $this->middleware('auth');
     }
@@ -329,6 +331,9 @@ class CoolifyWordpressSiteController extends Controller
             'wp_info' => $metadata['wp_info'] ?? null,
             'wp_job' => $metadata['wp_job'] ?? null,
             'wp_management_log' => $metadata['wp_management_log'] ?? [],
+            'coolify_default_url' => $metadata['coolify_default_url'] ?? null,
+            'coolify_default_admin_url' => $metadata['coolify_default_admin_url'] ?? null,
+            'custom_public_url' => $site->public_url,
         ];
 
         if ($this->coolify->isConfigured() && filled($site->service_uuid)) {
@@ -337,12 +342,16 @@ class CoolifyWordpressSiteController extends Controller
                 $service = is_array($response['data'] ?? null) ? $response['data'] : [];
                 $components = $this->coolify->extractServiceComponentStatuses($service);
                 $coolifyStatus = strtolower((string) ($service['status'] ?? ''));
+                $coolifyUrls = $this->coolify->resolveCoolifyUrlMetadata($service);
 
                 $metadata = array_merge($metadata, [
                     'coolify_service_status' => $coolifyStatus,
                     'coolify_components' => $components,
-                ]);
+                ], $coolifyUrls);
                 $site->update(['metadata' => $metadata]);
+
+                $payload['coolify_default_url'] = $coolifyUrls['coolify_default_url'];
+                $payload['coolify_default_admin_url'] = $coolifyUrls['coolify_default_admin_url'];
 
                 $payload['coolify_status'] = $coolifyStatus;
                 $payload['components'] = $components;
@@ -357,6 +366,11 @@ class CoolifyWordpressSiteController extends Controller
                         $payload['status'] = $site->status;
                         $payload['local_status'] = $site->status;
                         $metadata = $site->metadata ?? [];
+                        $payload['public_url'] = $site->public_url;
+                        $payload['admin_url'] = $site->admin_url;
+                        $payload['custom_public_url'] = $site->public_url;
+                        $payload['coolify_default_url'] = $metadata['coolify_default_url'] ?? $payload['coolify_default_url'];
+                        $payload['coolify_default_admin_url'] = $metadata['coolify_default_admin_url'] ?? $payload['coolify_default_admin_url'];
                     } catch (\Throwable) {
                         // non-fatal
                     }
@@ -460,6 +474,24 @@ class CoolifyWordpressSiteController extends Controller
         return redirect()
             ->route('admin.coolify.wordpress-sites.show', $site->uuid)
             ->with('success', 'تم حفظ التعديلات');
+    }
+
+    public function syncCloudflare(string $uuid)
+    {
+        $site = CoolifyWordpressSite::query()->where('uuid', $uuid)->firstOrFail();
+
+        $result = $this->wordpressCloudflare->syncFromExistingDns($site);
+
+        if (! ($result['ok'] ?? false)) {
+            return back()->with('error', $result['message'] ?? 'فشل مزامنة Cloudflare');
+        }
+
+        $meta = $result['metadata'] ?? [];
+        $fqdn = $meta['fqdn'] ?? $site->slug;
+
+        return redirect()
+            ->route('admin.coolify.wordpress-sites.show', $site->uuid)
+            ->with('success', 'تمت مزامنة Cloudflare من السجل الحالي: '.$fqdn);
     }
 
     public function retry(string $uuid)

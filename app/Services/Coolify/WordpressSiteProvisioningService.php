@@ -75,15 +75,16 @@ class WordpressSiteProvisioningService
             }
             $envs = $this->coolify->normalizeList($this->coolify->listServiceEnvs($serviceUuid)['data'] ?? []);
 
-            $resolvedPublic = $this->coolify->extractServicePublicUrl($service) ?: $publicUrl;
-            $adminUrl = $this->coolify->extractWordpressAdminUrl($service, $envs);
+            $coolifyUrls = $this->coolify->resolveCoolifyUrlMetadata($service);
+            $primaryPublic = $this->resolveSitePublicUrl($site, $publicUrl, $service);
+            $adminUrl = $this->resolveSiteAdminUrl($primaryPublic, $coolifyUrls, $service, $envs);
             $dbEnv = $this->coolify->extractDatabaseEnvFromServiceEnvs($envs);
 
             $metadata = array_merge($site->metadata ?? [], [
                 'service' => Arr::only($service, ['uuid', 'name', 'status', 'type', 'fqdn', 'domains']),
                 'database_env' => $dbEnv,
                 'provisioned_at' => now()->toIso8601String(),
-            ]);
+            ], $coolifyUrls);
 
             if ($domainWarning !== null) {
                 $metadata['domain_warning'] = $domainWarning;
@@ -93,7 +94,7 @@ class WordpressSiteProvisioningService
 
             $site->update([
                 'status' => 'running',
-                'public_url' => $resolvedPublic,
+                'public_url' => $primaryPublic,
                 'admin_url' => $adminUrl,
                 'metadata' => $metadata,
                 'error_message' => null,
@@ -542,7 +543,8 @@ class WordpressSiteProvisioningService
 
         $service = $this->fetchService($site->service_uuid);
         $envs = $this->coolify->normalizeList($this->coolify->listServiceEnvs($site->service_uuid)['data'] ?? []);
-        $public = $this->coolify->extractServicePublicUrl($service) ?: $site->public_url;
+        $coolifyUrls = $this->coolify->resolveCoolifyUrlMetadata($service);
+        $public = $this->resolveSitePublicUrl($site, null, $service);
         $status = strtolower((string) ($service['status'] ?? ''));
         $stackHealthy = $this->coolify->isServiceStackHealthy($service);
         $runningStatuses = ['running', 'healthy', 'started', 'active'];
@@ -559,7 +561,7 @@ class WordpressSiteProvisioningService
             'coolify_components' => $this->coolify->extractServiceComponentStatuses($service),
             'coolify_stack_healthy' => $stackHealthy,
             'synced_at' => now()->toIso8601String(),
-        ]);
+        ], $coolifyUrls);
 
         if ($stackHealthy && in_array($site->status, ['provisioning', 'pending'], true)) {
             $metadata['provisioning_step'] = 'done';
@@ -568,7 +570,7 @@ class WordpressSiteProvisioningService
         $updates = [
             'status' => $siteStatus,
             'public_url' => $public,
-            'admin_url' => $this->coolify->extractWordpressAdminUrl($service, $envs),
+            'admin_url' => $this->resolveSiteAdminUrl($public, $coolifyUrls, $service, $envs),
             'metadata' => $metadata,
         ];
 
@@ -600,5 +602,44 @@ class WordpressSiteProvisioningService
         ]);
 
         $this->syncSiteFromCoolify($site);
+    }
+
+    protected function resolveSitePublicUrl(CoolifyWordpressSite $site, ?string $intendedCustom, array $service): ?string
+    {
+        $candidates = array_filter([
+            $intendedCustom,
+            $site->public_url,
+            $site->slug !== '' ? $this->settings->buildWordpressPublicUrl($site->slug) : null,
+        ]);
+
+        foreach ($candidates as $url) {
+            $host = $this->coolify->hostnameFromUrl((string) $url);
+            if ($host !== '' && ! $this->coolify->isCoolifyGeneratedHost($host)) {
+                return $this->coolify->normalizePublicUrl((string) $url);
+            }
+        }
+
+        return $this->coolify->extractServicePublicUrl($service)
+            ?: $this->coolify->extractCoolifyDefaultPublicUrl($service)
+            ?: ($site->public_url ?: null);
+    }
+
+    /**
+     * @param  array{coolify_default_url: ?string, coolify_default_admin_url: ?string, coolify_urls?: array<int, string>}  $coolifyUrls
+     */
+    protected function resolveSiteAdminUrl(?string $publicUrl, array $coolifyUrls, array $service, array $envs): ?string
+    {
+        if ($publicUrl) {
+            $host = $this->coolify->hostnameFromUrl($publicUrl);
+            if ($host !== '' && ! $this->coolify->isCoolifyGeneratedHost($host)) {
+                return rtrim($publicUrl, '/').'/wp-admin';
+            }
+        }
+
+        if (! empty($coolifyUrls['coolify_default_admin_url'])) {
+            return $coolifyUrls['coolify_default_admin_url'];
+        }
+
+        return $this->coolify->extractWordpressAdminUrl($service, $envs);
     }
 }

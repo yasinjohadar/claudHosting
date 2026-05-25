@@ -19,9 +19,12 @@
         'accent' => 'warning',
         'icon' => 'fe fe-shield',
         'label' => 'Cloudflare',
-        'desc' => 'لم يُربط بعد — راجع سجل الإنشاء',
+        'desc' => 'السجل موجود على Cloudflare؟ اضغط مزامنة لتحديث حالة اللوحة دون إنشاء سجل جديد.',
         'highlight' => 'قيد الإعداد',
     ])
+    <div class="mt-3">
+        @include('admin.coolify.wordpress-sites.partials.sync-cloudflare-form')
+    </div>
     @else
     <div class="row g-3 site-show-tab-grid">
         <div class="col-lg-8">
@@ -52,6 +55,9 @@
             ])
         </div>
         @endif
+    </div>
+    <div class="mt-3">
+        @include('admin.coolify.wordpress-sites.partials.sync-cloudflare-form')
     </div>
     @endif
 </div>

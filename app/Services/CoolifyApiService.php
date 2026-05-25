@@ -1203,6 +1203,143 @@ class CoolifyApiService
         return [['name' => 'primary', 'url' => $url]];
     }
 
+    public function isCoolifyGeneratedHost(string $host): bool
+    {
+        $host = strtolower(trim($host));
+        if ($host === '') {
+            return false;
+        }
+
+        if (str_ends_with($host, '.sslip.io') || str_ends_with($host, '.sslip.dev')) {
+            return true;
+        }
+
+        return (bool) preg_match('/\.(\d{1,3}(?:\.\d{1,3}){3})\.sslip\.io$/', $host);
+    }
+
+    /**
+     * @return array<int, string>
+     */
+    public function collectServicePublicUrls(array $service): array
+    {
+        $seen = [];
+        $ordered = [];
+
+        $push = function (?string $raw) use (&$seen, &$ordered): void {
+            if ($raw === null || trim($raw) === '') {
+                return;
+            }
+            $url = $this->normalizePublicUrl($raw);
+            if ($url === '' || isset($seen[$url])) {
+                return;
+            }
+            $seen[$url] = true;
+            $ordered[] = $url;
+        };
+
+        $wordpressApps = [];
+        $otherApps = [];
+        foreach ($this->normalizeList($service['applications'] ?? []) as $app) {
+            if (! is_array($app)) {
+                continue;
+            }
+            $name = strtolower((string) ($app['name'] ?? ''));
+            if (str_contains($name, 'wordpress')) {
+                $wordpressApps[] = $app;
+            } else {
+                $otherApps[] = $app;
+            }
+        }
+
+        foreach (array_merge($wordpressApps, $otherApps) as $app) {
+            $push($app['fqdn'] ?? null);
+            foreach ($this->normalizeList($app['urls'] ?? []) as $entry) {
+                if (is_string($entry)) {
+                    $push($entry);
+                } elseif (is_array($entry)) {
+                    $push($entry['url'] ?? $entry['name'] ?? $entry['fqdn'] ?? null);
+                }
+            }
+        }
+
+        foreach (['fqdn', 'domain', 'public_url'] as $key) {
+            $value = $service[$key] ?? null;
+            if (is_string($value)) {
+                $push($value);
+            }
+        }
+
+        foreach ($this->normalizeList($service['domains'] ?? []) as $domain) {
+            if (is_string($domain)) {
+                $push($domain);
+            } elseif (is_array($domain)) {
+                $push($domain['url'] ?? $domain['name'] ?? $domain['fqdn'] ?? null);
+            }
+        }
+
+        foreach ($this->normalizeList($service['urls'] ?? []) as $entry) {
+            if (is_string($entry)) {
+                $push($entry);
+            } elseif (is_array($entry)) {
+                $push($entry['url'] ?? $entry['name'] ?? null);
+            }
+        }
+
+        return $ordered;
+    }
+
+    public function extractCoolifyDefaultPublicUrl(array $service): ?string
+    {
+        $fromWordpress = $this->extractWordpressApplicationPublicUrl($service);
+        if ($fromWordpress !== null) {
+            $host = $this->hostnameFromUrl($fromWordpress);
+            if ($this->isCoolifyGeneratedHost($host)) {
+                return $fromWordpress;
+            }
+        }
+
+        foreach ($this->collectServicePublicUrls($service) as $url) {
+            if ($this->isCoolifyGeneratedHost($this->hostnameFromUrl($url))) {
+                return $url;
+            }
+        }
+
+        return null;
+    }
+
+    public function extractWordpressApplicationPublicUrl(array $service): ?string
+    {
+        foreach ($this->normalizeList($service['applications'] ?? []) as $app) {
+            if (! is_array($app)) {
+                continue;
+            }
+            $name = strtolower((string) ($app['name'] ?? ''));
+            if (! str_contains($name, 'wordpress')) {
+                continue;
+            }
+            $fqdn = (string) ($app['fqdn'] ?? '');
+            if ($fqdn !== '') {
+                return $this->normalizePublicUrl($fqdn);
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * @return array{coolify_default_url: ?string, coolify_default_admin_url: ?string, coolify_urls: array<int, string>}
+     */
+    public function resolveCoolifyUrlMetadata(array $service): array
+    {
+        $default = $this->extractCoolifyDefaultPublicUrl($service);
+
+        return [
+            'coolify_default_url' => $default,
+            'coolify_default_admin_url' => $default ? rtrim($default, '/').'/wp-admin' : null,
+            'coolify_urls' => $this->collectServicePublicUrls($service),
+        ];
+    }
+
     public function extractServicePublicUrl(array $service): ?string
     {
         foreach (['fqdn', 'domain', 'public_url'] as $key) {
@@ -1281,7 +1418,7 @@ class CoolifyApiService
         return strtolower((string) parse_url($url, PHP_URL_HOST));
     }
 
-    protected function normalizePublicUrl(string $url): string
+    public function normalizePublicUrl(string $url): string
     {
         $url = trim($url);
         if ($url === '') {
