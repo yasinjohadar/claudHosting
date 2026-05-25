@@ -794,7 +794,15 @@ class WordpressManagementService
 
         $decoded = json_decode($output, true);
         if (is_array($decoded)) {
-            return isset($decoded[0]) ? $decoded : [$decoded];
+            if (array_is_list($decoded)) {
+                return $decoded;
+            }
+            $values = array_values($decoded);
+            if ($values !== [] && is_array($values[0])) {
+                return $values;
+            }
+
+            return [$decoded];
         }
 
         $items = [];

@@ -12,7 +12,6 @@ use App\Services\Coolify\WordpressManagementService;
 use App\Services\Coolify\WordpressProvisioningProgress;
 use App\Services\Coolify\WordpressSiteProvisioningService;
 use App\Services\CoolifyApiService;
-use App\Services\Wordpress\WordpressOrgDirectoryService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -28,8 +27,7 @@ class CoolifyWordpressSiteController extends Controller
         protected WordpressSiteProvisioningService $provisioning,
         protected WordpressManagementService $wpManagement,
         protected WordpressCloudflareService $wordpressCloudflare,
-        protected WordpressProvisioningProgress $provisioningProgress,
-        protected WordpressOrgDirectoryService $wpDirectory
+        protected WordpressProvisioningProgress $provisioningProgress
     ) {
         $this->middleware('auth');
     }
@@ -220,51 +218,6 @@ class CoolifyWordpressSiteController extends Controller
             'message' => $result['message'] ?? null,
             'can_manage' => $this->wpManagement->canManage($site->fresh()),
         ]);
-    }
-
-    public function wpDirectoryPlugins(Request $request, string $uuid): JsonResponse
-    {
-        CoolifyWordpressSite::query()->where('uuid', $uuid)->firstOrFail();
-
-        $validated = $request->validate([
-            'q' => 'nullable|string|max:80',
-            'page' => 'nullable|integer|min:1|max:20',
-            'browse' => 'nullable|string|in:popular,new,updated,featured',
-        ]);
-
-        $result = $this->wpDirectory->searchPlugins(
-            (string) ($validated['q'] ?? ''),
-            (int) ($validated['page'] ?? 1),
-            (string) ($validated['browse'] ?? '')
-        );
-
-        return response()->json($result);
-    }
-
-    public function wpDirectoryThemes(Request $request, string $uuid): JsonResponse
-    {
-        CoolifyWordpressSite::query()->where('uuid', $uuid)->firstOrFail();
-
-        $validated = $request->validate([
-            'q' => 'nullable|string|max:80',
-            'page' => 'nullable|integer|min:1|max:20',
-            'browse' => 'nullable|string|in:popular,new,updated,featured',
-        ]);
-
-        $result = $this->wpDirectory->searchThemes(
-            (string) ($validated['q'] ?? ''),
-            (int) ($validated['page'] ?? 1),
-            (string) ($validated['browse'] ?? '')
-        );
-
-        return response()->json($result);
-    }
-
-    public function wpDirectoryPluginInfo(string $uuid, string $slug): JsonResponse
-    {
-        CoolifyWordpressSite::query()->where('uuid', $uuid)->firstOrFail();
-
-        return response()->json($this->wpDirectory->getPluginInfo($slug));
     }
 
     public function wpAction(Request $request, string $uuid): JsonResponse

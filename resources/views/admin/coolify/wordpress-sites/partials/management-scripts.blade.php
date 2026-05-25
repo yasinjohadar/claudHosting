@@ -7,8 +7,6 @@
     const wpActionUrl = @json(route('admin.coolify.wordpress-sites.wp-action', $uuid));
     const wpJobUrl = @json(route('admin.coolify.wordpress-sites.wp-job', $uuid));
     const wpStatusUrl = @json(route('admin.coolify.wordpress-sites.status', $uuid));
-    const wpDirectoryPluginsUrl = @json(route('admin.coolify.wordpress-sites.wp-directory.plugins', $uuid));
-    const wpDirectoryThemesUrl = @json(route('admin.coolify.wordpress-sites.wp-directory.themes', $uuid));
     const csrf = @json(csrf_token());
     const quickCommands = @json(config('wordpress_cli.quick_commands', []));
 
@@ -687,178 +685,6 @@
         if (!login || !email) { alert('اسم المستخدم والبريد مطلوبان'); return; }
         runAction('user_create', { login, email, role, password });
     });
-    /* --- wordpress.org directory browser --- */
-    let wpDirectoryType = 'plugin';
-    let wpDirectoryPage = 1;
-    let wpDirectoryBrowse = '';
-
-    function wpDirectoryBaseUrl() {
-        return wpDirectoryType === 'theme' ? wpDirectoryThemesUrl : wpDirectoryPluginsUrl;
-    }
-
-    function setWpDirectoryType(type) {
-        wpDirectoryType = type === 'theme' ? 'theme' : 'plugin';
-        document.querySelectorAll('.wp-directory-type-tabs .nav-link').forEach(link => {
-            link.classList.toggle('active', link.dataset.directoryType === wpDirectoryType);
-        });
-        const activateWrap = document.getElementById('wpDirectoryPluginActivateWrap');
-        if (activateWrap) activateWrap.classList.toggle('d-none', wpDirectoryType === 'theme');
-    }
-
-    function escapeHtml(str) {
-        return String(str || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
-    }
-
-    function renderWpDirectoryCards(data) {
-        const wrap = document.getElementById('wpDirectoryResults');
-        const status = document.getElementById('wpDirectoryStatus');
-        const pagination = document.getElementById('wpDirectoryPagination');
-        if (!wrap) return;
-
-        if (!data.success) {
-            wrap.innerHTML = '';
-            if (status) status.textContent = data.message || 'فشل جلب النتائج';
-            if (pagination) pagination.classList.add('d-none');
-            return;
-        }
-
-        const items = data.items || [];
-        if (status) {
-            status.textContent = items.length
-                ? ('عرض ' + items.length + ' نتيجة — صفحة ' + (data.page || 1) + ' من ' + (data.pages || 1))
-                : 'لا توجد نتائج.';
-        }
-
-        if (!items.length) {
-            wrap.innerHTML = '<div class="col-12"><p class="text-muted small mb-0">لا توجد نتائج — جرّب كلمة بحث أخرى.</p></div>';
-            if (pagination) pagination.classList.add('d-none');
-            return;
-        }
-
-        wrap.innerHTML = items.map(item => {
-            const icon = item.icon
-                ? '<img src="' + escapeHtml(item.icon) + '" alt="" class="wp-directory-card-icon me-2" loading="lazy">'
-                : '<span class="wp-directory-card-icon me-2 d-inline-flex align-items-center justify-content-center"><i class="fe fe-package text-muted"></i></span>';
-            const meta = wpDirectoryType === 'plugin'
-                ? ('تقييم: ' + escapeHtml(item.rating_label) + ' · تثبيتات: ' + escapeHtml(item.active_installs_label))
-                : ('تقييم: ' + escapeHtml(item.rating_label) + ' · تحميل: ' + escapeHtml(String(item.downloaded || '—')));
-            return '<div class="col-md-6 col-xl-4">' +
-                '<div class="wp-directory-card" data-slug="' + escapeHtml(item.slug) + '">' +
-                '<div class="d-flex align-items-start">' + icon +
-                '<div class="flex-grow-1 min-w-0">' +
-                '<div class="wp-directory-card-title">' + escapeHtml(item.name) + '</div>' +
-                '<code class="small text-muted">' + escapeHtml(item.slug) + '</code></div></div>' +
-                '<p class="wp-directory-card-desc mt-2 mb-0">' + escapeHtml(item.short_description) + '</p>' +
-                '<div class="wp-directory-card-meta">' + meta + '</div>' +
-                '<div class="wp-directory-card-actions d-flex gap-2 flex-wrap">' +
-                '<button type="button" class="btn btn-primary btn-sm wp-directory-install" data-slug="' + escapeHtml(item.slug) + '" data-name="' + escapeHtml(item.name) + '"' + (wpExec ? '' : ' disabled') + '>تثبيت</button>' +
-                '<a href="' + escapeHtml(item.org_url) + '" target="_blank" rel="noopener" class="btn btn-outline-secondary btn-sm">الصفحة</a>' +
-                '</div></div></div>';
-        }).join('');
-
-        wrap.querySelectorAll('.wp-directory-install').forEach(btn => {
-            btn.addEventListener('click', () => installFromDirectory(btn.dataset.slug || '', btn.dataset.name || ''));
-        });
-
-        if (pagination) {
-            const page = data.page || 1;
-            const pages = data.pages || 1;
-            if (pages > 1) {
-                pagination.classList.remove('d-none');
-                pagination.innerHTML =
-                    '<button type="button" class="btn btn-sm btn-outline-secondary wp-directory-page" data-page="' + (page - 1) + '" ' + (page <= 1 ? 'disabled' : '') + '>السابق</button>' +
-                    '<span class="small align-self-center">صفحة ' + page + ' / ' + pages + '</span>' +
-                    '<button type="button" class="btn btn-sm btn-outline-secondary wp-directory-page" data-page="' + (page + 1) + '" ' + (page >= pages ? 'disabled' : '') + '>التالي</button>';
-                pagination.querySelectorAll('.wp-directory-page').forEach(pbtn => {
-                    pbtn.addEventListener('click', () => {
-                        const p = parseInt(pbtn.dataset.page, 10);
-                        if (!isNaN(p)) loadWpDirectory(p);
-                    });
-                });
-            } else {
-                pagination.classList.add('d-none');
-            }
-        }
-    }
-
-    async function loadWpDirectory(page) {
-        wpDirectoryPage = page || 1;
-        const q = document.getElementById('wpDirectorySearch')?.value?.trim() || '';
-        const status = document.getElementById('wpDirectoryStatus');
-        const wrap = document.getElementById('wpDirectoryResults');
-        if (status) status.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> جاري التحميل من wordpress.org…';
-        if (wrap) wrap.innerHTML = '';
-
-        const params = new URLSearchParams({ page: String(wpDirectoryPage) });
-        if (wpDirectoryBrowse) params.set('browse', wpDirectoryBrowse);
-        else if (q) params.set('q', q);
-
-        try {
-            const data = await fetchJson(wpDirectoryBaseUrl() + '?' + params.toString(), { headers: { 'Accept': 'application/json' } }, 60000);
-            renderWpDirectoryCards(data);
-        } catch (err) {
-            renderWpDirectoryCards({ success: false, message: err.message || 'خطأ في الاتصال' });
-        }
-    }
-
-    async function installFromDirectory(slug, name) {
-        if (!slug) return;
-        if (!wpExec) { alert('اضبط مفتاح SSH في إعدادات Coolify أولاً'); return; }
-        const card = document.querySelector('.wp-directory-card[data-slug="' + slug.replace(/\\/g, '\\\\').replace(/"/g, '\\"') + '"]');
-        if (card) card.classList.add('wp-directory-card--busy');
-        const label = name || slug;
-        if (!confirm('تثبيت «' + label + '» (' + slug + ') على هذا الموقع؟')) {
-            if (card) card.classList.remove('wp-directory-card--busy');
-            return;
-        }
-        const action = wpDirectoryType === 'theme' ? 'theme_install' : 'plugin_install';
-        const params = { slug };
-        if (action === 'plugin_install') {
-            params.activate = document.getElementById('wpDirectoryActivatePlugin')?.checked ? '1' : '';
-        }
-        try {
-            await runAction(action, params);
-            showJob('تم تثبيت «' + label + '» بنجاح — حدّث القائمة أدناه إن لزم.', 'success');
-            await fetchInfo(true, { silent: true });
-        } finally {
-            if (card) card.classList.remove('wp-directory-card--busy');
-        }
-    }
-
-    document.querySelectorAll('.wp-directory-type-tabs .nav-link').forEach(link => {
-        link.addEventListener('click', () => {
-            setWpDirectoryType(link.dataset.directoryType || 'plugin');
-            wpDirectoryBrowse = '';
-            loadWpDirectory(1);
-        });
-    });
-    document.getElementById('wpDirectorySearchBtn')?.addEventListener('click', () => {
-        wpDirectoryBrowse = '';
-        loadWpDirectory(1);
-    });
-    document.getElementById('wpDirectorySearch')?.addEventListener('keydown', e => {
-        if (e.key === 'Enter') { e.preventDefault(); wpDirectoryBrowse = ''; loadWpDirectory(1); }
-    });
-    document.querySelectorAll('.wp-directory-browse').forEach(btn => {
-        btn.addEventListener('click', () => {
-            wpDirectoryBrowse = btn.dataset.browse || 'popular';
-            const search = document.getElementById('wpDirectorySearch');
-            if (search) search.value = '';
-            loadWpDirectory(1);
-        });
-    });
-
-    const wpPluginsTab = document.querySelector('[data-bs-target="#wpTabPlugins"]');
-    if (wpPluginsTab) {
-        wpPluginsTab.addEventListener('shown.bs.tab', () => {
-            if (!document.getElementById('wpDirectoryResults')?.innerHTML) {
-                setWpDirectoryType('plugin');
-                wpDirectoryBrowse = 'popular';
-                loadWpDirectory(1);
-            }
-        });
-    }
-
     document.getElementById('wpBtnInstallPlugin')?.addEventListener('click', () => {
         const slug = document.getElementById('wpInstallPluginSlug')?.value?.trim();
         if (!slug) return;
@@ -904,6 +730,10 @@
         });
     }
 
+    if (wpInfoInitial && Object.keys(wpInfoInitial).length) {
+        applyInfo(wpInfoInitial);
+    }
+
     const wpPluginsTab = document.querySelector('[data-bs-target="#wpTabPlugins"]');
     if (wpPluginsTab) {
         wpPluginsTab.addEventListener('shown.bs.tab', () => {
@@ -911,10 +741,6 @@
             if (p && p.querySelector('table')) return;
             if (wpExec) fetchInfo(true);
         });
-    }
-
-    if (wpInfoInitial && Object.keys(wpInfoInitial).length) {
-        applyInfo(wpInfoInitial);
     }
 
     if (wpExec) {

@@ -94,7 +94,7 @@
                 <pre id="wpCoreOutput" class="p-2 bg-light rounded small mb-0" dir="ltr" style="max-height:160px;overflow:auto;white-space:pre-wrap;"></pre>
             </div>
             <div class="tab-pane fade" id="wpTabPlugins">
-                @include('admin.coolify.wordpress-sites.partials.wp-plugins-themes-panel', ['uuid' => $uuid])
+                @include('admin.coolify.wordpress-sites.partials.wp-plugins-themes-panel')
             </div>
             <div class="tab-pane fade" id="wpTabUsers">
                 <div id="wpPassResult" class="alert alert-success py-2 small d-none mb-3" role="status"></div>
