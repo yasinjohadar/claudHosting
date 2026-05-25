@@ -45,12 +45,13 @@ class WordpressCliService
         $path = $this->resolveWordpressPath($site, $host, $containerId);
         $appTimeout = $longRunning ? $timeout : min($timeout, 120);
         $sidecarTimeout = $longRunning ? $timeout : min($timeout, 180);
+        // php+phar داخل حاوية الموقع أولاً (Coolify غالباً بدون أمر wp في PATH)
         $methods = [
-            fn () => $this->runViaWpCliSidecar($host, $containerId, $wpArgs, $path, $sidecarTimeout, true),
-            fn () => $this->runViaWpCliSidecar($host, $containerId, $wpArgs, $path, $sidecarTimeout, false),
             fn () => $this->runViaDockerExec($host, $containerId, $wpArgs, $path, $appTimeout),
             fn () => $this->runViaComposeLabels($host, $containerId, $wpArgs, $path, $appTimeout),
             fn () => $this->runViaComposePaths($site, $host, $wpArgs, $path, $appTimeout),
+            fn () => $this->runViaWpCliSidecar($host, $containerId, $wpArgs, $path, $sidecarTimeout, true),
+            fn () => $this->runViaWpCliSidecar($host, $containerId, $wpArgs, $path, $sidecarTimeout, false),
         ];
 
         $last = ['success' => false, 'output' => '', 'exit_code' => 1];
@@ -254,17 +255,20 @@ class WordpressCliService
     {
         $this->ensureWpCliImage($host);
 
-        $inner = $this->wpExecInnerCommandSidecar($wpArgs, $path);
+        $flags = $this->wpFlags($path, true);
         $network = $shareNetwork
             ? sprintf('--network container:%s ', escapeshellarg($containerId))
             : '';
 
+        // تجنّب sh -c "wp …" — في بعض الصور يفشل بـ sh: wp: not found
         $cmd = sprintf(
-            'docker run --rm %s--volumes-from %s %s sh -c %s',
+            'docker run --rm %s--volumes-from %s -w %s %s wp %s %s',
             $network,
             escapeshellarg($containerId),
+            escapeshellarg($path),
             self::WPCLI_IMAGE,
-            escapeshellarg($inner)
+            $flags,
+            $wpArgs
         );
 
         return $this->ssh->run($host, $cmd, $timeout);
@@ -314,23 +318,13 @@ class WordpressCliService
         $url = self::WPCLI_PHAR_URL;
 
         return sprintf(
-            'PHAR=%s; PHP=$(command -v php 2>/dev/null || command -v php83 2>/dev/null || command -v php8 2>/dev/null || echo php); run() { "$PHP" "$PHAR" %s %s; }; if [ ! -f "$PHAR" ]; then (curl -fsSL -o "$PHAR" %s || wget -qO "$PHAR" %s); fi; run',
+            'PHAR=%s; PHP=$(command -v php 2>/dev/null || command -v php83 2>/dev/null || command -v php82 2>/dev/null || command -v php81 2>/dev/null || command -v php8 2>/dev/null || echo php); run() { "$PHP" "$PHAR" %s %s; }; if [ ! -f "$PHAR" ]; then (curl -fsSL -o "$PHAR" %s 2>/dev/null || wget -qO "$PHAR" %s 2>/dev/null); fi; run',
             escapeshellarg($phar),
             $flags,
             $wpArgs,
             escapeshellarg($url),
             escapeshellarg($url)
         );
-    }
-
-    /**
-     * حاوية wpcli/wp-cli — الأمر wp مضمّن.
-     */
-    protected function wpExecInnerCommandSidecar(string $wpArgs, string $path): string
-    {
-        $flags = $this->wpFlags($path, true);
-
-        return "wp {$flags} {$wpArgs}";
     }
 
     protected function wpPharPath(string $wordpressPath): string
