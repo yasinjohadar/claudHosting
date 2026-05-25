@@ -1,6 +1,6 @@
 @php
     $terminalReady = $wpManagementState['execute_ready'] ?? false;
-    $bridgeEnabled = (bool) config('terminal_bridge.enabled');
+    $bridgeEnabled = (bool) ($terminalBridge['enabled'] ?? false);
 @endphp
 <div class="tab-pane fade" id="siteTabTerminal" role="tabpanel">
     <div class="site-terminal-panel">
@@ -8,8 +8,9 @@
         <div class="alert alert-warning py-3">اضبط SSH أولاً — {{ $wpManagementState['message'] ?? '' }}</div>
         @elseif(!$bridgeEnabled)
         <div class="alert alert-info py-3">
-            <strong>Terminal Bridge غير مفعّل.</strong> على السيرفر: اضبط <code>TERMINAL_BRIDGE_ENABLED=true</code> وشغّل
-            <code>services/terminal-bridge</code> (راجع README).
+            <strong>Terminal Bridge غير مفعّل.</strong>
+            فعّله من <a href="{{ route('admin.coolify.settings.index', ['tab' => 'terminal']) }}">إعدادات Coolify → Terminal</a>
+            ثم شغّل <code>services/terminal-bridge</code> على السيرفر (راجع README).
         </div>
         @else
         <p class="text-muted small mb-2">Shell داخل حاوية WordPress عبر WebSocket (xterm.js). الأوامر تُنفَّذ على السيرفر — احذر الأوامر المدمرة.</p>

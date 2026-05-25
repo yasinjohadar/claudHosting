@@ -41,6 +41,11 @@ return [
         'wordpress_redis_enabled' => 'coolify_wordpress_redis_enabled',
         'wordpress_redis_host' => 'coolify_wordpress_redis_host',
         'wordpress_redis_port' => 'coolify_wordpress_redis_port',
+        'terminal_bridge_enabled' => 'coolify_terminal_bridge_enabled',
+        'terminal_bridge_url' => 'coolify_terminal_bridge_url',
+        'terminal_bridge_secret' => 'coolify_terminal_bridge_secret',
+        'terminal_bridge_port' => 'coolify_terminal_bridge_port',
+        'terminal_bridge_token_ttl' => 'coolify_terminal_bridge_token_ttl',
     ],
 
     /** قوالب حماية/تسريع عند إنشاء موقع WordPress */
@@ -89,6 +94,11 @@ return [
         'wordpress_redis_enabled' => '0',
         'wordpress_redis_host' => '',
         'wordpress_redis_port' => '6379',
+        'terminal_bridge_enabled' => '0',
+        'terminal_bridge_url' => 'http://127.0.0.1:3099',
+        'terminal_bridge_secret' => '',
+        'terminal_bridge_port' => '3099',
+        'terminal_bridge_token_ttl' => '900',
     ],
 
     /** سواقات مدعومة لتخزين لقطات volumes/manifest (S3-compatible) */

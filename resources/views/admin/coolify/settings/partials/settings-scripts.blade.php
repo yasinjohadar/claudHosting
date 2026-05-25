@@ -31,6 +31,11 @@
         ssh_user: 'tab-ssh-btn',
         ssh_private_key_path: 'tab-ssh-btn',
         ssh_private_key: 'tab-ssh-btn',
+        terminal_bridge_enabled: 'tab-terminal-btn',
+        terminal_bridge_url: 'tab-terminal-btn',
+        terminal_bridge_secret: 'tab-terminal-btn',
+        terminal_bridge_port: 'tab-terminal-btn',
+        terminal_bridge_token_ttl: 'tab-terminal-btn',
     };
 
     const urlTabAliases = {
@@ -40,6 +45,7 @@
         cloudflare: 'tab-cloudflare-btn',
         wp: 'tab-wp-mgmt-btn',
         ssh: 'tab-ssh-btn',
+        terminal: 'tab-terminal-btn',
     };
 
     function activateTab(btnId) {
@@ -149,5 +155,18 @@
     if (sshHostInput && sshTestHost) {
         sshHostInput.addEventListener('input', () => { sshTestHost.value = sshHostInput.value; });
     }
+
+    document.getElementById('btnTestTerminalBridge')?.addEventListener('click', function () {
+        const el = document.getElementById('terminalBridgeTestResult');
+        el.innerHTML = '<span class="text-muted">جاري الاختبار (الإعدادات المحفوظة)...</span>';
+        fetch('{{ route('admin.coolify.settings.test-terminal-bridge') }}', {
+            method: 'POST',
+            headers: { 'X-CSRF-TOKEN': '{{ csrf_token() }}', 'Accept': 'application/json' }
+        }).then(r => r.json()).then(d => {
+            el.innerHTML = d.success
+                ? '<div class="alert alert-success mb-0 py-1">' + (d.message || 'OK') + '</div>'
+                : '<div class="alert alert-danger mb-0 py-1">' + (d.message || 'فشل') + '</div>';
+        }).catch(e => { el.innerHTML = '<div class="alert alert-danger py-1">' + e.message + '</div>'; });
+    });
 })();
 </script>

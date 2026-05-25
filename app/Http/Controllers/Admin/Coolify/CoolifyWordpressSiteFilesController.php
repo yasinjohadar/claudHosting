@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\CoolifyWordpressSite;
 use App\Services\Coolify\ContainerFileManager;
 use App\Services\Coolify\ContainerInspector;
+use App\Services\Coolify\CoolifySettingsService;
 use App\Services\Coolify\TerminalSessionService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -17,7 +18,8 @@ class CoolifyWordpressSiteFilesController extends Controller
     public function __construct(
         protected ContainerFileManager $files,
         protected ContainerInspector $inspector,
-        protected TerminalSessionService $terminal
+        protected TerminalSessionService $terminal,
+        protected CoolifySettingsService $settings
     ) {
         $this->middleware('auth');
     }
@@ -160,7 +162,7 @@ class CoolifyWordpressSiteFilesController extends Controller
         return response()->json([
             'success' => true,
             'groups' => config('terminal_commands.groups', []),
-            'bridge_enabled' => (bool) config('terminal_bridge.enabled'),
+            'bridge_enabled' => $this->settings->getTerminalBridgeConfig()['enabled'] ?? false,
         ]);
     }
 

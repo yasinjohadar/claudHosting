@@ -29,4 +29,9 @@
             <i class="fe fe-key me-1"></i> SSH
         </button>
     </li>
+    <li class="nav-item" role="presentation">
+        <button class="nav-link" id="tab-terminal-btn" data-bs-toggle="tab" data-bs-target="#tabTerminalBridge" type="button" role="tab">
+            <i class="fe fe-monitor me-1"></i> Terminal
+        </button>
+    </li>
 </ul>

@@ -17,13 +17,15 @@ class TerminalSessionService
      */
     public function createSession(CoolifyWordpressSite $site, int $userId): array
     {
-        if (! config('terminal_bridge.enabled')) {
-            return ['success' => false, 'message' => 'خدمة Terminal غير مفعّلة. فعّل TERMINAL_BRIDGE_ENABLED وشغّل terminal-bridge.'];
+        $bridge = $this->settings->getTerminalBridgeConfig();
+
+        if (! ($bridge['enabled'] ?? false)) {
+            return ['success' => false, 'message' => 'خدمة Terminal غير مفعّلة. فعّلها من إعدادات Coolify → تبويب Terminal وشغّل خدمة terminal-bridge.'];
         }
 
-        $secret = config('terminal_bridge.secret');
+        $secret = (string) ($bridge['secret'] ?? '');
         if ($secret === '') {
-            return ['success' => false, 'message' => 'TERMINAL_BRIDGE_SECRET غير مضبوط'];
+            return ['success' => false, 'message' => 'سر Terminal Bridge غير مضبوط — أضفه من إعدادات Coolify → Terminal.'];
         }
 
         $ctx = $this->contextFactory->forSite($site);
@@ -35,7 +37,7 @@ class TerminalSessionService
         $context = $ctx['context'];
         $ssh = $this->settings->getSshConfig();
 
-        $ttl = (int) config('terminal_bridge.token_ttl_seconds', 900);
+        $ttl = (int) ($bridge['token_ttl_seconds'] ?? 900);
         $exp = time() + $ttl;
         $payload = [
             'sub' => (string) $userId,
@@ -44,13 +46,13 @@ class TerminalSessionService
             'container_id' => $context->containerId,
             'wordpress_root' => $context->wordpressRoot,
             'ssh_user' => $ssh['ssh_user'] ?? 'root',
-            'ssh_port' => (int) ($ssh['ssh_port'] ?? 22),
+            'ssh_port' => $this->settings->getSshPort(),
             'exp' => $exp,
             'jti' => (string) Str::uuid(),
         ];
 
         $token = $this->encodeToken($payload, $secret);
-        $base = rtrim(config('terminal_bridge.url'), '/');
+        $base = rtrim((string) ($bridge['url'] ?? ''), '/');
         $wsBase = preg_replace('#^http#', 'ws', $base);
         $wsBase = preg_replace('#^https#', 'wss', $wsBase);
 

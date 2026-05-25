@@ -44,6 +44,7 @@
                                 @include('admin.coolify.settings.partials.tab-cloudflare')
                                 @include('admin.coolify.settings.partials.tab-wp-management')
                                 @include('admin.coolify.settings.partials.tab-ssh')
+                                @include('admin.coolify.settings.partials.tab-terminal-bridge')
                             </div>
 
                             <div class="coolify-settings-footer mt-4">

@@ -261,6 +261,7 @@ Route::middleware(['auth', 'admin.panel'])->group(function () {
             Route::put('/settings', [CoolifySettingsController::class, 'update'])->name('settings.update');
             Route::post('/settings/test-connection', [CoolifySettingsController::class, 'testConnection'])->name('settings.test');
             Route::post('/settings/test-ssh', [CoolifySettingsController::class, 'testSsh'])->name('settings.test-ssh');
+            Route::post('/settings/test-terminal-bridge', [CoolifySettingsController::class, 'testTerminalBridge'])->name('settings.test-terminal-bridge');
             Route::post('/settings/discover-s3', [CoolifySettingsController::class, 'discoverS3'])->name('settings.discover-s3');
 
             Route::get('/system', [CoolifySystemController::class, 'index'])->name('system.index');

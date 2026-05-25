@@ -17,6 +17,7 @@ use App\Services\CloudflareApiService;
 use App\Services\CoolifyApiService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Http;
 
 class CoolifySettingsController extends Controller
 {
@@ -115,6 +116,11 @@ class CoolifySettingsController extends Controller
             'wordpress_redis_enabled' => 'nullable|boolean',
             'wordpress_redis_host' => 'nullable|string|max:255',
             'wordpress_redis_port' => 'nullable|integer|min:1|max:65535',
+            'terminal_bridge_enabled' => 'nullable|boolean',
+            'terminal_bridge_url' => 'nullable|url|max:500',
+            'terminal_bridge_secret' => 'nullable|string|max:2000',
+            'terminal_bridge_port' => 'nullable|integer|min:1|max:65535',
+            'terminal_bridge_token_ttl' => 'nullable|integer|min:60|max:86400',
         ], [
             'api_url.required' => 'عنوان Coolify API مطلوب',
             'api_url.url' => 'عنوان API غير صالح',
@@ -168,6 +174,11 @@ class CoolifySettingsController extends Controller
             'wordpress_redis_enabled' => $request->boolean('wordpress_redis_enabled', false),
             'wordpress_redis_host' => $validated['wordpress_redis_host'] ?? null,
             'wordpress_redis_port' => $validated['wordpress_redis_port'] ?? null,
+            'terminal_bridge_enabled' => $request->boolean('terminal_bridge_enabled'),
+            'terminal_bridge_url' => $validated['terminal_bridge_url'] ?? null,
+            'terminal_bridge_secret' => $validated['terminal_bridge_secret'] ?? null,
+            'terminal_bridge_port' => $validated['terminal_bridge_port'] ?? null,
+            'terminal_bridge_token_ttl' => $validated['terminal_bridge_token_ttl'] ?? null,
         ]);
 
         $this->coolify->refreshConnection();
@@ -410,6 +421,53 @@ class CoolifySettingsController extends Controller
         }
 
         return response()->json($result);
+    }
+
+    public function testTerminalBridge(): JsonResponse
+    {
+        $bridge = $this->settings->getTerminalBridgeConfig();
+
+        if (! ($bridge['enabled'] ?? false)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Terminal Bridge معطّل في الإعدادات — فعّل المفتاح ثم احفظ.',
+            ]);
+        }
+
+        $url = rtrim((string) ($bridge['url'] ?? ''), '/');
+        if ($url === '') {
+            return response()->json([
+                'success' => false,
+                'message' => 'عنوان الجسر غير مضبوط.',
+            ]);
+        }
+
+        if (! ($bridge['secret_configured'] ?? false)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'سر JWT غير مضبوط — أضفه واحفظ قبل الاختبار.',
+            ]);
+        }
+
+        try {
+            $response = Http::timeout(8)->get($url.'/health');
+            if ($response->successful() && ($response->json('ok') === true || $response->json('ok') === 1)) {
+                return response()->json([
+                    'success' => true,
+                    'message' => 'الجسر يعمل: '.$url.'/health',
+                ]);
+            }
+
+            return response()->json([
+                'success' => false,
+                'message' => 'استجابة غير متوقعة من الجسر (HTTP '.$response->status().').',
+            ]);
+        } catch (\Throwable $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'تعذّر الاتصال بـ '.$url.' — '.$e->getMessage().' تأكد أن خدمة terminal-bridge تعمل على المنفذ المضبوط.',
+            ]);
+        }
     }
 
     public function discoverS3(): JsonResponse

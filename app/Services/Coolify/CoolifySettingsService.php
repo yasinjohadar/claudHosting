@@ -16,6 +16,8 @@ class CoolifySettingsService
 
     protected const SSH_CACHE_KEY = 'coolify_ssh_config';
 
+    protected const TERMINAL_CACHE_KEY = 'coolify_terminal_bridge_config';
+
     /**
      * @return array{api_url: string, api_token: string, timeout: int, token_configured: bool}
      */
@@ -89,7 +91,76 @@ class CoolifySettingsService
             'wordpress_redis_port' => $this->getWordpressRedisPort(),
             'ssh_host_fallback' => $this->getSshHostFallback(),
             'ssh_port' => $this->getSshPort(),
+            'terminal_bridge_enabled' => $this->getTerminalBridgeConfig()['enabled'],
+            'terminal_bridge_url' => $this->getTerminalBridgeConfig()['url'],
+            'terminal_bridge_port' => $this->getTerminalBridgeConfig()['port'],
+            'terminal_bridge_token_ttl' => $this->getTerminalBridgeConfig()['token_ttl_seconds'],
+            'has_terminal_bridge_secret' => $this->getTerminalBridgeConfig()['secret_configured'],
         ];
+    }
+
+    /**
+     * @return array{
+     *     enabled: bool,
+     *     url: string,
+     *     secret: string,
+     *     port: int,
+     *     token_ttl_seconds: int,
+     *     secret_configured: bool
+     * }
+     */
+    public function getTerminalBridgeConfig(): array
+    {
+        return Cache::remember(self::TERMINAL_CACHE_KEY, 300, function () {
+            $this->initializeDefaults();
+            $keys = config('coolify.keys');
+            $stored = SystemSetting::query()
+                ->where('group', self::GROUP)
+                ->pluck('value', 'key')
+                ->toArray();
+
+            $defaults = config('coolify.defaults');
+            $env = config('terminal_bridge.env_fallback', []);
+
+            $enabledRaw = $stored[$keys['terminal_bridge_enabled']] ?? null;
+            if ($enabledRaw === null || $enabledRaw === '') {
+                $enabled = (bool) ($env['enabled'] ?? false);
+            } else {
+                $enabled = filter_var($enabledRaw, FILTER_VALIDATE_BOOLEAN);
+            }
+
+            $url = trim((string) ($stored[$keys['terminal_bridge_url']] ?? $defaults['terminal_bridge_url'] ?? ''));
+            if ($url === '') {
+                $url = (string) ($env['url'] ?? 'http://127.0.0.1:3099');
+            }
+            $url = rtrim($url, '/');
+
+            $secretRaw = $stored[$keys['terminal_bridge_secret']] ?? '';
+            $secret = $this->decryptIfEncrypted($secretRaw);
+            if ($secret === '') {
+                $secret = trim((string) ($env['secret'] ?? ''));
+            }
+
+            $port = (int) ($stored[$keys['terminal_bridge_port']] ?? $defaults['terminal_bridge_port'] ?? 0);
+            if ($port <= 0 || $port > 65535) {
+                $port = (int) ($env['port'] ?? 3099);
+            }
+
+            $ttl = (int) ($stored[$keys['terminal_bridge_token_ttl']] ?? $defaults['terminal_bridge_token_ttl'] ?? 0);
+            if ($ttl < 60 || $ttl > 86400) {
+                $ttl = (int) ($env['token_ttl_seconds'] ?? 900);
+            }
+            $ttl = max(60, min(86400, $ttl));
+
+            return [
+                'enabled' => $enabled,
+                'url' => $url,
+                'secret' => $secret,
+                'port' => $port,
+                'token_ttl_seconds' => $ttl,
+                'secret_configured' => $secret !== '' || $secretRaw !== '',
+            ];
+        });
     }
 
     public function getSshHostFallback(): string
@@ -696,6 +767,51 @@ class CoolifySettingsService
             );
         }
 
+        if (array_key_exists('terminal_bridge_enabled', $data)) {
+            SystemSetting::set(
+                $keys['terminal_bridge_enabled'],
+                filter_var($data['terminal_bridge_enabled'] ?? false, FILTER_VALIDATE_BOOLEAN) ? '1' : '0',
+                'string',
+                self::GROUP
+            );
+        }
+
+        if (array_key_exists('terminal_bridge_url', $data)) {
+            SystemSetting::set(
+                $keys['terminal_bridge_url'],
+                rtrim(trim((string) $data['terminal_bridge_url']), '/'),
+                'string',
+                self::GROUP
+            );
+        }
+
+        if (! empty($data['terminal_bridge_secret'])) {
+            SystemSetting::set(
+                $keys['terminal_bridge_secret'],
+                Crypt::encryptString((string) $data['terminal_bridge_secret']),
+                'string',
+                self::GROUP
+            );
+        }
+
+        if (array_key_exists('terminal_bridge_port', $data)) {
+            SystemSetting::set(
+                $keys['terminal_bridge_port'],
+                (string) max(1, min(65535, (int) $data['terminal_bridge_port'])),
+                'integer',
+                self::GROUP
+            );
+        }
+
+        if (array_key_exists('terminal_bridge_token_ttl', $data)) {
+            SystemSetting::set(
+                $keys['terminal_bridge_token_ttl'],
+                (string) max(60, min(86400, (int) $data['terminal_bridge_token_ttl'])),
+                'integer',
+                self::GROUP
+            );
+        }
+
         if (array_key_exists('ssh_private_key', $data) || array_key_exists('ssh_private_key_path', $data) || array_key_exists('ssh_host_fallback', $data)) {
             $this->purgeSshKeyCacheFiles();
         }
@@ -725,6 +841,7 @@ class CoolifySettingsService
     {
         Cache::forget(self::CACHE_KEY);
         Cache::forget(self::SSH_CACHE_KEY);
+        Cache::forget(self::TERMINAL_CACHE_KEY);
         Cache::forget('coolify_dashboard_stats');
     }
 
@@ -760,6 +877,11 @@ class CoolifySettingsService
             $keys['wordpress_cloudflare_ssl_mode'] => $defaults['wordpress_cloudflare_ssl_mode'],
             $keys['wordpress_security_preset'] => $defaults['wordpress_security_preset'],
             $keys['wordpress_cloudflare_enabled'] => $defaults['wordpress_cloudflare_enabled'],
+            $keys['terminal_bridge_enabled'] => $defaults['terminal_bridge_enabled'],
+            $keys['terminal_bridge_url'] => $defaults['terminal_bridge_url'],
+            $keys['terminal_bridge_secret'] => $defaults['terminal_bridge_secret'],
+            $keys['terminal_bridge_port'] => (string) $defaults['terminal_bridge_port'],
+            $keys['terminal_bridge_token_ttl'] => (string) $defaults['terminal_bridge_token_ttl'],
         ] as $key => $value) {
             if (! SystemSetting::query()->where('group', self::GROUP)->where('key', $key)->exists()) {
                 SystemSetting::set($key, (string) $value, 'string', self::GROUP);

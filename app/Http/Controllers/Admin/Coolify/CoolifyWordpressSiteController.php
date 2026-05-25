@@ -173,13 +173,15 @@ class CoolifyWordpressSiteController extends Controller
             'message' => $wpManagementState['message'],
         ];
         $wpInfo = ($site->metadata ?? [])['wp_info'] ?? null;
+        $terminalBridge = $this->settings->getTerminalBridgeConfig();
 
         return view('admin.coolify.wordpress-sites.show', compact(
             'site',
             'uuid',
             'wpCanManage',
             'wpManagementState',
-            'wpInfo'
+            'wpInfo',
+            'terminalBridge'
         ));
     }
 
