@@ -429,6 +429,11 @@ class WordpressCliService
         return $services[0] ?? '';
     }
 
+    public function resolveWordpressPathForSite(CoolifyWordpressSite $site, string $host, string $containerId): string
+    {
+        return $this->resolveWordpressPath($site, $host, $containerId);
+    }
+
     protected function resolveWordpressPath(CoolifyWordpressSite $site, string $host, string $containerId): string
     {
         $cacheKey = $site->id.'|'.$containerId;

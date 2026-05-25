@@ -14,6 +14,8 @@
         overview: 'site-tab-overview-btn',
         wordpress: 'site-tab-wp-btn',
         wp: 'site-tab-wp-btn',
+        files: 'site-tab-files-btn',
+        terminal: 'site-tab-terminal-btn',
         cloudflare: 'site-tab-cf-btn',
         cf: 'site-tab-cf-btn',
         infra: 'site-tab-infra-btn',

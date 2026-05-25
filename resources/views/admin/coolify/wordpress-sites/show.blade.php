@@ -26,6 +26,9 @@
                     @include('admin.coolify.wordpress-sites.partials.management', ['embeddedInSiteShow' => true])
                 </div>
 
+                @include('admin.coolify.wordpress-sites.partials.tab-files')
+                @include('admin.coolify.wordpress-sites.partials.tab-terminal')
+
                 @include('admin.coolify.wordpress-sites.partials.tab-cloudflare')
                 @include('admin.coolify.wordpress-sites.partials.tab-infrastructure')
                 @include('admin.coolify.wordpress-sites.partials.tab-technical')

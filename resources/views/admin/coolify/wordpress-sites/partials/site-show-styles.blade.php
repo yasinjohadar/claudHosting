@@ -1,4 +1,8 @@
 <style>
+.site-files-table-wrap { max-height: 480px; overflow: auto; }
+.site-files-monaco { min-height: 320px; }
+.site-terminal-xterm { height: 420px; background: #1e1e1e; padding: 4px; }
+.site-terminal-commands { max-height: 420px; overflow-y: auto; }
 .site-show-hero {
     border-radius: 1rem;
     padding: 1.35rem 1.5rem;

@@ -17,5 +17,52 @@
         <pre id="containerLogs" class="site-show-log-pre border-0 rounded-0 mb-0 text-muted" dir="ltr">جاري التحميل عند توفر الخدمة...</pre>
     </details>
 
+    @if($wpManagementState['execute_ready'] ?? false)
+    <details class="site-show-log-card mb-3" id="dockerLogsCard" open>
+        <summary class="d-flex justify-content-between align-items-center">
+            <span><i class="fe fe-terminal me-1 text-primary"></i> سجلات Docker (حاوية WordPress)</span>
+            <button type="button" class="btn btn-outline-primary btn-sm" id="btnDockerLogsRefresh">تحديث</button>
+        </summary>
+        <pre id="dockerContainerLogs" class="site-show-log-pre border-0 rounded-0 mb-0" dir="ltr" style="max-height:320px">اضغط تحديث لجلب آخر 500 سطر…</pre>
+    </details>
+    <details class="site-show-log-card mb-3" id="dockerInspectCard">
+        <summary><i class="fe fe-box me-1"></i> Docker inspect / compose</summary>
+        <pre id="dockerInspectOutput" class="site-show-log-pre border-0 rounded-0 mb-0 small" dir="ltr">—</pre>
+    </details>
+    @endif
+
     <p class="small text-muted mb-0" id="liveStatusHint"></p>
 </div>
+@if($wpManagementState['execute_ready'] ?? false)
+@push('scripts')
+<script>
+(function() {
+    const logsUrl = @json(route('admin.coolify.wordpress-sites.docker.logs', $uuid));
+    const inspectUrl = @json(route('admin.coolify.wordpress-sites.docker.inspect', $uuid));
+    document.getElementById('btnDockerLogsRefresh')?.addEventListener('click', async () => {
+        const el = document.getElementById('dockerContainerLogs');
+        if (el) el.textContent = 'جاري التحميل…';
+        const r = await fetch(logsUrl + '?tail=500', { headers: { 'Accept': 'application/json' } });
+        const d = await r.json();
+        if (el) el.textContent = d.logs || d.message || '(فارغ)';
+    });
+    document.getElementById('dockerInspectCard')?.addEventListener('toggle', async function() {
+        if (!this.open) return;
+        const el = document.getElementById('dockerInspectOutput');
+        if (!el || el.dataset.loaded) return;
+        const r = await fetch(inspectUrl, { headers: { 'Accept': 'application/json' } });
+        const d = await r.json();
+        if (d.success && d.data) {
+            let text = 'Host: ' + d.data.host + '\nContainer: ' + d.data.container_id + '\nWP root: ' + d.data.wordpress_root + '\n\n';
+            if (d.data.compose?.ps) text += '--- compose ps ---\n' + d.data.compose.ps + '\n\n';
+            text += '--- inspect (snippet) ---\n' + (d.data.inspect_raw || '').slice(0, 12000);
+            el.textContent = text;
+        } else {
+            el.textContent = d.message || 'فشل';
+        }
+        el.dataset.loaded = '1';
+    });
+})();
+</script>
+@endpush
+@endif

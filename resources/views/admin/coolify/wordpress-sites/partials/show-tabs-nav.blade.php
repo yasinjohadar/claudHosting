@@ -10,6 +10,16 @@
         </button>
     </li>
     <li class="nav-item" role="presentation">
+        <button class="nav-link" id="site-tab-files-btn" data-bs-toggle="tab" data-bs-target="#siteTabFiles" type="button" role="tab">
+            <i class="fe fe-folder me-1"></i> مدير الملفات
+        </button>
+    </li>
+    <li class="nav-item" role="presentation">
+        <button class="nav-link" id="site-tab-terminal-btn" data-bs-toggle="tab" data-bs-target="#siteTabTerminal" type="button" role="tab">
+            <i class="fe fe-terminal me-1"></i> Terminal
+        </button>
+    </li>
+    <li class="nav-item" role="presentation">
         <button class="nav-link" id="site-tab-cf-btn" data-bs-toggle="tab" data-bs-target="#siteTabCloudflare" type="button" role="tab">
             <i class="fe fe-shield me-1"></i> Cloudflare
         </button>
