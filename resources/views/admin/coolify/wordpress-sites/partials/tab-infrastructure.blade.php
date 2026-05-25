@@ -34,11 +34,12 @@
     <p class="small text-muted mb-0" id="liveStatusHint"></p>
 </div>
 @if($wpManagementState['execute_ready'] ?? false)
+@php $wpSiteRoutes = $wpSiteRoutes ?? \App\Support\WordpressSiteRouteMap::forPanel('admin', $uuid); @endphp
 @push('scripts')
 <script>
 (function() {
-    const logsUrl = @json(route('admin.coolify.wordpress-sites.docker.logs', $uuid));
-    const inspectUrl = @json(route('admin.coolify.wordpress-sites.docker.inspect', $uuid));
+    const logsUrl = @json($wpSiteRoutes['dockerLogs']);
+    const inspectUrl = @json($wpSiteRoutes['dockerInspect']);
     document.getElementById('btnDockerLogsRefresh')?.addEventListener('click', async () => {
         const el = document.getElementById('dockerContainerLogs');
         if (el) el.textContent = 'جاري التحميل…';

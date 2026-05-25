@@ -1,12 +1,15 @@
+@php
+    $wpSiteRoutes = $wpSiteRoutes ?? \App\Support\WordpressSiteRouteMap::forPanel('admin', $uuid);
+@endphp
 @push('scripts')
 <script>
 (function() {
     const wpExec = @json($wpExec);
     const wpInfoInitial = @json($wpInfoData ?? []);
-    const wpInfoUrl = @json(route('admin.coolify.wordpress-sites.wp-info', $uuid));
-    const wpActionUrl = @json(route('admin.coolify.wordpress-sites.wp-action', $uuid));
-    const wpJobUrl = @json(route('admin.coolify.wordpress-sites.wp-job', $uuid));
-    const wpStatusUrl = @json(route('admin.coolify.wordpress-sites.status', $uuid));
+    const wpInfoUrl = @json($wpSiteRoutes['wpInfo']);
+    const wpActionUrl = @json($wpSiteRoutes['wpAction']);
+    const wpJobUrl = @json($wpSiteRoutes['wpJob']);
+    const wpStatusUrl = @json($wpSiteRoutes['status']);
     const csrf = @json(csrf_token());
     const quickCommands = @json(config('wordpress_cli.quick_commands', []));
 

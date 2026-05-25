@@ -21,9 +21,15 @@
             </div>
             <nav>
                 <ol class="breadcrumb mb-0 small">
+                    @if(!empty($isClientPanel))
+                    <li class="breadcrumb-item"><a href="{{ route('client.dashboard') }}">الرئيسية</a></li>
+                    <li class="breadcrumb-item"><a href="{{ route('client.services') }}">خدماتي</a></li>
+                    <li class="breadcrumb-item"><a href="{{ route('client.wordpress-sites.index') }}">WordPress</a></li>
+                    @else
                     <li class="breadcrumb-item"><a href="{{ route('admin.dashboard') }}">الرئيسية</a></li>
                     <li class="breadcrumb-item"><a href="{{ route('admin.coolify.overview') }}">Coolify</a></li>
                     <li class="breadcrumb-item"><a href="{{ route('admin.coolify.wordpress-sites.index') }}">مواقع WordPress</a></li>
+                    @endif
                     <li class="breadcrumb-item active">{{ $site->slug }}</li>
                 </ol>
             </nav>
@@ -45,6 +51,7 @@
             @elseif($site->admin_url && $site->status === 'running' && $canOpenCustom)
             <a href="{{ $site->admin_url }}" target="_blank" rel="noopener" class="btn btn-outline-success btn-sm" id="btnOpenCustomAdmin">لوحة WP</a>
             @endif
+            @if(empty($isClientPanel))
             <a href="{{ route('admin.coolify.wordpress-sites.edit', $uuid) }}" class="btn btn-outline-primary btn-sm"><i class="fe fe-edit-2"></i> تعديل</a>
             @if($site->service_uuid)
             <a href="{{ route('admin.coolify.services.show', $site->service_uuid) }}" class="btn btn-outline-secondary btn-sm">خدمة Coolify</a>
@@ -71,6 +78,7 @@
             @endif
             @endif
             @include('admin.coolify.partials.delete-form', ['action' => route('admin.coolify.wordpress-sites.destroy', $uuid)])
+            @endif
         </div>
     </div>
 </div>

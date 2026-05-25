@@ -12,8 +12,9 @@
 @php
     $domainCount = $domains->count();
     $projectCount = count($projects);
+    $wordpressCount = $wordpressSites->count();
     $hostingCount = $hosting->count();
-    $totalServices = $domainCount + $projectCount + $hostingCount;
+    $totalServices = $domainCount + $projectCount + $wordpressCount + $hostingCount;
 @endphp
 <div class="main-content app-content">
     <div class="container-fluid">
@@ -50,6 +51,13 @@
                             type="button" role="tab" aria-controls="pane-projects" aria-selected="false" data-hash="projects">
                             <i class="fe fe-layers me-1"></i>Coolify
                             <span class="badge bg-secondary-transparent ms-1">{{ $projectCount }}</span>
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="tab-wordpress-btn" data-bs-toggle="tab" data-bs-target="#pane-wordpress"
+                            type="button" role="tab" aria-controls="pane-wordpress" aria-selected="false" data-hash="wordpress">
+                            <i class="fe fe-layout me-1"></i>WordPress
+                            <span class="badge bg-info-transparent ms-1">{{ $wordpressCount }}</span>
                         </button>
                     </li>
                     <li class="nav-item" role="presentation">
@@ -131,6 +139,48 @@
                         </div>
                     </div>
 
+                    {{-- WordPress --}}
+                    <div class="tab-pane fade" id="pane-wordpress" role="tabpanel" aria-labelledby="tab-wordpress-btn" tabindex="0">
+                        <div class="table-responsive">
+                            <table class="table table-hover client-services-table mb-0">
+                                <thead>
+                                    <tr>
+                                        <th>الاسم</th>
+                                        <th>الرابط</th>
+                                        <th>الحالة</th>
+                                        <th class="text-end">إجراء</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @forelse($wordpressSites as $site)
+                                        <tr>
+                                            <td class="fw-semibold">{{ $site->display_name }}</td>
+                                            <td dir="ltr">
+                                                @if($site->public_url)
+                                                <a href="{{ $site->public_url }}" target="_blank" rel="noopener" class="small">{{ $site->slug }}</a>
+                                                @else
+                                                <code class="small">{{ $site->slug }}</code>
+                                                @endif
+                                            </td>
+                                            <td>
+                                                <span class="badge bg-{{ $site->status === 'running' ? 'success' : 'secondary' }}-transparent">
+                                                    {{ \App\Models\CoolifyWordpressSite::STATUSES[$site->status] ?? $site->status }}
+                                                </span>
+                                            </td>
+                                            <td class="text-end">
+                                                <a href="{{ route('client.wordpress-sites.show', $site->uuid) }}" class="btn btn-primary btn-sm">إدارة</a>
+                                            </td>
+                                        </tr>
+                                    @empty
+                                        <tr>
+                                            <td colspan="4" class="client-empty-state">لا توجد مواقع WordPress مخصصة لحسابك.</td>
+                                        </tr>
+                                    @endforelse
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
                     {{-- cPanel --}}
                     <div class="tab-pane fade" id="pane-hosting" role="tabpanel" aria-labelledby="tab-hosting-btn" tabindex="0">
                         <div class="table-responsive">
@@ -189,6 +239,7 @@ document.addEventListener('DOMContentLoaded', function () {
     var hashToTarget = {
         domains: '#pane-domains',
         projects: '#pane-projects',
+        wordpress: '#pane-wordpress',
         hosting: '#pane-hosting'
     };
 

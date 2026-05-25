@@ -47,6 +47,18 @@
                 </a>
             </div>
             <div class="col-md-6 col-lg-3">
+                <a href="{{ !empty($summary['first_wordpress_site_uuid']) ? route('client.wordpress-sites.show', $summary['first_wordpress_site_uuid']) : route('client.services') . '#wordpress' }}" class="card custom-card h-100 border-0 shadow-sm text-decoration-none">
+                    <div class="card-body text-center py-4">
+                        <div class="avatar avatar-lg bg-info-transparent text-info rounded-circle mx-auto mb-3">
+                            <i class="fe fe-layout fs-24"></i>
+                        </div>
+                        <div class="display-6 fw-bold text-info">{{ $summary['wordpress_sites'] ?? 0 }}</div>
+                        <div class="text-muted">موقع WordPress</div>
+                        <p class="small text-info mt-2 mb-0">عرض القائمة <i class="fe fe-arrow-left"></i></p>
+                    </div>
+                </a>
+            </div>
+            <div class="col-md-6 col-lg-3">
                 <a href="{{ route('client.services') }}#hosting" class="card custom-card h-100 border-0 shadow-sm text-decoration-none">
                     <div class="card-body text-center py-4">
                         <div class="avatar avatar-lg bg-warning-transparent text-warning rounded-circle mx-auto mb-3">

@@ -3,10 +3,13 @@
 namespace App\Http\Controllers\Admin\Coolify;
 
 use App\Http\Controllers\Admin\Coolify\Concerns\HandlesCoolifyResponses;
+use App\Http\Controllers\Concerns\ResolvesAuthorizedWordpressSite;
 use App\Http\Controllers\Controller;
 use App\Jobs\ProvisionWordpressSiteJob;
 use App\Models\CoolifyWordpressSite;
+use App\Services\Client\ClientAssetService;
 use App\Services\Coolify\CoolifySettingsService;
+use App\Support\WordpressSiteRouteMap;
 use App\Services\Coolify\WordpressCloudflareService;
 use App\Services\Coolify\WordpressManagementService;
 use App\Services\Coolify\WordpressProvisioningProgress;
@@ -20,6 +23,7 @@ use Illuminate\Validation\Rule;
 class CoolifyWordpressSiteController extends Controller
 {
     use HandlesCoolifyResponses;
+    use ResolvesAuthorizedWordpressSite;
 
     public function __construct(
         protected CoolifyApiService $coolify,
@@ -27,7 +31,8 @@ class CoolifyWordpressSiteController extends Controller
         protected WordpressSiteProvisioningService $provisioning,
         protected WordpressManagementService $wpManagement,
         protected WordpressCloudflareService $wordpressCloudflare,
-        protected WordpressProvisioningProgress $provisioningProgress
+        protected WordpressProvisioningProgress $provisioningProgress,
+        protected ClientAssetService $clientAssets
     ) {
         $this->middleware('auth');
     }
@@ -38,10 +43,40 @@ class CoolifyWordpressSiteController extends Controller
             return $this->coolifyRedirectError('يرجى ضبط إعدادات Coolify أولاً.', 'admin.coolify.settings.index');
         }
 
-        $sites = CoolifyWordpressSite::with('creator')->latest()->paginate(20);
+        $sites = CoolifyWordpressSite::with(['creator', 'client.customer'])->latest()->paginate(20);
         $readiness = $this->settings->getWordpressReadiness();
+        $clientUsers = $this->clientAssets->clientPortalUsersForSelect();
 
-        return view('admin.coolify.wordpress-sites.index', compact('sites', 'readiness'));
+        return view('admin.coolify.wordpress-sites.index', compact('sites', 'readiness', 'clientUsers'));
+    }
+
+    public function assignClient(Request $request, string $uuid)
+    {
+        $validated = $request->validate([
+            'user_id' => 'nullable|exists:users,id',
+            'display_name' => 'nullable|string|max:255',
+        ]);
+
+        $userId = isset($validated['user_id']) && $validated['user_id'] !== ''
+            ? (int) $validated['user_id']
+            : null;
+
+        $result = $this->clientAssets->assignWordpressSite($userId, $uuid);
+
+        if ($request->wantsJson() || $request->ajax()) {
+            $site = $result['site'] ?? null;
+
+            return response()->json([
+                'success' => $result['success'],
+                'message' => $result['message'],
+                'html' => view('admin.coolify.wordpress-sites.partials.client-cell', [
+                    'client' => $site?->client,
+                    'customer' => $site?->client?->customer,
+                ])->render(),
+            ], $result['success'] ? 200 : 422);
+        }
+
+        return back()->with($result['success'] ? 'success' : 'error', $result['message']);
     }
 
     public function create(Request $request)
@@ -156,8 +191,16 @@ class CoolifyWordpressSiteController extends Controller
 
     public function show(string $uuid)
     {
-        $site = CoolifyWordpressSite::query()->where('uuid', $uuid)->firstOrFail();
+        $site = $this->resolveAuthorizedWordpressSite($uuid);
 
+        return view('admin.coolify.wordpress-sites.show', $this->buildShowViewData($site, 'admin'));
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    protected function buildShowViewData(CoolifyWordpressSite $site, string $panel): array
+    {
         if ($site->service_uuid && $this->coolify->isConfigured()) {
             try {
                 $this->provisioning->syncSiteFromCoolify($site);
@@ -167,6 +210,7 @@ class CoolifyWordpressSiteController extends Controller
             }
         }
 
+        $uuid = $site->uuid;
         $wpManagementState = $this->wpManagement->getManagementState($site);
         $wpCanManage = [
             'ok' => $wpManagementState['execute_ready'],
@@ -175,19 +219,22 @@ class CoolifyWordpressSiteController extends Controller
         $wpInfo = ($site->metadata ?? [])['wp_info'] ?? null;
         $terminalBridge = $this->settings->getTerminalBridgeConfig();
 
-        return view('admin.coolify.wordpress-sites.show', compact(
-            'site',
-            'uuid',
-            'wpCanManage',
-            'wpManagementState',
-            'wpInfo',
-            'terminalBridge'
-        ));
+        return [
+            'site' => $site,
+            'uuid' => $uuid,
+            'wpCanManage' => $wpCanManage,
+            'wpManagementState' => $wpManagementState,
+            'wpInfo' => $wpInfo,
+            'terminalBridge' => $terminalBridge,
+            'wpPanel' => $panel,
+            'isClientPanel' => $panel === 'client',
+            'wpSiteRoutes' => WordpressSiteRouteMap::forPanel($panel, $uuid),
+        ];
     }
 
     public function wpInfo(string $uuid): JsonResponse
     {
-        $site = CoolifyWordpressSite::query()->where('uuid', $uuid)->firstOrFail();
+        $site = $this->resolveAuthorizedWordpressSite($uuid);
 
         if (request()->boolean('refresh')) {
             $this->wpManagement->clearStuckWpJob($site);
@@ -222,7 +269,7 @@ class CoolifyWordpressSiteController extends Controller
 
     public function wpAction(Request $request, string $uuid): JsonResponse
     {
-        $site = CoolifyWordpressSite::query()->where('uuid', $uuid)->firstOrFail();
+        $site = $this->resolveAuthorizedWordpressSite($uuid);
 
         $validated = $request->validate([
             'action' => 'required|string|max:64',
@@ -304,7 +351,7 @@ class CoolifyWordpressSiteController extends Controller
 
     public function wpJob(string $uuid): JsonResponse
     {
-        $site = CoolifyWordpressSite::query()->where('uuid', $uuid)->firstOrFail();
+        $site = $this->resolveAuthorizedWordpressSite($uuid);
 
         if (request()->boolean('clear')) {
             $this->wpManagement->clearWpJobRecord($site);
@@ -322,7 +369,7 @@ class CoolifyWordpressSiteController extends Controller
 
     public function status(string $uuid): JsonResponse
     {
-        $site = CoolifyWordpressSite::query()->where('uuid', $uuid)->firstOrFail();
+        $site = $this->resolveAuthorizedWordpressSite($uuid);
         $metadata = $site->metadata ?? [];
 
         $payload = [
@@ -496,7 +543,7 @@ class CoolifyWordpressSiteController extends Controller
 
     public function syncCloudflare(string $uuid)
     {
-        $site = CoolifyWordpressSite::query()->where('uuid', $uuid)->firstOrFail();
+        $site = $this->resolveAuthorizedWordpressSite($uuid);
 
         $result = $this->wordpressCloudflare->syncFromExistingDns($site);
 
@@ -508,8 +555,17 @@ class CoolifyWordpressSiteController extends Controller
         $fqdn = $meta['fqdn'] ?? $site->slug;
 
         return redirect()
-            ->route('admin.coolify.wordpress-sites.show', $site->uuid)
+            ->to($this->wordpressSiteShowUrl($site))
             ->with('success', 'تمت مزامنة Cloudflare من السجل الحالي: '.$fqdn);
+    }
+
+    protected function wordpressSiteShowUrl(CoolifyWordpressSite $site): string
+    {
+        if (request()->routeIs('client.*')) {
+            return route('client.wordpress-sites.show', $site->uuid);
+        }
+
+        return route('admin.coolify.wordpress-sites.show', $site->uuid);
     }
 
     public function retry(string $uuid)

@@ -4,6 +4,8 @@ namespace App\Services\Client;
 
 use App\Models\ClientCoolifyProject;
 use App\Models\ClientDomain;
+use App\Models\CoolifyWordpressSite;
+use App\Models\Customer;
 use App\Models\User;
 use App\Models\WhmAccount;
 use App\Services\Coolify\CoolifyTeamService;
@@ -105,6 +107,76 @@ class ClientAssetService
             'domain' => $record,
             'invoice' => $invoice,
         ];
+    }
+
+    /**
+     * مستخدمو النظام القابلون للربط (نفس مصدر «عملاء الاستضافة» ومشاريع Coolify).
+     *
+     * @return \Illuminate\Support\Collection<int, object{id: int, name: string, email: string|null}>
+     */
+    public function clientPortalUsersForSelect(): Collection
+    {
+        return User::query()
+            ->orderBy('name')
+            ->select(['id', 'name', 'email'])
+            ->limit(500)
+            ->get()
+            ->map(fn (User $user) => (object) [
+                'id' => $user->id,
+                'name' => $user->name,
+                'email' => $user->email,
+            ]);
+    }
+
+    /**
+     * @return array{success: bool, message: string, site?: CoolifyWordpressSite}
+     */
+    public function assignWordpressSite(?int $userId, string $siteUuid): array
+    {
+        $siteUuid = trim($siteUuid);
+        if ($siteUuid === '') {
+            return ['success' => false, 'message' => 'معرّف الموقع غير صالح'];
+        }
+
+        $site = CoolifyWordpressSite::query()->where('uuid', $siteUuid)->first();
+        if (! $site) {
+            return ['success' => false, 'message' => 'الموقع غير موجود'];
+        }
+
+        if ($userId !== null && ! User::whereKey($userId)->exists()) {
+            return ['success' => false, 'message' => 'المستخدم غير موجود'];
+        }
+
+        $site->update(['user_id' => $userId]);
+
+        if ($userId !== null && filled($site->project_uuid)) {
+            $this->assignCoolifyProject($userId, (string) $site->project_uuid, $site->project_name);
+        }
+
+        return [
+            'success' => true,
+            'message' => $userId ? 'تم ربط الموقع بالعميل' : 'تم إلغاء ربط العميل',
+            'site' => $site->fresh()->load(['client.customer']),
+        ];
+    }
+
+    public function userOwnsWordpressSite(int $userId, string $uuid): bool
+    {
+        return CoolifyWordpressSite::query()
+            ->where('uuid', $uuid)
+            ->where('user_id', $userId)
+            ->exists();
+    }
+
+    /**
+     * @return Collection<int, CoolifyWordpressSite>
+     */
+    public function wordpressSitesForUser(int $userId): Collection
+    {
+        return CoolifyWordpressSite::query()
+            ->where('user_id', $userId)
+            ->latest()
+            ->get();
     }
 
     /**
@@ -282,6 +354,7 @@ class ClientAssetService
         return [
             'domains' => $this->domainsForUser($userId)->count(),
             'projects' => ClientCoolifyProject::where('user_id', $userId)->count(),
+            'wordpress_sites' => CoolifyWordpressSite::where('user_id', $userId)->count(),
             'hosting' => WhmAccount::where('user_id', $userId)->where('status', '!=', 'terminated')->count(),
             'team_linked' => $team !== null && $team->hasApiToken(),
         ];

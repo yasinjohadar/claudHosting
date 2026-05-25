@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Admin\Coolify;
 
+use App\Http\Controllers\Concerns\ResolvesAuthorizedWordpressSite;
 use App\Http\Controllers\Controller;
 use App\Models\CoolifyWordpressSite;
 use App\Services\Coolify\ContainerFileManager;
@@ -15,6 +16,8 @@ use Symfony\Component\HttpFoundation\BinaryFileResponse;
 
 class CoolifyWordpressSiteFilesController extends Controller
 {
+    use ResolvesAuthorizedWordpressSite;
+
     public function __construct(
         protected ContainerFileManager $files,
         protected ContainerInspector $inspector,
@@ -168,7 +171,7 @@ class CoolifyWordpressSiteFilesController extends Controller
 
     protected function site(string $uuid): CoolifyWordpressSite
     {
-        return CoolifyWordpressSite::query()->where('uuid', $uuid)->firstOrFail();
+        return $this->resolveAuthorizedWordpressSite($uuid);
     }
 
     protected function isUtf8(string $data): bool

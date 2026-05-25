@@ -1,10 +1,11 @@
+@php $wpSiteRoutes = $wpSiteRoutes ?? \App\Support\WordpressSiteRouteMap::forPanel('admin', $uuid); @endphp
 @push('scripts')
 <script src="https://cdn.jsdelivr.net/npm/@xterm/xterm@5.5.0/lib/xterm.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@xterm/addon-fit@0.10.0/lib/addon-fit.min.js"></script>
 <script>
 (function() {
-    const sessionUrl = @json(route('admin.coolify.wordpress-sites.terminal.session', $uuid));
-    const commandsUrl = @json(route('admin.coolify.wordpress-sites.terminal.commands'));
+    const sessionUrl = @json($wpSiteRoutes['terminalSession']);
+    const commandsUrl = @json($wpSiteRoutes['terminalCommands']);
     const csrf = @json(csrf_token());
 
     let term = null;

@@ -27,6 +27,11 @@ class ClientPortalController extends Controller
             $summary['first_coolify_project_uuid'] = $coolifyProjects[0]['uuid'] ?? null;
         }
 
+        $wordpressSites = $this->clientAssets->wordpressSitesForUser($user->id);
+        if ($wordpressSites->count() === 1) {
+            $summary['first_wordpress_site_uuid'] = $wordpressSites->first()->uuid;
+        }
+
         return view('client.pages.dashboard', compact('user', 'summary'));
     }
 
@@ -36,13 +41,14 @@ class ClientPortalController extends Controller
 
         $domains = $this->clientAssets->domainsForUser($user->id);
         $projects = $this->clientAssets->coolifyProjectsForUser($user->id);
+        $wordpressSites = $this->clientAssets->wordpressSitesForUser($user->id);
         $hosting = WhmAccount::query()
             ->where('user_id', $user->id)
             ->where('status', '!=', 'terminated')
             ->orderByDesc('joined_at')
             ->get();
 
-        return view('client.pages.services', compact('user', 'domains', 'projects', 'hosting'));
+        return view('client.pages.services', compact('user', 'domains', 'projects', 'wordpressSites', 'hosting'));
     }
 
     public function invoices(): View

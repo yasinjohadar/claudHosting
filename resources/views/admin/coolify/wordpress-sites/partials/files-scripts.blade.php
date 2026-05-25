@@ -1,17 +1,18 @@
+@php $wpSiteRoutes = $wpSiteRoutes ?? \App\Support\WordpressSiteRouteMap::forPanel('admin', $uuid); @endphp
 @push('scripts')
 <script src="https://cdn.jsdelivr.net/npm/monaco-editor@0.52.0/min/vs/loader.js"></script>
 <script>
 (function() {
     const csrf = @json(csrf_token());
     const urls = {
-        list: @json(route('admin.coolify.wordpress-sites.files.list', $uuid)),
-        read: @json(route('admin.coolify.wordpress-sites.files.read', $uuid)),
-        write: @json(route('admin.coolify.wordpress-sites.files.write', $uuid)),
-        upload: @json(route('admin.coolify.wordpress-sites.files.upload', $uuid)),
-        mkdir: @json(route('admin.coolify.wordpress-sites.files.mkdir', $uuid)),
-        rename: @json(route('admin.coolify.wordpress-sites.files.rename', $uuid)),
-        destroy: @json(route('admin.coolify.wordpress-sites.files.destroy', $uuid)),
-        download: @json(route('admin.coolify.wordpress-sites.files.download', $uuid)),
+        list: @json($wpSiteRoutes['filesList']),
+        read: @json($wpSiteRoutes['filesRead']),
+        write: @json($wpSiteRoutes['filesWrite']),
+        upload: @json($wpSiteRoutes['filesUpload']),
+        mkdir: @json($wpSiteRoutes['filesMkdir']),
+        rename: @json($wpSiteRoutes['filesRename']),
+        destroy: @json($wpSiteRoutes['filesDestroy']),
+        download: @json($wpSiteRoutes['filesDownload']),
     };
     let currentPath = '';
     let currentFile = '';

@@ -10,5 +10,5 @@
             <option value="{{ $u->id }}" @selected(($selectedUserId ?? null) == $u->id)>{{ $u->name }}</option>
         @endforeach
     </select>
-    <button type="button" class="btn btn-sm btn-outline-primary asset-client-save py-0">ربط</button>
+    <button type="button" class="btn btn-sm btn-outline-primary asset-client-save py-0">{{ $saveButtonLabel ?? 'ربط' }}</button>
 </div>

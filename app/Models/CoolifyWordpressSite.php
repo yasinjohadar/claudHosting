@@ -37,6 +37,7 @@ class CoolifyWordpressSite extends Model
         'description',
         'metadata',
         'created_by',
+        'user_id',
     ];
 
     protected function casts(): array
@@ -58,6 +59,11 @@ class CoolifyWordpressSite extends Model
     public function creator(): BelongsTo
     {
         return $this->belongsTo(User::class, 'created_by');
+    }
+
+    public function client(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'user_id');
     }
 
     public static function slugFromName(string $name): string

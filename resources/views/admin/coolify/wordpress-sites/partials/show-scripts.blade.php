@@ -1,10 +1,11 @@
 @php
     $pollActive = in_array($site->status, ['pending', 'provisioning', 'failed'], true);
     $hasServiceUuid = filled($site->service_uuid);
+    $wpSiteRoutes = $wpSiteRoutes ?? \App\Support\WordpressSiteRouteMap::forPanel('admin', $uuid);
 @endphp
 <script>
 (function() {
-    const statusUrl = @json(route('admin.coolify.wordpress-sites.status', $uuid));
+    const statusUrl = @json($wpSiteRoutes['status']);
     const labels = @json(\App\Models\CoolifyWordpressSite::STATUSES);
     const runningStatuses = ['running', 'healthy', 'started', 'active'];
     const pollActive = @json($pollActive);

@@ -132,6 +132,27 @@ Route::middleware(['auth'])->group(function () {
             Route::post('/{uuid}/applications/{appUuid}/restart', [\App\Http\Controllers\Client\ClientCoolifyProjectController::class, 'restartApplication'])->name('applications.restart');
             Route::get('/{uuid}/applications/{appUuid}/logs', [\App\Http\Controllers\Client\ClientCoolifyProjectController::class, 'applicationLogs'])->name('applications.logs');
         });
+        Route::prefix('wordpress-sites')->name('wordpress-sites.')->group(function () {
+            Route::get('/', [\App\Http\Controllers\Client\ClientWordpressSiteController::class, 'index'])->name('index');
+            Route::get('/{uuid}/status', [CoolifyWordpressSiteController::class, 'status'])->name('status');
+            Route::get('/{uuid}/wp-info', [CoolifyWordpressSiteController::class, 'wpInfo'])->name('wp-info');
+            Route::post('/{uuid}/wp-action', [CoolifyWordpressSiteController::class, 'wpAction'])->name('wp-action');
+            Route::get('/{uuid}/wp-job', [CoolifyWordpressSiteController::class, 'wpJob'])->name('wp-job');
+            Route::get('/{uuid}/files/list', [CoolifyWordpressSiteFilesController::class, 'list'])->name('files.list');
+            Route::get('/{uuid}/files/read', [CoolifyWordpressSiteFilesController::class, 'read'])->name('files.read');
+            Route::post('/{uuid}/files/write', [CoolifyWordpressSiteFilesController::class, 'write'])->name('files.write');
+            Route::post('/{uuid}/files/upload', [CoolifyWordpressSiteFilesController::class, 'upload'])->name('files.upload');
+            Route::post('/{uuid}/files/mkdir', [CoolifyWordpressSiteFilesController::class, 'mkdir'])->name('files.mkdir');
+            Route::post('/{uuid}/files/rename', [CoolifyWordpressSiteFilesController::class, 'rename'])->name('files.rename');
+            Route::delete('/{uuid}/files', [CoolifyWordpressSiteFilesController::class, 'destroy'])->name('files.destroy');
+            Route::get('/{uuid}/files/download', [CoolifyWordpressSiteFilesController::class, 'download'])->name('files.download');
+            Route::get('/{uuid}/docker/logs', [CoolifyWordpressSiteFilesController::class, 'dockerLogs'])->name('docker.logs');
+            Route::get('/{uuid}/docker/inspect', [CoolifyWordpressSiteFilesController::class, 'dockerInspect'])->name('docker.inspect');
+            Route::post('/{uuid}/terminal/session', [CoolifyWordpressSiteFilesController::class, 'terminalSession'])->name('terminal.session');
+            Route::get('/terminal/commands', [CoolifyWordpressSiteFilesController::class, 'terminalCommands'])->name('terminal.commands');
+            Route::post('/{uuid}/sync-cloudflare', [CoolifyWordpressSiteController::class, 'syncCloudflare'])->name('sync-cloudflare');
+            Route::get('/{uuid}', [\App\Http\Controllers\Client\ClientWordpressSiteController::class, 'show'])->name('show');
+        });
         Route::post('/impersonate/stop', [\App\Http\Controllers\Client\ClientImpersonationController::class, 'stop'])
             ->name('impersonate.stop');
     });
@@ -298,6 +319,7 @@ Route::middleware(['auth', 'admin.panel'])->group(function () {
                 Route::get('/', [CoolifyWordpressSiteController::class, 'index'])->name('index');
                 Route::get('/create', [CoolifyWordpressSiteController::class, 'create'])->name('create');
                 Route::post('/', [CoolifyWordpressSiteController::class, 'store'])->name('store');
+                Route::post('/{uuid}/assign-client', [CoolifyWordpressSiteController::class, 'assignClient'])->name('assign-client');
                 Route::get('/{uuid}/status', [CoolifyWordpressSiteController::class, 'status'])->name('status');
                 Route::get('/{uuid}/wp-info', [CoolifyWordpressSiteController::class, 'wpInfo'])->name('wp-info');
                 Route::post('/{uuid}/wp-action', [CoolifyWordpressSiteController::class, 'wpAction'])->name('wp-action');

@@ -25,6 +25,7 @@
                                 <th>الاسم</th>
                                 <th>الرابط</th>
                                 <th>الحالة</th>
+                                <th>العميل</th>
                                 <th>المشروع</th>
                                 <th>التاريخ</th>
                                 <th></th>
@@ -47,14 +48,29 @@
                                         {{ \App\Models\CoolifyWordpressSite::STATUSES[$st] ?? $st }}
                                     </span>
                                 </td>
+                                <td class="wp-site-client-cell" id="wp-site-client-{{ $site->uuid }}">
+                                    @include('admin.coolify.wordpress-sites.partials.client-cell', [
+                                        'client' => $site->client,
+                                        'customer' => $site->client?->customer,
+                                    ])
+                                </td>
                                 <td class="small text-muted">{{ $site->project_name ?? $site->project_uuid ?? '—' }}</td>
                                 <td class="small">{{ $site->created_at?->format('Y-m-d H:i') }}</td>
-                                <td>
+                                <td class="text-nowrap">
                                     <a href="{{ route('admin.coolify.wordpress-sites.show', $site->uuid) }}" class="btn btn-sm btn-outline-primary">عرض</a>
+                                    @include('admin.partials.asset-client-assign-inline', [
+                                        'assignUrl' => route('admin.coolify.wordpress-sites.assign-client', $site->uuid),
+                                        'payloadKey' => 'display_name',
+                                        'payloadValue' => $site->display_name,
+                                        'clientUsers' => $clientUsers ?? [],
+                                        'selectedUserId' => $site->user_id,
+                                        'cellSelector' => '#wp-site-client-'.$site->uuid,
+                                        'saveButtonLabel' => 'إدارة',
+                                    ])
                                 </td>
                             </tr>
                         @empty
-                            <tr><td colspan="6" class="text-center text-muted py-4">لا توجد مواقع بعد</td></tr>
+                            <tr><td colspan="7" class="text-center text-muted py-4">لا توجد مواقع بعد</td></tr>
                         @endforelse
                         </tbody>
                     </table>
@@ -67,4 +83,6 @@
     </div>
 </div>
 @endsection
-
+@push('scripts')
+@include('admin.partials.asset-client-assign-script')
+@endpush
