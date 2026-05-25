@@ -15,3 +15,4 @@
     $color = $map[strtolower((string) $status)] ?? 'info';
 @endphp
 <span class="badge bg-{{ $color }}-transparent text-{{ $color }}">{{ $status }}</span>
+

@@ -103,4 +103,19 @@ return [
     'metrics_refresh_seconds' => 10,
     'metrics_cache_seconds' => 8,
 
+    /** إجراءات بوابة العميل على مشاريع Coolify */
+    'client_portal' => [
+        'actions' => [
+            'view_logs' => env('COOLIFY_CLIENT_VIEW_LOGS', true),
+            'deploy' => env('COOLIFY_CLIENT_DEPLOY', true),
+            'restart' => env('COOLIFY_CLIENT_RESTART', false),
+            'stop' => env('COOLIFY_CLIENT_STOP', false),
+        ],
+    ],
+
+    'ops_notifications' => [
+        'enabled' => env('COOLIFY_OPS_NOTIFICATIONS', true),
+        'emails' => env('COOLIFY_OPS_NOTIFICATION_EMAILS', ''),
+    ],
+
 ];

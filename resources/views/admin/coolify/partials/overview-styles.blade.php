@@ -247,3 +247,4 @@
     animation: coolify-pulse 1.8s infinite;
 }
 </style>
+

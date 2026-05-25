@@ -6,6 +6,8 @@
         <h4 class="my-4">نتيجة التحقق</h4>
         <div class="d-flex gap-2 mb-3">
             <a href="{{ route('admin.coolify.cloud-tokens.index') }}" class="btn btn-light">رجوع</a>
+            <a href="{{ route('admin.coolify.cloud-tokens.edit', $uuid) }}" class="btn btn-outline-primary">تعديل</a>
+            @include('admin.coolify.partials.delete-form', ['action' => route('admin.coolify.cloud-tokens.destroy', $uuid)])
             <form method="POST" action="{{ route('admin.coolify.cloud-tokens.validate', $uuid) }}">@csrf<button class="btn btn-outline-primary">إعادة التحقق</button></form>
         </div>
         @include('admin.coolify.partials.alerts')
@@ -14,3 +16,4 @@
     </div>
 </div>
 @endsection
+

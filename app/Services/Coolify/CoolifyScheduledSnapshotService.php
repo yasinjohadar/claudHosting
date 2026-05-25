@@ -88,6 +88,11 @@ class CoolifyScheduledSnapshotService
         return true;
     }
 
+    public function calculateNextRunAt(string $frequency): \Illuminate\Support\Carbon
+    {
+        return $this->nextRun($frequency);
+    }
+
     protected function nextRun(string $frequency): \Illuminate\Support\Carbon
     {
         return match ($frequency) {

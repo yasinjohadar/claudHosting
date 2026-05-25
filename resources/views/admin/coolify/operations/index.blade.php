@@ -8,6 +8,9 @@
             <div class="d-flex gap-2 flex-wrap">
                 <a href="{{ route('admin.coolify.readiness.index') }}" class="btn btn-outline-primary btn-sm">معالج الجاهزية</a>
                 <a href="{{ route('admin.coolify.operations.index', ['refresh_ssh' => 1]) }}" class="btn btn-outline-secondary btn-sm">تحديث SSH</a>
+                <form method="POST" action="{{ route('admin.coolify.operations.check-alerts') }}" class="d-inline">@csrf
+                    <button type="submit" class="btn btn-outline-danger btn-sm">فحص التنبيهات</button>
+                </form>
                 <a href="{{ route('admin.coolify.overview') }}" class="btn btn-outline-secondary btn-sm">لوحة Coolify</a>
             </div>
         </div>
@@ -170,3 +173,4 @@
     </div>
 </div>
 @endsection
+

@@ -12,6 +12,10 @@
         <a class="nav-link {{ $tab === 'projects' ? 'active' : '' }}" href="{{ route('admin.coolify.backups.projects.index') }}">لقطات المشاريع</a>
     </li>
     <li class="nav-item">
+        <a class="nav-link {{ $tab === 'schedules' ? 'active' : '' }}" href="{{ route('admin.coolify.backups.schedules.index') }}">الجداول الدورية</a>
+    </li>
+    <li class="nav-item">
         <a class="nav-link {{ $tab === 'snapshots' ? 'active' : '' }}" href="{{ route('admin.coolify.backups.snapshots.index') }}">سجل اللقطات</a>
     </li>
 </ul>
+

@@ -48,6 +48,7 @@ use App\Http\Controllers\Admin\Coolify\CoolifyCatalogController;
 use App\Http\Controllers\Admin\Coolify\CoolifyCatalogSettingsController;
 use App\Http\Controllers\Admin\Coolify\CoolifyBackupController;
 use App\Http\Controllers\Admin\Coolify\CoolifyProjectSnapshotController;
+use App\Http\Controllers\Admin\Coolify\CoolifySnapshotScheduleController;
 use App\Http\Controllers\Admin\Coolify\CoolifyWordpressSiteController;
 use App\Http\Controllers\Admin\Cloudflare\CloudflareSettingsController;
 use App\Http\Controllers\Admin\Cloudflare\CloudflareZoneController;
@@ -123,6 +124,12 @@ Route::middleware(['auth'])->group(function () {
         Route::get('/services', [\App\Http\Controllers\Client\ClientPortalController::class, 'services'])->name('services');
         Route::get('/invoices', [\App\Http\Controllers\Client\ClientPortalController::class, 'invoices'])->name('invoices.index');
         Route::get('/invoices/{invoice}', [\App\Http\Controllers\Client\ClientPortalController::class, 'invoiceShow'])->name('invoices.show');
+        Route::prefix('coolify/projects')->name('coolify.projects.')->group(function () {
+            Route::get('/{uuid}', [\App\Http\Controllers\Client\ClientCoolifyProjectController::class, 'show'])->name('show');
+            Route::post('/{uuid}/applications/{appUuid}/deploy', [\App\Http\Controllers\Client\ClientCoolifyProjectController::class, 'deployApplication'])->name('applications.deploy');
+            Route::post('/{uuid}/applications/{appUuid}/restart', [\App\Http\Controllers\Client\ClientCoolifyProjectController::class, 'restartApplication'])->name('applications.restart');
+            Route::get('/{uuid}/applications/{appUuid}/logs', [\App\Http\Controllers\Client\ClientCoolifyProjectController::class, 'applicationLogs'])->name('applications.logs');
+        });
         Route::post('/impersonate/stop', [\App\Http\Controllers\Client\ClientImpersonationController::class, 'stop'])
             ->name('impersonate.stop');
     });
@@ -132,7 +139,7 @@ Route::middleware(['auth'])->group(function () {
         Route::redirect('/domains', '/client')->name('domains.index');
         Route::redirect('/domains/{domain}', '/client')->where('domain', '.+')->name('domains.show');
         Route::redirect('/projects', '/client')->name('projects.index');
-        Route::redirect('/projects/{uuid}', '/client')->name('projects.show');
+        Route::redirect('/projects/{uuid}', '/client/coolify/projects/{uuid}')->name('projects.show');
         Route::redirect('/hosting', '/client')->name('hosting.index');
         Route::redirect('/hosting/{account}', '/client')->name('hosting.show');
         Route::redirect('/hosting/{account}/cpanel', '/client')->name('hosting.cpanel');
@@ -239,6 +246,7 @@ Route::middleware(['auth', 'admin.panel'])->group(function () {
         Route::prefix('coolify')->name('coolify.')->group(function () {
             Route::get('/', [CoolifySettingsController::class, 'overview'])->name('overview');
             Route::get('/operations', [CoolifyOperationsController::class, 'index'])->name('operations.index');
+            Route::post('/operations/check-alerts', [CoolifyOperationsController::class, 'checkAlerts'])->name('operations.check-alerts');
             Route::get('/readiness', [CoolifyOperationsController::class, 'readiness'])->name('readiness.index');
 
             Route::prefix('metrics')->name('metrics.')->group(function () {
@@ -302,6 +310,10 @@ Route::middleware(['auth', 'admin.panel'])->group(function () {
                 Route::get('/', [CoolifyGithubAppController::class, 'index'])->name('index');
                 Route::get('/create', [CoolifyGithubAppController::class, 'create'])->name('create');
                 Route::post('/', [CoolifyGithubAppController::class, 'store'])->name('store');
+                Route::get('/{uuid}', [CoolifyGithubAppController::class, 'show'])->name('show');
+                Route::get('/{uuid}/edit', [CoolifyGithubAppController::class, 'edit'])->name('edit');
+                Route::put('/{uuid}', [CoolifyGithubAppController::class, 'update'])->name('update');
+                Route::delete('/{uuid}', [CoolifyGithubAppController::class, 'destroy'])->name('destroy');
             });
 
             Route::prefix('cloud-tokens')->name('cloud-tokens.')->group(function () {
@@ -309,10 +321,14 @@ Route::middleware(['auth', 'admin.panel'])->group(function () {
                 Route::get('/create', [CoolifyCloudTokenController::class, 'create'])->name('create');
                 Route::post('/', [CoolifyCloudTokenController::class, 'store'])->name('store');
                 Route::get('/{uuid}', [CoolifyCloudTokenController::class, 'show'])->name('show');
+                Route::get('/{uuid}/edit', [CoolifyCloudTokenController::class, 'edit'])->name('edit');
+                Route::put('/{uuid}', [CoolifyCloudTokenController::class, 'update'])->name('update');
+                Route::delete('/{uuid}', [CoolifyCloudTokenController::class, 'destroy'])->name('destroy');
                 Route::post('/{uuid}/validate', [CoolifyCloudTokenController::class, 'validateToken'])->name('validate');
             });
 
             Route::prefix('hetzner')->name('hetzner.')->group(function () {
+                Route::get('/', [CoolifyHetznerController::class, 'index'])->name('index');
                 Route::get('/create', [CoolifyHetznerController::class, 'create'])->name('create');
                 Route::post('/', [CoolifyHetznerController::class, 'store'])->name('store');
             });
@@ -341,6 +357,7 @@ Route::middleware(['auth', 'admin.panel'])->group(function () {
                 Route::delete('/{uuid}', [CoolifyProjectController::class, 'destroy'])->name('destroy');
                 Route::get('/{uuid}/resources', [CoolifyProjectController::class, 'resources'])->name('resources');
                 Route::get('/{uuid}/environment/{environment}', [CoolifyProjectController::class, 'environment'])->name('environment');
+                Route::post('/{uuid}/environments', [CoolifyProjectController::class, 'storeEnvironment'])->name('environments.store');
                 Route::post('/{uuid}/snapshots/{snapshotUuid}/restore', [CoolifyProjectController::class, 'restoreSnapshot'])->name('snapshots.restore');
             });
 
@@ -362,6 +379,9 @@ Route::middleware(['auth', 'admin.panel'])->group(function () {
                 Route::put('/{uuid}/envs/{envUuid}', [CoolifyApplicationController::class, 'updateEnv'])->name('envs.update');
                 Route::delete('/{uuid}/envs/{envUuid}', [CoolifyApplicationController::class, 'destroyEnv'])->name('envs.destroy');
                 Route::post('/{uuid}/envs/bulk', [CoolifyApplicationController::class, 'bulkEnvs'])->name('envs.bulk');
+                Route::post('/{uuid}/storages', [CoolifyApplicationController::class, 'storeStorage'])->name('storages.store');
+                Route::put('/{uuid}/storages/{storageId}', [CoolifyApplicationController::class, 'updateStorage'])->name('storages.update');
+                Route::delete('/{uuid}/storages/{storageId}', [CoolifyApplicationController::class, 'destroyStorage'])->name('storages.destroy');
             });
 
             Route::prefix('backups')->name('backups.')->group(function () {
@@ -387,6 +407,17 @@ Route::middleware(['auth', 'admin.panel'])->group(function () {
                     Route::get('/{uuid}/status', [CoolifyProjectSnapshotController::class, 'status'])->name('status');
                     Route::post('/{uuid}/restore', [CoolifyProjectSnapshotController::class, 'restore'])->name('restore');
                     Route::get('/{uuid}', [CoolifyProjectSnapshotController::class, 'show'])->name('show');
+                });
+
+                Route::prefix('schedules')->name('schedules.')->group(function () {
+                    Route::get('/', [CoolifySnapshotScheduleController::class, 'index'])->name('index');
+                    Route::get('/create', [CoolifySnapshotScheduleController::class, 'create'])->name('create');
+                    Route::post('/', [CoolifySnapshotScheduleController::class, 'store'])->name('store');
+                    Route::get('/{uuid}/edit', [CoolifySnapshotScheduleController::class, 'edit'])->name('edit');
+                    Route::put('/{uuid}', [CoolifySnapshotScheduleController::class, 'update'])->name('update');
+                    Route::delete('/{uuid}', [CoolifySnapshotScheduleController::class, 'destroy'])->name('destroy');
+                    Route::post('/{uuid}/toggle', [CoolifySnapshotScheduleController::class, 'toggle'])->name('toggle');
+                    Route::post('/{uuid}/run', [CoolifySnapshotScheduleController::class, 'runNow'])->name('run');
                 });
             });
 

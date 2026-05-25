@@ -23,6 +23,12 @@
                         @if(!empty($apiVersion))
                             <span class="coolify-api-pill text-muted small" dir="ltr">v{{ $apiVersion }}</span>
                         @endif
+                        @if($connected ?? false)
+                            <span class="coolify-api-pill {{ ($systemHealthOk ?? false) ? 'coolify-api-pill--on' : '' }}">
+                                @if($systemHealthOk ?? false)<span class="coolify-pulse" aria-hidden="true"></span>@endif
+                                Health: {{ ($systemHealthOk ?? false) ? 'سليم' : 'غير متاح' }}
+                            </span>
+                        @endif
                         @if(($localStats['activity_today'] ?? 0) > 0)
                             <span class="coolify-api-pill">{{ $localStats['activity_today'] }} نشاط اليوم</span>
                         @endif
@@ -78,10 +84,29 @@
 
         {{-- Panel / local --}}
         <div class="mb-2">
-            <h6 class="text-muted text-uppercase small fw-bold mb-3">اللوحة والأدوات</h6>
+            <h6 class="text-muted text-uppercase small fw-bold mb-3">النسخ والتشغيل</h6>
         </div>
         <div class="row g-3 mb-4">
             @foreach($panelWidgets ?? [] as $w)
+                <div class="col-xl-4 col-lg-4 col-md-6">
+                    @include('admin.coolify.partials.stat-widget', [
+                        'count' => $w['count'],
+                        'route' => $w['route'],
+                        'label' => $w['label'],
+                        'desc' => $w['desc'],
+                        'icon' => $w['icon'],
+                        'accent' => $w['accent'],
+                        'linkClass' => 'coolify-panel-widget',
+                    ])
+                </div>
+            @endforeach
+        </div>
+
+        <div class="mb-2">
+            <h6 class="text-muted text-uppercase small fw-bold mb-3">التكاملات والاختبار</h6>
+        </div>
+        <div class="row g-3 mb-4">
+            @foreach($integrationWidgets ?? [] as $w)
                 <div class="col-xl-4 col-lg-4 col-md-6">
                     @include('admin.coolify.partials.stat-widget', [
                         'count' => $w['count'],
@@ -277,3 +302,4 @@
 </script>
 @endif
 @endpush
+

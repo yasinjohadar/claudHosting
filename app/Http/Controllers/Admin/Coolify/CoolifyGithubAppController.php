@@ -54,4 +54,60 @@ class CoolifyGithubAppController extends Controller
 
         return $this->coolifyRedirectSuccess('تم ربط GitHub App', 'admin.coolify.github-apps.index');
     }
+
+    public function show(string $uuid)
+    {
+        $response = $this->coolify->getGithubApp($uuid);
+        $app = $this->coolifyItem($response);
+
+        if (! $app) {
+            return $this->coolifyRedirectError($response['message'] ?? 'غير موجود', 'admin.coolify.github-apps.index');
+        }
+
+        return view('admin.coolify.github-apps.show', compact('app', 'uuid'));
+    }
+
+    public function edit(string $uuid)
+    {
+        $response = $this->coolify->getGithubApp($uuid);
+        $app = $this->coolifyItem($response);
+
+        if (! $app) {
+            return $this->coolifyRedirectError($response['message'] ?? 'غير موجود', 'admin.coolify.github-apps.index');
+        }
+
+        return view('admin.coolify.github-apps.edit', compact('app', 'uuid'));
+    }
+
+    public function update(Request $request, string $uuid)
+    {
+        $validated = $request->validate([
+            'name' => 'sometimes|string|max:255',
+            'api_url' => 'nullable|url',
+            'html_url' => 'nullable|url',
+            'custom_user' => 'nullable|string',
+            'custom_port' => 'nullable|string',
+        ]);
+
+        $response = $this->coolify->updateGithubApp($uuid, $validated);
+
+        if (! $response['success']) {
+            return back()->withInput()->with('error', $response['message'] ?? 'فشل التحديث');
+        }
+
+        return $this->coolifyRedirectSuccess('تم التحديث', 'admin.coolify.github-apps.show', ['uuid' => $uuid]);
+    }
+
+    public function destroy(string $uuid)
+    {
+        $response = $this->coolify->deleteGithubApp($uuid);
+
+        return $this->redirectAfterResourceDestroy(
+            $response['success'] ?? false,
+            ($response['success'] ?? false) ? 'تم الحذف' : ($response['message'] ?? 'فشل الحذف'),
+            'admin.coolify.github-apps.show',
+            ['uuid' => $uuid],
+            'admin.coolify.github-apps.index'
+        );
+    }
 }

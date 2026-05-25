@@ -22,3 +22,9 @@
 Homestead.json
 Homestead.yaml
 Thumbs.db
+
+# Cursor MCP (بيانات SSH / Application Password)
+.cursor/mcp.json
+
+# WP-CLI phar (حمّله: Invoke-WebRequest …/wp-cli.phar → tools/wp-cli.phar)
+/tools/wp-cli.phar

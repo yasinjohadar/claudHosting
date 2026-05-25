@@ -16,6 +16,18 @@ class CoolifyHetznerController extends Controller
         $this->middleware('auth');
     }
 
+    public function index()
+    {
+        if (! $this->coolify->isConfigured()) {
+            return $this->coolifyRedirectError('يرجى ضبط إعدادات Coolify أولاً.');
+        }
+
+        $servers = $this->coolifyList($this->coolify->listServers());
+        $cloudTokens = $this->coolifyList($this->coolify->listCloudTokens());
+
+        return view('admin.coolify.hetzner.index', compact('servers', 'cloudTokens'));
+    }
+
     public function create()
     {
         if (! $this->coolify->isConfigured()) {

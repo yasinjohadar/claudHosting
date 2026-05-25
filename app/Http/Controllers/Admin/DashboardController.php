@@ -9,6 +9,8 @@ use App\Models\Invoice;
 use App\Models\Ticket;
 use App\Models\Payment;
 use App\Models\User;
+use App\Models\CoolifySnapshotSchedule;
+use App\Models\CoolifyWordpressSite;
 use Spatie\Permission\Models\Role;
 use App\Services\CoolifyApiService;
 use App\Services\Whm\WhmApiService;
@@ -28,6 +30,11 @@ class DashboardController extends Controller
     {
         $whmConnected = $this->whmApiService->isConfigured() && ($this->whmApiService->ping()['success'] ?? false);
         $coolifyStats = $this->coolifyApiService->getDashboardStats();
+        $coolifyLocal = [
+            'snapshot_schedules' => $this->safeModelCount(CoolifySnapshotSchedule::class),
+            'snapshot_schedules_enabled' => $this->safeQuery(fn () => CoolifySnapshotSchedule::where('enabled', true)->count()),
+            'wordpress_sites' => $this->safeModelCount(CoolifyWordpressSite::class),
+        ];
 
         $stats = [
             'total_customers' => Customer::count(),
@@ -67,6 +74,7 @@ class DashboardController extends Controller
         return view('admin.dashboard', compact(
             'whmConnected',
             'coolifyStats',
+            'coolifyLocal',
             'stats',
             'latestCustomers',
             'latestInvoices',
@@ -181,5 +189,23 @@ class DashboardController extends Controller
     private function getTopSellingProductsData()
     {
         return Product::orderBy('sales_count', 'desc')->take(5)->pluck('sales_count')->toArray();
+    }
+
+    private function safeModelCount(string $modelClass): int
+    {
+        try {
+            return $modelClass::query()->count();
+        } catch (\Throwable) {
+            return 0;
+        }
+    }
+
+    private function safeQuery(callable $callback): int
+    {
+        try {
+            return (int) $callback();
+        } catch (\Throwable) {
+            return 0;
+        }
     }
 }

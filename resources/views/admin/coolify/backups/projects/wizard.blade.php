@@ -42,12 +42,20 @@
                         <div class="col-12"><p class="small text-info mb-0"><i class="fe fe-cloud"></i> جميع اللقطات تُخزَّن على S3 فقط (إعدادات Coolify). لا تخزين دائم على السيرفر.</p></div>
                     </div>
                     <div class="mt-3">
-                        <label class="form-label">تكرار نسخ DB</label>
+                        <label class="form-label">تكرار (للجدولة الدورية)</label>
                         <select id="frequency" class="form-select">
                             @foreach($frequencies as $k => $label)
+                                @if(in_array($k, ['hourly', 'daily', 'weekly', 'monthly'], true))
                                 <option value="{{ $k }}" {{ $k === 'daily' ? 'selected' : '' }}>{{ $label }}</option>
+                                @endif
                             @endforeach
                         </select>
+                    </div>
+                    <div class="mt-2">
+                        <label class="form-check">
+                            <input type="checkbox" id="createSchedule" class="form-check-input"> إنشاء جدولة دورية لهذا المشروع
+                        </label>
+                        <p class="small text-muted mb-0">عند التفعيل تُنشأ جدولة تلقائية بالإضافة للقطة الفورية</p>
                     </div>
                     <div class="mt-3">
                         <label class="form-label">اسم اللقطة</label>
@@ -82,6 +90,7 @@
                         <input type="hidden" name="project_name" id="formProjectName">
                         <input type="hidden" name="name" id="formName">
                         <input type="hidden" name="frequency" id="formFrequency">
+                        <input type="hidden" name="create_schedule" id="formCreateSchedule" value="0">
                         <input type="hidden" name="save_s3" id="formSaveS3" value="1">
                         <div id="planInputs"></div>
                         <button type="submit" class="btn btn-success" id="btnExecute">تنفيذ اللقطة</button>
@@ -172,6 +181,7 @@
         document.getElementById('formProjectName').value = scope === 'all_projects' ? '' : (projectEl.selectedOptions[0]?.dataset?.name || '');
         document.getElementById('formName').value = document.getElementById('snapshotName').value;
         document.getElementById('formFrequency').value = document.getElementById('frequency').value;
+        document.getElementById('formCreateSchedule').value = document.getElementById('createSchedule').checked ? '1' : '0';
         document.getElementById('formSaveS3').value = '1';
         const wrap = document.getElementById('planInputs');
         wrap.innerHTML = '';
@@ -213,3 +223,4 @@
 </script>
 @endpush
 @endsection
+

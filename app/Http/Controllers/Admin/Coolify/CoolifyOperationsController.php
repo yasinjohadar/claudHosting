@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Admin\Coolify;
 
 use App\Http\Controllers\Admin\Coolify\Concerns\HandlesCoolifyResponses;
 use App\Http\Controllers\Controller;
+use App\Services\Coolify\CoolifyOperationsNotificationService;
 use App\Services\Coolify\CoolifyOperationsService;
 use App\Services\Coolify\CoolifyReadinessService;
 use Illuminate\Http\Request;
@@ -14,7 +15,8 @@ class CoolifyOperationsController extends Controller
 
     public function __construct(
         protected CoolifyOperationsService $operations,
-        protected CoolifyReadinessService $readiness
+        protected CoolifyReadinessService $readiness,
+        protected CoolifyOperationsNotificationService $notifications
     ) {
         $this->middleware('auth');
     }
@@ -25,6 +27,20 @@ class CoolifyOperationsController extends Controller
         $readiness = $this->readiness->run();
 
         return view('admin.coolify.operations.index', compact('ops', 'readiness'));
+    }
+
+    public function checkAlerts()
+    {
+        $result = $this->notifications->checkAndNotify();
+
+        if ($result['issues'] === []) {
+            return back()->with('success', 'لا توجد مشاكل — لم تُرسل تنبيهات');
+        }
+
+        return back()->with(
+            'success',
+            'تم رصد '.count($result['issues']).' مشكلة — رسائل مرسلة: '.$result['sent']
+        );
     }
 
     public function readiness(Request $request)

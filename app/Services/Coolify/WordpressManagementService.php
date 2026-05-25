@@ -10,44 +10,30 @@ use Illuminate\Support\Str;
 
 class WordpressManagementService
 {
-    public const ASYNC_ACTIONS = [
-        'refresh_info',
-        'diagnose',
-        'core_update',
-        'core_reinstall',
-        'plugin_update_all',
-        'theme_update_all',
-        'docker_compose_pull',
-        'bootstrap_mcp',
-    ];
-
-    public const ALLOWED_ACTIONS = [
-        'refresh_info',
-        'core_update',
-        'core_reinstall',
-        'core_update_db',
-        'core_check_update',
-        'cache_flush',
-        'rewrite_flush',
-        'maintenance_activate',
-        'maintenance_deactivate',
-        'plugin_update_all',
-        'plugin_update',
-        'theme_update_all',
-        'user_reset_password',
-        'docker_compose_pull',
-        'redis_apply_env',
-        'diagnose',
-        'bootstrap_mcp',
-    ];
-
     public function __construct(
         protected WordpressCliService $cli,
         protected CoolifyApiService $coolify,
         protected CoolifySettingsService $settings,
         protected WordpressSiteProvisioningService $provisioning,
-        protected WordpressMcpBootstrapService $mcpBootstrap
+        protected WordpressMcpBootstrapService $mcpBootstrap,
+        protected WordpressCliActionRunner $actionRunner
     ) {}
+
+    /**
+     * @return list<string>
+     */
+    public static function allowedActions(): array
+    {
+        return app(WordpressCliActionRunner::class)->allowedActionNames();
+    }
+
+    /**
+     * @return list<string>
+     */
+    public static function asyncActions(): array
+    {
+        return app(WordpressCliActionRunner::class)->asyncActionNames();
+    }
 
     /**
      * @return array{ui_ready: bool, ssh_ready: bool, execute_ready: bool, message: string}
@@ -243,8 +229,23 @@ class WordpressManagementService
      */
     public function executeAction(CoolifyWordpressSite $site, string $action, array $params = [], ?int $userId = null): array
     {
-        if (! in_array($action, self::ALLOWED_ACTIONS, true)) {
+        if (! $this->actionRunner->isAllowed($action)) {
             return ['success' => false, 'message' => 'إجراء غير مسموح'];
+        }
+
+        if ($action === 'raw_cli') {
+            $validation = $this->actionRunner->validateRawCommand(
+                (string) ($params['command'] ?? ''),
+                (bool) ($params['confirm_dangerous'] ?? false)
+            );
+            if (! ($validation['success'] ?? false)) {
+                return ['success' => false, 'message' => $validation['message'] ?? 'أمر غير صالح'];
+            }
+        }
+
+        $def = $this->actionRunner->definition($action);
+        if (! empty($def['confirm']) && empty($params['_confirmed'])) {
+            // UI handles confirm; optional server-side skip when _confirmed=1
         }
 
         $check = $this->canManage($site);
@@ -260,7 +261,7 @@ class WordpressManagementService
             }
         }
 
-        if (in_array($action, self::ASYNC_ACTIONS, true)) {
+        if ($this->actionRunner->isAsync($action)) {
             return $this->dispatchAsync($site, $action, $params, $userId);
         }
 
@@ -272,13 +273,45 @@ class WordpressManagementService
      */
     public function runSyncAction(CoolifyWordpressSite $site, string $action, array $params = [], ?int $userId = null): array
     {
-        @set_time_limit($action === 'refresh_info' ? 300 : 120);
+        @set_time_limit(in_array($action, ['refresh_info', 'db_export', 'raw_cli', 'core_update', 'core_reinstall'], true) ? 600 : 180);
 
+        $special = $this->runSpecialAction($site, $action, $params, $userId);
+        if ($special !== null) {
+            return $special;
+        }
+
+        $resolved = $this->actionRunner->resolve($action, $params);
+        if (! ($resolved['success'] ?? false)) {
+            return ['success' => false, 'message' => $resolved['message'] ?? 'فشل'];
+        }
+
+        $command = $resolved['command'] ?? '';
+        $timeout = (int) ($resolved['timeout'] ?? 120);
+        $long = $timeout > 120 || in_array($action, ['db_export', 'plugin_update_all', 'theme_update_all'], true);
+        $result = $long
+            ? $this->cli->runLong($site, $command, $timeout)
+            : $this->cli->run($site, $command, $timeout);
+
+        return $this->finalizeActionResult($site, $action, $result['success'] ?? false, $result['output'] ?? '', $userId);
+    }
+
+    /**
+     * @param  array<string, mixed>  $params
+     * @return array<string, mixed>|null
+     */
+    protected function runSpecialAction(CoolifyWordpressSite $site, string $action, array $params, ?int $userId): ?array
+    {
+        $def = $this->actionRunner->definition($action);
+        if (($def['type'] ?? '') !== 'special') {
+            return null;
+        }
+
+        $handler = $def['handler'] ?? $action;
         $output = '';
         $success = true;
         $extra = [];
 
-        switch ($action) {
+        switch ($handler) {
             case 'diagnose':
                 $output = $this->cli->diagnose($site);
 
@@ -297,123 +330,6 @@ class WordpressManagementService
                     'data' => $info['data'] ?? null,
                 ];
 
-            case 'core_check_update':
-                $result = $this->cli->run($site, 'core check-update', 120);
-                $output = $result['output'];
-                $success = $result['success'];
-                break;
-
-            case 'core_update_db':
-                $result = $this->cli->run($site, 'core update-db', 120);
-                $output = $result['output'];
-                $success = $result['success'];
-                break;
-
-            case 'core_reinstall':
-                $r1 = $this->cli->run($site, 'core update --force', 600);
-                $output = $r1['output'] ?? '';
-                $success = $r1['success'] ?? false;
-                if (! $success) {
-                    $r2 = $this->cli->run($site, 'core download --force --skip-content', 600);
-                    $output = trim($output."\n".($r2['output'] ?? ''));
-                    $success = $r2['success'] ?? false;
-                }
-                if ($success) {
-                    $r3 = $this->cli->run($site, 'core update-db', 120);
-                    $output = trim($output."\n".($r3['output'] ?? ''));
-                    $success = ($r3['success'] ?? false) && $success;
-                }
-                break;
-
-            case 'core_update':
-                $r1 = $this->cli->run($site, 'core update --version=latest', 600);
-                if (! ($r1['success'] ?? false)) {
-                    $r1 = $this->cli->run($site, 'core update', 600);
-                }
-                $r2 = $this->cli->run($site, 'core update-db', 120);
-                $output = trim(($r1['output'] ?? '')."\n".($r2['output'] ?? ''));
-                $success = ($r1['success'] ?? false) && ($r2['success'] ?? false);
-                break;
-
-            case 'cache_flush':
-                $result = $this->cli->run($site, 'cache flush', 60);
-                $output = $result['output'];
-                $success = $result['success'];
-                break;
-
-            case 'rewrite_flush':
-                $result = $this->cli->run($site, 'rewrite flush', 60);
-                $output = $result['output'];
-                $success = $result['success'];
-                break;
-
-            case 'maintenance_activate':
-                $result = $this->cli->run($site, 'maintenance-mode activate', 60);
-                $output = $result['output'];
-                $success = $result['success'];
-                break;
-
-            case 'maintenance_deactivate':
-                $result = $this->cli->run($site, 'maintenance-mode deactivate', 60);
-                $output = $result['output'];
-                $success = $result['success'];
-                break;
-
-            case 'plugin_update_all':
-                $result = $this->cli->run($site, 'plugin update --all', 900);
-                $output = $result['output'];
-                $success = $result['success'];
-                break;
-
-            case 'plugin_update':
-                $slug = preg_replace('/[^a-z0-9_-]/i', '', (string) ($params['slug'] ?? ''));
-                if ($slug === '') {
-                    return ['success' => false, 'message' => 'معرّف الإضافة مطلوب'];
-                }
-                $result = $this->cli->run($site, 'plugin update '.$slug, 300);
-                $output = $result['output'];
-                $success = $result['success'];
-                break;
-
-            case 'theme_update_all':
-                $result = $this->cli->run($site, 'theme update --all', 600);
-                $output = $result['output'];
-                $success = $result['success'];
-                break;
-
-            case 'user_reset_password':
-                $login = preg_replace('/[^a-z0-9_@.\-]/i', '', (string) ($params['login'] ?? ''));
-                if ($login === '') {
-                    return ['success' => false, 'message' => 'اسم المستخدم مطلوب'];
-                }
-                $password = (string) ($params['password'] ?? '');
-                if ($password === '') {
-                    $password = Str::password(16, symbols: true);
-                }
-                $escaped = escapeshellarg($password);
-                $result = $this->cli->run($site, 'user update '.$login.' --user_pass='.$escaped, 60);
-                $output = $result['output'];
-                $success = $result['success'];
-                if ($success) {
-                    $extra['generated_password'] = $password;
-                    $extra['login'] = $login;
-                }
-                break;
-
-            case 'docker_compose_pull':
-                $result = $this->pullDockerCompose($site);
-                $output = $result['output'] ?? '';
-                $success = $result['success'] ?? false;
-                if ($success) {
-                    $this->provisioning->syncSiteFromCoolify($site->fresh());
-                    $this->getSiteInfo($site->fresh(), true);
-                }
-                break;
-
-            case 'redis_apply_env':
-                $result = $this->applyRedisEnv($site);
-                return $result;
-
             case 'bootstrap_mcp':
                 $boot = $this->mcpBootstrap->bootstrap($site);
                 $output = $boot['output'] ?? '';
@@ -428,14 +344,155 @@ class WordpressManagementService
                     'data' => $boot['data'] ?? null,
                 ]);
 
-            default:
-                return ['success' => false, 'message' => 'إجراء غير مدعوم'];
-        }
+            case 'redis_apply_env':
+                return $this->applyRedisEnv($site);
 
+            case 'docker_compose_pull':
+                $result = $this->pullDockerCompose($site);
+                $output = $result['output'] ?? '';
+                $success = $result['success'] ?? false;
+                if ($success) {
+                    $this->provisioning->syncSiteFromCoolify($site->fresh());
+                    $this->getSiteInfo($site->fresh(), true);
+                }
+
+                return $this->finalizeActionResult($site, $action, $success, $output, $userId);
+
+            case 'docker_compose_lifecycle':
+                $op = (string) ($def['lifecycle'] ?? 'restart');
+                $result = $this->cli->composeLifecycle($site, $op);
+                if ($result['success'] ?? false) {
+                    $this->provisioning->syncSiteFromCoolify($site->fresh());
+                }
+
+                return $this->finalizeActionResult($site, $action, $result['success'] ?? false, $result['output'] ?? '', $userId);
+
+            case 'raw_cli':
+                $command = trim((string) ($params['command'] ?? ''));
+                $result = $this->cli->runLong($site, $command, 600);
+
+                return $this->finalizeActionResult($site, 'raw_cli: '.$command, $result['success'] ?? false, $result['output'] ?? '', $userId);
+
+            case 'core_update':
+                $r1 = $this->cli->runLong($site, 'core update --version=latest', 600);
+                if (! ($r1['success'] ?? false)) {
+                    $r1 = $this->cli->runLong($site, 'core update', 600);
+                }
+                $r2 = $this->cli->run($site, 'core update-db', 120);
+                $output = trim(($r1['output'] ?? '')."\n".($r2['output'] ?? ''));
+                $success = ($r1['success'] ?? false) && ($r2['success'] ?? false);
+
+                return $this->finalizeActionResult($site, $action, $success, $output, $userId);
+
+            case 'core_reinstall':
+                $r1 = $this->cli->runLong($site, 'core update --force', 600);
+                $output = $r1['output'] ?? '';
+                $success = $r1['success'] ?? false;
+                if (! $success) {
+                    $r2 = $this->cli->runLong($site, 'core download --force --skip-content', 600);
+                    $output = trim($output."\n".($r2['output'] ?? ''));
+                    $success = $r2['success'] ?? false;
+                }
+                if ($success) {
+                    $r3 = $this->cli->run($site, 'core update-db', 120);
+                    $output = trim($output."\n".($r3['output'] ?? ''));
+                    $success = ($r3['success'] ?? false) && $success;
+                }
+
+                return $this->finalizeActionResult($site, $action, $success, $output, $userId);
+
+            case 'user_reset_password':
+                $login = preg_replace('/[^a-z0-9_@.\-]/i', '', (string) ($params['login'] ?? ''));
+                if ($login === '') {
+                    return ['success' => false, 'message' => 'اسم المستخدم مطلوب'];
+                }
+                $password = (string) ($params['password'] ?? '');
+                if ($password === '') {
+                    $password = Str::password(16, symbols: true);
+                }
+                $result = $this->cli->run($site, 'user update '.$login.' --user_pass='.escapeshellarg($password), 60);
+                $extra = $result['success'] ? ['generated_password' => $password, 'login' => $login] : [];
+
+                return array_merge(
+                    $this->finalizeActionResult($site, $action, $result['success'] ?? false, $result['output'] ?? '', $userId),
+                    $extra
+                );
+
+            case 'user_create':
+                $login = preg_replace('/[^a-z0-9_@.\-]/i', '', (string) ($params['login'] ?? ''));
+                $email = filter_var($params['email'] ?? '', FILTER_VALIDATE_EMAIL) ?: '';
+                $role = preg_replace('/[^a-z0-9_-]/i', '', (string) ($params['role'] ?? 'subscriber')) ?: 'subscriber';
+                if ($login === '' || $email === '') {
+                    return ['success' => false, 'message' => 'اسم المستخدم والبريد مطلوبان'];
+                }
+                $password = (string) ($params['password'] ?? '');
+                if ($password === '') {
+                    $password = Str::password(16, symbols: true);
+                }
+                $cmd = sprintf(
+                    'user create %s %s --user_pass=%s --role=%s --porcelain',
+                    escapeshellarg($login),
+                    escapeshellarg($email),
+                    escapeshellarg($password),
+                    escapeshellarg($role)
+                );
+                $result = $this->cli->run($site, $cmd, 120);
+                $extra = $result['success'] ? ['generated_password' => $password, 'login' => $login] : [];
+
+                return array_merge(
+                    $this->finalizeActionResult($site, $action, $result['success'] ?? false, $result['output'] ?? '', $userId),
+                    $extra
+                );
+
+            case 'search_replace':
+                $old = (string) ($params['old'] ?? '');
+                $new = (string) ($params['new'] ?? '');
+                if ($old === '') {
+                    return ['success' => false, 'message' => 'النص القديم مطلوب'];
+                }
+                $dry = ! empty($params['dry_run']);
+                $flag = $dry ? '--dry-run' : '';
+                $cmd = sprintf(
+                    'search-replace %s %s %s --all-tables',
+                    escapeshellarg($old),
+                    escapeshellarg($new),
+                    $flag
+                );
+                $result = $this->cli->runLong($site, trim($cmd), 600);
+
+                return $this->finalizeActionResult($site, $action, $result['success'] ?? false, $result['output'] ?? '', $userId);
+
+            case 'post_create':
+                $title = Str::limit(strip_tags((string) ($params['title'] ?? '')), 200, '');
+                if ($title === '') {
+                    return ['success' => false, 'message' => 'العنوان مطلوب'];
+                }
+                $postType = preg_replace('/[^a-z0-9_-]/i', '', (string) ($params['post_type'] ?? 'post')) ?: 'post';
+                $status = preg_replace('/[^a-z0-9_-]/i', '', (string) ($params['status'] ?? 'draft')) ?: 'draft';
+                $cmd = sprintf(
+                    'post create --post_title=%s --post_type=%s --post_status=%s --porcelain',
+                    escapeshellarg($title),
+                    escapeshellarg($postType),
+                    escapeshellarg($status)
+                );
+                $result = $this->cli->run($site, $cmd, 120);
+
+                return $this->finalizeActionResult($site, $action, $result['success'] ?? false, $result['output'] ?? '', $userId);
+
+            default:
+                return null;
+        }
+    }
+
+    /**
+     * @return array{success: bool, message: string, output: string}
+     */
+    protected function finalizeActionResult(CoolifyWordpressSite $site, string $action, bool $success, string $output, ?int $userId): array
+    {
         $this->appendLog($site, $action, $success ? 'نجح' : 'فشل', $output);
         $this->recordActivity($site, $action, $success, $userId);
 
-        if ($success) {
+        if ($success && ! str_starts_with($action, 'raw_cli')) {
             $this->getSiteInfo($site->fresh(), true);
         }
 
@@ -444,11 +501,11 @@ class WordpressManagementService
             $failMessage = Str::limit(trim($output), 400);
         }
 
-        return array_merge([
+        return [
             'success' => $success,
             'message' => $success ? 'تم تنفيذ الإجراء' : $failMessage,
             'output' => $output,
-        ], $extra);
+        ];
     }
 
     /**

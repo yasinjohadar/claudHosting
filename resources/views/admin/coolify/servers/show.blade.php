@@ -120,3 +120,4 @@ document.querySelectorAll('.coolify-copy-btn').forEach(btn => {
 });
 </script>
 @endpush
+

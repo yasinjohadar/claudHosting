@@ -10,14 +10,23 @@
         @include('admin.coolify.partials.alerts')
         <div class="card custom-card">
             <table class="table mb-0">
-                <thead><tr><th>الاسم</th><th>UUID</th></tr></thead>
+                <thead><tr><th>الاسم</th><th>UUID</th><th></th></tr></thead>
                 <tbody>
                 @forelse($apps as $a)
-                    <tr><td>{{ $a['name'] ?? '—' }}</td><td><code>{{ $a['uuid'] ?? '' }}</code></td></tr>
-                @empty<tr><td colspan="2" class="text-center text-muted">لا توجد</td></tr>@endforelse
+                    @php $uuid = $a['uuid'] ?? ''; @endphp
+                    <tr>
+                        <td>{{ $a['name'] ?? '—' }}</td>
+                        <td><code>{{ $uuid }}</code></td>
+                        <td class="text-nowrap">
+                            <a href="{{ route('admin.coolify.github-apps.show', $uuid) }}" class="btn btn-sm btn-outline-primary">عرض</a>
+                            <a href="{{ route('admin.coolify.github-apps.edit', $uuid) }}" class="btn btn-sm btn-outline-secondary">تعديل</a>
+                        </td>
+                    </tr>
+                @empty<tr><td colspan="3" class="text-center text-muted">لا توجد</td></tr>@endforelse
                 </tbody>
             </table>
         </div>
     </div>
 </div>
 @endsection
+

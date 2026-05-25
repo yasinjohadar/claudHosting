@@ -113,8 +113,9 @@ class CoolifyApplicationController extends Controller
 
         $envs = $this->coolifyList($this->coolify->listApplicationEnvs($uuid));
         $deployments = $this->coolifyList($this->coolify->listDeploymentsByApplication($uuid));
+        $storages = $this->coolifyList($this->coolify->listApplicationStorages($uuid));
 
-        return view('admin.coolify.applications.show', compact('application', 'uuid', 'envs', 'deployments'));
+        return view('admin.coolify.applications.show', compact('application', 'uuid', 'envs', 'deployments', 'storages'));
     }
 
     public function edit(string $uuid)
@@ -291,5 +292,57 @@ class CoolifyApplicationController extends Controller
         }
 
         return $this->coolifyRedirectSuccess('تم تحديث المتغيرات', 'admin.coolify.applications.show', ['uuid' => $uuid]);
+    }
+
+    public function storeStorage(Request $request, string $uuid)
+    {
+        $validated = $request->validate([
+            'name' => 'required|string|max:255',
+            'mount_path' => 'required|string|max:500',
+            'host_path' => 'nullable|string|max:500',
+            'is_directory' => 'nullable|boolean',
+        ]);
+
+        $validated['is_directory'] = $request->boolean('is_directory', true);
+        $response = $this->coolify->createApplicationStorage($uuid, $validated);
+
+        if (! $response['success']) {
+            return back()->with('error', $response['message'] ?? 'فشل إنشاء التخزين');
+        }
+
+        return $this->coolifyRedirectSuccess('تم إضافة التخزين', 'admin.coolify.applications.show', ['uuid' => $uuid]);
+    }
+
+    public function updateStorage(Request $request, string $uuid, string $storageId)
+    {
+        $validated = $request->validate([
+            'name' => 'sometimes|string|max:255',
+            'mount_path' => 'sometimes|string|max:500',
+            'host_path' => 'nullable|string|max:500',
+            'is_directory' => 'nullable|boolean',
+        ]);
+
+        if ($request->has('is_directory')) {
+            $validated['is_directory'] = $request->boolean('is_directory');
+        }
+
+        $response = $this->coolify->updateApplicationStorage($uuid, $storageId, $validated);
+
+        if (! $response['success']) {
+            return back()->with('error', $response['message'] ?? 'فشل تحديث التخزين');
+        }
+
+        return $this->coolifyRedirectSuccess('تم تحديث التخزين', 'admin.coolify.applications.show', ['uuid' => $uuid]);
+    }
+
+    public function destroyStorage(string $uuid, string $storageId)
+    {
+        $response = $this->coolify->deleteApplicationStorage($uuid, $storageId);
+
+        if (! $response['success']) {
+            return $this->coolifyRedirectError($response['message'] ?? 'فشل الحذف', 'admin.coolify.applications.show', ['uuid' => $uuid]);
+        }
+
+        return $this->coolifyRedirectSuccess('تم حذف التخزين', 'admin.coolify.applications.show', ['uuid' => $uuid]);
     }
 }

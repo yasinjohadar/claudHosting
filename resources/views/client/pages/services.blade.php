@@ -113,7 +113,11 @@
                                 <tbody>
                                     @forelse($projects as $proj)
                                         <tr>
-                                            <td class="fw-semibold">{{ $proj['name'] }}</td>
+                                            <td class="fw-semibold">
+                                                <a href="{{ route('client.coolify.projects.show', $proj['uuid']) }}" class="text-decoration-none">
+                                                    {{ $proj['name'] }}
+                                                </a>
+                                            </td>
                                             <td><span class="client-uuid-chip" dir="ltr" title="{{ $proj['uuid'] }}">{{ $proj['uuid'] }}</span></td>
                                             <td class="text-end"><span class="badge bg-success-transparent">مرتبط</span></td>
                                         </tr>
@@ -210,3 +214,4 @@ document.addEventListener('DOMContentLoaded', function () {
 });
 </script>
 @endpush
+

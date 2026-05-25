@@ -7,10 +7,12 @@ use App\Http\Controllers\Controller;
 use App\Jobs\RestoreProjectSnapshotJob;
 use App\Jobs\RunProjectSnapshotJob;
 use App\Models\CoolifyProjectSnapshot;
+use App\Models\CoolifySnapshotSchedule;
 use App\Services\Coolify\CoolifyBackupService;
 use App\Services\Coolify\CoolifyProjectBackupPlanner;
 use App\Services\Coolify\CoolifyProjectSnapshotService;
 use App\Services\Coolify\CoolifySnapshotStorageService;
+use App\Services\Coolify\CoolifyScheduledSnapshotService;
 use App\Services\Coolify\CoolifySettingsService;
 use App\Services\CoolifyApiService;
 use Illuminate\Http\JsonResponse;
@@ -26,7 +28,8 @@ class CoolifyProjectSnapshotController extends Controller
         protected CoolifyProjectBackupPlanner $planner,
         protected CoolifyProjectSnapshotService $snapshots,
         protected CoolifySnapshotStorageService $snapshotStorage,
-        protected CoolifySettingsService $coolifySettings
+        protected CoolifySettingsService $coolifySettings,
+        protected CoolifyScheduledSnapshotService $scheduledSnapshots
     ) {
         $this->middleware('auth');
     }
@@ -108,6 +111,7 @@ class CoolifyProjectSnapshotController extends Controller
             'project_name' => 'nullable|string',
             'name' => 'required|string|max:255',
             'frequency' => 'nullable|string',
+            'create_schedule' => 'nullable|boolean',
             'save_s3' => 'nullable|boolean',
             'plan' => 'required|array',
             'plan.*.resource_uuid' => 'required|string',
@@ -163,6 +167,29 @@ class CoolifyProjectSnapshotController extends Controller
         ]);
 
         RunProjectSnapshotJob::dispatch($snapshot->id);
+
+        if ($request->boolean('create_schedule')
+            && ($validated['scope'] ?? '') === 'single_project'
+            && ! empty($validated['project_uuid'])) {
+            $frequency = in_array($validated['frequency'] ?? '', ['hourly', 'daily', 'weekly', 'monthly'], true)
+                ? $validated['frequency']
+                : 'daily';
+
+            CoolifySnapshotSchedule::create([
+                'project_uuid' => $validated['project_uuid'],
+                'project_name' => $validated['project_name'] ?? null,
+                'name' => ($validated['name'] ?? 'لقطة').' — مجدول',
+                'frequency' => $frequency,
+                'enabled' => true,
+                'options' => [
+                    'include_databases' => collect($plan)->contains(fn ($row) => ($row['resource_type'] ?? '') === 'database'),
+                    'include_applications' => collect($plan)->contains(fn ($row) => ($row['resource_type'] ?? '') === 'application'),
+                    'include_services' => collect($plan)->contains(fn ($row) => ($row['resource_type'] ?? '') === 'service'),
+                ],
+                'next_run_at' => $this->scheduledSnapshots->calculateNextRunAt($frequency),
+                'created_by' => auth()->id(),
+            ]);
+        }
 
         $this->logCoolify('snapshot_create', 'project_snapshot', $snapshot->uuid, $validated['name']);
 

@@ -47,21 +47,23 @@
             'destroyRoutePrefix' => 'admin.coolify.applications.envs.destroy',
             'bulkRoute' => route('admin.coolify.applications.envs.bulk', $uuid),
         ])
+        @include('admin.coolify.applications.partials.storage-panel', compact('uuid', 'storages'))
         <div class="card custom-card mb-3">
             <div class="card-header"><div class="card-title">سجل النشرات</div></div>
             <div class="card-body p-0">
                 <table class="table table-sm mb-0">
-                    <thead><tr><th>UUID</th><th>الحالة</th><th></th></tr></thead>
+                    <thead><tr><th>UUID</th><th>الحالة</th><th>التاريخ</th><th></th></tr></thead>
                     <tbody>
                     @forelse($deployments as $d)
                         @php $did = $d['uuid'] ?? ''; @endphp
                         <tr>
                             <td><code class="small">{{ $did }}</code></td>
                             <td>@include('admin.coolify.partials.status-badges', ['item' => $d])</td>
+                            <td class="small">{{ $d['created_at'] ?? ($d['updated_at'] ?? '—') }}</td>
                             <td><a href="{{ route('admin.coolify.deployments.show', $did) }}" class="btn btn-sm btn-outline-primary">عرض</a></td>
                         </tr>
                     @empty
-                        <tr><td colspan="3" class="text-muted text-center">لا توجد نشرات</td></tr>
+                        <tr><td colspan="4" class="text-muted text-center">لا توجد نشرات</td></tr>
                     @endforelse
                     </tbody>
                 </table>
@@ -73,3 +75,4 @@
     </div>
 </div>
 @endsection
+

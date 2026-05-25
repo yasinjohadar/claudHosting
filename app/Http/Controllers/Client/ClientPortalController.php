@@ -22,6 +22,10 @@ class ClientPortalController extends Controller
     {
         $user = auth()->user();
         $summary = $this->clientAssets->portalSummary($user->id);
+        $coolifyProjects = $this->clientAssets->coolifyProjectsForUser($user->id);
+        if (count($coolifyProjects) === 1) {
+            $summary['first_coolify_project_uuid'] = $coolifyProjects[0]['uuid'] ?? null;
+        }
 
         return view('client.pages.dashboard', compact('user', 'summary'));
     }

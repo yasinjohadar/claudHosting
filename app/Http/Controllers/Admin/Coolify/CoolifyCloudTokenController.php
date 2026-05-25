@@ -58,9 +58,52 @@ class CoolifyCloudTokenController extends Controller
 
     public function show(string $uuid)
     {
+        $response = $this->coolify->getCloudToken($uuid);
+        $token = $this->coolifyItem($response);
         $validate = $this->coolify->validateCloudToken($uuid);
 
-        return view('admin.coolify.cloud-tokens.show', compact('uuid', 'validate'));
+        return view('admin.coolify.cloud-tokens.show', compact('uuid', 'validate', 'token', 'response'));
+    }
+
+    public function edit(string $uuid)
+    {
+        $response = $this->coolify->getCloudToken($uuid);
+        $token = $this->coolifyItem($response);
+
+        if (! $token) {
+            return $this->coolifyRedirectError($response['message'] ?? 'غير موجود', 'admin.coolify.cloud-tokens.index');
+        }
+
+        return view('admin.coolify.cloud-tokens.edit', compact('token', 'uuid'));
+    }
+
+    public function update(Request $request, string $uuid)
+    {
+        $validated = $request->validate([
+            'name' => 'sometimes|string|max:255',
+            'token' => 'nullable|string',
+        ]);
+
+        $response = $this->coolify->updateCloudToken($uuid, array_filter($validated));
+
+        if (! $response['success']) {
+            return back()->withInput()->with('error', $response['message'] ?? 'فشل التحديث');
+        }
+
+        return $this->coolifyRedirectSuccess('تم التحديث', 'admin.coolify.cloud-tokens.show', ['uuid' => $uuid]);
+    }
+
+    public function destroy(string $uuid)
+    {
+        $response = $this->coolify->deleteCloudToken($uuid);
+
+        return $this->redirectAfterResourceDestroy(
+            $response['success'] ?? false,
+            ($response['success'] ?? false) ? 'تم الحذف' : ($response['message'] ?? 'فشل الحذف'),
+            'admin.coolify.cloud-tokens.show',
+            ['uuid' => $uuid],
+            'admin.coolify.cloud-tokens.index'
+        );
     }
 
     public function validateToken(string $uuid)

@@ -1,4 +1,4 @@
-@extends('admin.layouts.master')
+﻿@extends('admin.layouts.master')
 @section('page-title') مركز نسخ Coolify @stop
 @section('content')
 <div class="main-content app-content">
@@ -15,7 +15,7 @@
             </div>
         @endif
         <div class="row g-3">
-            <div class="col-md-4">
+            <div class="col-md-6 col-lg-3">
                 <div class="card custom-card h-100">
                     <div class="card-body">
                         <h5>قواعد البيانات</h5>
@@ -24,7 +24,7 @@
                     </div>
                 </div>
             </div>
-            <div class="col-md-4">
+            <div class="col-md-6 col-lg-3">
                 <div class="card custom-card h-100 border-primary">
                     <div class="card-body">
                         <h5>لقطات المشاريع</h5>
@@ -34,7 +34,17 @@
                     </div>
                 </div>
             </div>
-            <div class="col-md-4">
+            <div class="col-md-6 col-lg-3">
+                <div class="card custom-card h-100 border-info">
+                    <div class="card-body">
+                        <h5><i class="fe fe-calendar me-1"></i> جداول اللقطات</h5>
+                        <p class="text-muted small">جدولة snapshots دورية تلقائية لكل مشروع.</p>
+                        <a href="{{ route('admin.coolify.backups.schedules.index') }}" class="btn btn-outline-info btn-sm">إدارة الجداول</a>
+                        <a href="{{ route('admin.coolify.backups.schedules.create') }}" class="btn btn-link btn-sm">جدول جديد</a>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-6 col-lg-3">
                 <div class="card custom-card h-100">
                     <div class="card-body">
                         <h5>سجل اللقطات</h5>

@@ -303,12 +303,30 @@ class CoolifyProjectController extends Controller
     {
         $response = $this->coolify->projectEnvironment($uuid, $environment);
         $data = $this->coolifyItem($response) ?? $response['data'] ?? null;
+        $environments = $this->coolifyList($this->coolify->listProjectEnvironments($uuid));
 
         return view('admin.coolify.projects.environment', [
             'uuid' => $uuid,
             'environment' => $environment,
             'data' => $data,
             'response' => $response,
+            'environments' => $environments,
         ]);
+    }
+
+    public function storeEnvironment(Request $request, string $uuid)
+    {
+        $validated = $request->validate(['name' => 'required|string|max:64']);
+        $response = $this->coolify->createProjectEnvironment($uuid, $validated['name']);
+
+        if (! ($response['success'] ?? false)) {
+            return back()->with('error', $response['message'] ?? 'فشل إنشاء البيئة');
+        }
+
+        return $this->coolifyRedirectSuccess(
+            'تم إنشاء البيئة',
+            'admin.coolify.projects.environment',
+            ['uuid' => $uuid, 'environment' => $validated['name']]
+        );
     }
 }

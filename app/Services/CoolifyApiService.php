@@ -1639,6 +1639,21 @@ class CoolifyApiService
         return $this->request('POST', 'github-apps', $data);
     }
 
+    public function getGithubApp(string $uuid): array
+    {
+        return $this->request('GET', "github-apps/{$uuid}");
+    }
+
+    public function updateGithubApp(string $uuid, array $data): array
+    {
+        return $this->request('PATCH', "github-apps/{$uuid}", $data);
+    }
+
+    public function deleteGithubApp(string $uuid): array
+    {
+        return $this->request('DELETE', "github-apps/{$uuid}");
+    }
+
     // --- Cloud Tokens ---
 
     public function listCloudTokens(): array
@@ -1649,6 +1664,21 @@ class CoolifyApiService
     public function createCloudToken(array $data): array
     {
         return $this->request('POST', 'cloud-tokens', $data);
+    }
+
+    public function getCloudToken(string $uuid): array
+    {
+        return $this->request('GET', "cloud-tokens/{$uuid}");
+    }
+
+    public function updateCloudToken(string $uuid, array $data): array
+    {
+        return $this->request('PATCH', "cloud-tokens/{$uuid}", $data);
+    }
+
+    public function deleteCloudToken(string $uuid): array
+    {
+        return $this->request('DELETE', "cloud-tokens/{$uuid}");
     }
 
     public function validateCloudToken(string $uuid): array

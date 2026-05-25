@@ -21,7 +21,7 @@ class WordpressCliService
     /**
      * @return array{success: bool, output: string, exit_code: int, message?: string}
      */
-    public function run(CoolifyWordpressSite $site, string $wpArgs, int $timeout = 300): array
+    public function run(CoolifyWordpressSite $site, string $wpArgs, int $timeout = 300, bool $longRunning = false): array
     {
         $resolved = $this->resolver->resolve($site);
         if (! ($resolved['success'] ?? false)) {
@@ -41,12 +41,13 @@ class WordpressCliService
         }
 
         $path = $this->resolveWordpressPath($site, $host, $containerId);
-        $effectiveTimeout = min($timeout, 45);
+        $composeTimeout = $longRunning ? $timeout : min($timeout, 45);
+        $sidecarTimeout = $longRunning ? $timeout : min($timeout, 90);
         $methods = [
-            fn () => $this->runViaComposeLabels($host, $containerId, $wpArgs, $path, $effectiveTimeout),
-            fn () => $this->runViaComposePaths($site, $host, $wpArgs, $path, $effectiveTimeout),
-            fn () => $this->runViaDockerExec($host, $containerId, $wpArgs, $path, $effectiveTimeout),
-            fn () => $this->runViaWpCliSidecar($host, $containerId, $wpArgs, $path, min($timeout, 90)),
+            fn () => $this->runViaComposeLabels($host, $containerId, $wpArgs, $path, $composeTimeout),
+            fn () => $this->runViaComposePaths($site, $host, $wpArgs, $path, $composeTimeout),
+            fn () => $this->runViaDockerExec($host, $containerId, $wpArgs, $path, $composeTimeout),
+            fn () => $this->runViaWpCliSidecar($host, $containerId, $wpArgs, $path, $sidecarTimeout),
         ];
 
         $last = ['success' => false, 'output' => '', 'exit_code' => 1];
@@ -65,6 +66,52 @@ class WordpressCliService
         }
 
         return $last;
+    }
+
+    /**
+     * @return array{success: bool, output: string, exit_code: int, message?: string}
+     */
+    public function runLong(CoolifyWordpressSite $site, string $wpArgs, int $timeout = 600): array
+    {
+        return $this->run($site, $wpArgs, $timeout, true);
+    }
+
+    /**
+     * @return array{success: bool, output: string, exit_code: int, message?: string}
+     */
+    public function composeLifecycle(CoolifyWordpressSite $site, string $operation): array
+    {
+        $operation = match ($operation) {
+            'stop', 'start', 'restart' => $operation,
+            default => '',
+        };
+        if ($operation === '') {
+            return ['success' => false, 'output' => '', 'exit_code' => 1, 'message' => 'عملية docker غير صالحة'];
+        }
+
+        if (! filled($site->service_uuid)) {
+            return ['success' => false, 'output' => '', 'exit_code' => 1, 'message' => 'معرّف الخدمة غير موجود'];
+        }
+
+        $uuid = preg_replace('/[^a-zA-Z0-9_-]/', '', $site->service_uuid);
+        $paths = [
+            '/data/coolify/services/'.$uuid,
+            '/var/lib/coolify/services/'.$uuid,
+        ];
+
+        $commands = [];
+        foreach ($paths as $path) {
+            $commands[] = sprintf(
+                'if [ -d %s ]; then cd %s && docker compose %s; fi',
+                escapeshellarg($path),
+                escapeshellarg($path),
+                $operation
+            );
+        }
+
+        $command = implode(' ; ', $commands).' ; echo done';
+
+        return $this->runOnHost($site, $command, 300);
     }
 
     public function diagnose(CoolifyWordpressSite $site): string

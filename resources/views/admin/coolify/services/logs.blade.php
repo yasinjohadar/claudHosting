@@ -42,3 +42,4 @@ document.getElementById('fetchLogs')?.addEventListener('click', function() {
 });
 </script>
 @endsection
+

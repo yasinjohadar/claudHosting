@@ -4,3 +4,4 @@
     'metricsTitle' => 'مراقبة السيرفر (لحظي)',
     'serverUuid' => $uuid,
 ])
+

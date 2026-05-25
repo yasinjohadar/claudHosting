@@ -367,6 +367,7 @@
                                 <li class="slide"><a href="{{ route('admin.coolify.private-keys.index') }}" class="side-menu__item {{ request()->routeIs('admin.coolify.private-keys.*') ? 'active' : '' }}">مفاتيح SSH</a></li>
                                 <li class="slide"><a href="{{ route('admin.coolify.github-apps.index') }}" class="side-menu__item {{ request()->routeIs('admin.coolify.github-apps.*') ? 'active' : '' }}">GitHub Apps</a></li>
                                 <li class="slide"><a href="{{ route('admin.coolify.cloud-tokens.index') }}" class="side-menu__item {{ request()->routeIs('admin.coolify.cloud-tokens.*') ? 'active' : '' }}">Cloud Tokens</a></li>
+                                <li class="slide"><a href="{{ route('admin.coolify.hetzner.index') }}" class="side-menu__item {{ request()->routeIs('admin.coolify.hetzner.*') ? 'active' : '' }}">Hetzner</a></li>
                                 <li class="slide"><a href="{{ route('admin.coolify.teams.index') }}" class="side-menu__item {{ request()->routeIs('admin.coolify.teams.*') ? 'active' : '' }}">فرق العمل</a></li>
                                 <li class="slide"><a href="{{ route('admin.coolify.settings.index') }}" class="side-menu__item {{ request()->routeIs('admin.coolify.settings.*') ? 'active' : '' }}">إعدادات الاتصال</a></li>
                             </ul>

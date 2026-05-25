@@ -1,12 +1,21 @@
 {
   "mcpServers": {
-    "wordpress": {
+    "wordpress-rest": {
       "command": "npx",
       "args": ["-y", "@automattic/mcp-wordpress-remote@latest"],
       "env": {
         "WP_API_URL": "https://YOUR-SITE.example.com/wp-json",
         "WP_USERNAME": "admin",
         "WP_APP_PASSWORD": "paste-from-wordpress-site-page-after-bootstrap"
+      }
+    },
+    "wordpress-cli": {
+      "command": "D:\\Programming Projects\\Laravel\\claudHosting\\tools\\run-wp-cli-mcp.cmd",
+      "args": [],
+      "env": {
+        "PATH": "D:\\Programming Projects\\Laravel\\claudHosting\\tools;${PATH}",
+        "WP_SSH": "root@YOUR-COOLIFY-SERVER:/var/www/html",
+        "WP_URL": "https://YOUR-SITE.example.com"
       }
     }
   }

@@ -7,6 +7,7 @@ use App\Http\Controllers\Controller;
 use App\Models\ClientCoolifyProject;
 use App\Models\CoolifyActivityLog;
 use App\Models\CoolifyCatalogItem;
+use App\Models\CoolifySnapshotSchedule;
 use App\Models\CoolifyWordpressSite;
 use App\Models\AppStorageConfig;
 use App\Services\Coolify\CoolifySettingsService;
@@ -195,13 +196,20 @@ class CoolifySettingsController extends Controller
         $connected = $configured && ($stats['connected'] ?? false);
 
         $apiVersion = null;
-        if ($connected && $request->boolean('refresh')) {
+        $systemHealth = null;
+        $systemHealthOk = false;
+        if ($connected) {
             $versionRes = $this->coolify->getVersion();
             if ($versionRes['success'] ?? false) {
                 $data = $versionRes['data'] ?? null;
                 $apiVersion = is_array($data)
                     ? ($data['version'] ?? $data['coolify_version'] ?? json_encode($data))
                     : (string) $data;
+            }
+            $healthRes = $this->coolify->getHealth();
+            if ($healthRes['success'] ?? false) {
+                $systemHealth = $healthRes['data'] ?? $healthRes['message'] ?? null;
+                $systemHealthOk = true;
             }
         }
 
@@ -234,6 +242,8 @@ class CoolifySettingsController extends Controller
             'wordpress_sites' => $this->safeModelCount(CoolifyWordpressSite::class),
             'catalog_items' => $this->safeModelCount(CoolifyCatalogItem::class),
             'client_projects' => $this->safeModelCount(ClientCoolifyProject::class),
+            'snapshot_schedules' => $this->safeModelCount(CoolifySnapshotSchedule::class),
+            'snapshot_schedules_enabled' => $this->safeQuery(fn () => CoolifySnapshotSchedule::where('enabled', true)->count()),
             'activity_today' => $this->safeActivityTodayCount(),
         ];
 
@@ -247,19 +257,32 @@ class CoolifySettingsController extends Controller
         ];
 
         $panelWidgets = [
+            ['label' => 'مركز النسخ', 'count' => null, 'route' => 'admin.coolify.backups.index', 'icon' => 'fe-hard-drive', 'accent' => 'warning', 'desc' => 'قواعد + لقطات'],
+            ['label' => 'جداول اللقطات', 'count' => $localStats['snapshot_schedules'], 'route' => 'admin.coolify.backups.schedules.index', 'icon' => 'fe-calendar', 'accent' => 'info', 'desc' => ($localStats['snapshot_schedules_enabled'] ?? 0).' جدول مفعّل'],
+            ['label' => 'مركز العمليات', 'count' => null, 'route' => 'admin.coolify.operations.index', 'icon' => 'fe-activity', 'accent' => 'danger', 'desc' => 'تنبيهات وفحص'],
             ['label' => 'مواقع WordPress', 'count' => $localStats['wordpress_sites'], 'route' => 'admin.coolify.wordpress-sites.index', 'icon' => 'fab fa-wordpress', 'accent' => 'primary', 'desc' => 'توفير وإدارة'],
             ['label' => 'كتالوج التطبيقات', 'count' => $localStats['catalog_items'], 'route' => 'admin.coolify.catalog.index', 'icon' => 'fe-package', 'accent' => 'info', 'desc' => 'قوالب جاهزة'],
             ['label' => 'مشاريع العملاء', 'count' => $localStats['client_projects'], 'route' => 'admin.coolify.teams.index', 'icon' => 'fe-users', 'accent' => 'success', 'desc' => 'ربط بالعملاء'],
             ['label' => 'كل الموارد', 'count' => null, 'route' => 'admin.coolify.resources.index', 'icon' => 'fe-list', 'accent' => 'secondary', 'desc' => 'عرض موحّد'],
-            ['label' => 'النسخ الاحتياطي', 'count' => null, 'route' => 'admin.coolify.backups.index', 'icon' => 'fe-hard-drive', 'accent' => 'warning', 'desc' => 'مشاريع وقواعد'],
             ['label' => 'جاهزية الاستضافة', 'count' => null, 'route' => 'admin.coolify.readiness.index', 'icon' => 'fe-check-circle', 'accent' => 'success', 'desc' => 'فحص المتطلبات'],
         ];
 
+        $integrationWidgets = [
+            ['label' => 'Hetzner Cloud', 'count' => null, 'route' => 'admin.coolify.hetzner.index', 'icon' => 'fe-cloud', 'accent' => 'primary', 'desc' => 'إنشاء سيرفرات'],
+            ['label' => 'GitHub Apps', 'count' => null, 'route' => 'admin.coolify.github-apps.index', 'icon' => 'fab fa-github', 'accent' => 'secondary', 'desc' => 'ربط المستودعات'],
+            ['label' => 'Cloud Tokens', 'count' => null, 'route' => 'admin.coolify.cloud-tokens.index', 'icon' => 'fe-key', 'accent' => 'info', 'desc' => 'مفاتيح API'],
+            ['label' => 'المفاتيح الخاصة', 'count' => null, 'route' => 'admin.coolify.private-keys.index', 'icon' => 'fe-lock', 'accent' => 'warning', 'desc' => 'SSH keys'],
+            ['label' => 'إعدادات Coolify', 'count' => null, 'route' => 'admin.coolify.settings.index', 'icon' => 'fe-settings', 'accent' => 'teal', 'desc' => 'API · SSH · S3'],
+            ['label' => 'النظام', 'count' => null, 'route' => 'admin.coolify.system.index', 'icon' => 'fe-cpu', 'accent' => 'secondary', 'desc' => 'إصدار وصحة'],
+        ];
+
         $quickActions = [
+            ['label' => 'معالج لقطة', 'route' => 'admin.coolify.backups.projects.wizard', 'icon' => 'fe-camera', 'class' => 'btn-outline-info'],
             ['label' => 'إضافة مورد', 'route' => 'admin.coolify.catalog.index', 'icon' => 'fe-plus-circle', 'class' => 'btn-primary'],
             ['label' => 'مركز العمليات', 'route' => 'admin.coolify.operations.index', 'icon' => 'fe-activity', 'class' => 'btn-outline-warning'],
+            ['label' => 'جداول اللقطات', 'route' => 'admin.coolify.backups.schedules.index', 'icon' => 'fe-calendar', 'class' => 'btn-outline-secondary'],
+            ['label' => 'Hetzner', 'route' => 'admin.coolify.hetzner.index', 'icon' => 'fe-cloud', 'class' => 'btn-outline-primary'],
             ['label' => 'الإعدادات', 'route' => 'admin.coolify.settings.index', 'icon' => 'fe-settings', 'class' => 'btn-outline-primary'],
-            ['label' => 'النظام', 'route' => 'admin.coolify.system.index', 'icon' => 'fe-cpu', 'class' => 'btn-outline-secondary'],
         ];
 
         return view('admin.coolify.overview', compact(
@@ -273,8 +296,11 @@ class CoolifySettingsController extends Controller
             'localStats',
             'apiWidgets',
             'panelWidgets',
+            'integrationWidgets',
             'quickActions',
             'apiVersion',
+            'systemHealth',
+            'systemHealthOk',
         ));
     }
 
@@ -291,6 +317,15 @@ class CoolifySettingsController extends Controller
     {
         try {
             return CoolifyActivityLog::query()->whereDate('created_at', today())->count();
+        } catch (\Throwable) {
+            return 0;
+        }
+    }
+
+    protected function safeQuery(callable $callback): int
+    {
+        try {
+            return (int) $callback();
         } catch (\Throwable) {
             return 0;
         }

@@ -6,3 +6,4 @@
     @endif
     <button type="submit" class="btn btn-sm btn-outline-danger"><i class="fe fe-trash-2"></i> {{ $label ?? 'حذف' }}</button>
 </form>
+

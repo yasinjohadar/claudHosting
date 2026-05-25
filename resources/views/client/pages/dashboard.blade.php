@@ -35,7 +35,7 @@
                 </a>
             </div>
             <div class="col-md-6 col-lg-3">
-                <a href="{{ route('client.services') }}#projects" class="card custom-card h-100 border-0 shadow-sm text-decoration-none">
+                <a href="{{ !empty($summary['first_coolify_project_uuid']) ? route('client.coolify.projects.show', $summary['first_coolify_project_uuid']) : route('client.services') . '#projects' }}" class="card custom-card h-100 border-0 shadow-sm text-decoration-none">
                     <div class="card-body text-center py-4">
                         <div class="avatar avatar-lg bg-secondary-transparent text-secondary rounded-circle mx-auto mb-3">
                             <i class="fe fe-layers fs-24"></i>
@@ -80,3 +80,4 @@
     </div>
 </div>
 @endsection
+

@@ -10,4 +10,5 @@ Artisan::command('inspire', function () {
 
 Schedule::command('backup:run-scheduled')->everyMinute()->withoutOverlapping()->runInBackground();
 Schedule::command('coolify:run-scheduled-snapshots')->hourly()->withoutOverlapping()->runInBackground();
+Schedule::command('coolify:check-ops-alerts')->everyFifteenMinutes()->withoutOverlapping()->runInBackground();
 Schedule::command('backup:cleanup-expired')->daily()->at('02:00')->withoutOverlapping();
