@@ -32,7 +32,8 @@
     gap: 0.35rem;
     flex-wrap: nowrap;
     overflow-x: auto;
-    padding-bottom: 0.25rem;
+    overflow-y: visible;
+    padding: 0.35rem 0 0.5rem;
     scrollbar-width: thin;
 }
 .backup-hub-tabs .nav-link {
@@ -43,12 +44,13 @@
     font-weight: 600;
     color: var(--text-muted);
     white-space: nowrap;
-    transition: background 0.2s ease, color 0.2s ease, border-color 0.2s ease, transform 0.2s ease;
+    transition: background 0.2s ease, color 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
 }
 .backup-hub-tabs .nav-link:hover {
     color: var(--default-text-color);
     border-color: rgba(var(--primary-rgb, 132, 90, 223), 0.35);
-    transform: translateY(-1px);
+    background: rgba(var(--primary-rgb, 132, 90, 223), 0.06);
+    box-shadow: 0 2px 8px rgba(var(--primary-rgb, 132, 90, 223), 0.12);
 }
 .backup-hub-tabs .nav-link.active {
     background: rgb(var(--primary-rgb, 132, 90, 223));

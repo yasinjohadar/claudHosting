@@ -8,19 +8,10 @@
     $heroVariant = 'projects';
     $snapshotsTotal = \App\Models\CoolifyProjectSnapshot::query()->count();
     $snapshotsRunning = \App\Models\CoolifyProjectSnapshot::query()->whereIn('status', ['pending', 'running'])->count();
-    ob_start();
+    $backupConfigured = true;
 @endphp
-<span class="backup-hub-pill backup-hub-pill--ok"><i class="fe fe-layers"></i> {{ count($projects) }} مشروع</span>
-<span class="backup-hub-pill"><i class="fe fe-archive"></i> {{ $snapshotsTotal }} لقطة</span>
-@if($snapshotsRunning > 0)
-<span class="backup-hub-pill"><i class="fe fe-loader"></i> {{ $snapshotsRunning }} قيد التنفيذ</span>
-@endif
-@php $pills = ob_get_clean(); ob_start(); @endphp
-<a href="{{ route('admin.coolify.backups.index') }}" class="btn btn-light btn-sm"><i class="fe fe-home"></i> نظرة عامة</a>
-<a href="{{ route('admin.coolify.backups.projects.wizard') }}" class="btn btn-primary btn-sm"><i class="fe fe-zap"></i> معالج لقطة جديدة</a>
-@php $actions = ob_get_clean(); $backupConfigured = true; @endphp
 
-@include('admin.coolify.backups.partials.page-shell-start', compact('title', 'subtitle', 'tab', 'heroVariant', 'pills', 'actions', 'backupConfigured'))
+@include('admin.coolify.backups.partials.page-shell-start', compact('title', 'subtitle', 'tab', 'heroVariant', 'snapshotsTotal', 'snapshotsRunning', 'backupConfigured', 'projects'))
 
 @include('admin.coolify.backups.partials.stat-cards', ['stats' => [
     ['value' => count($projects), 'label' => 'مشاريع Coolify', 'valueClass' => 'text-primary'],

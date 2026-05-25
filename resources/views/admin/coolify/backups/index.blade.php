@@ -6,28 +6,9 @@
     $subtitle = 'جدولة ونسخ عبر Coolify API مع سجل التنفيذات والاستعادة';
     $tab = $tab ?? 'databases';
     $heroVariant = 'database';
-    ob_start();
 @endphp
-<span class="backup-hub-pill {{ ($backupConfigured ?? false) ? 'backup-hub-pill--ok' : 'backup-hub-pill--warn' }}">
-    <i class="fe fe-{{ ($backupConfigured ?? false) ? 'check-circle' : 'alert-circle' }}"></i>
-    {{ ($backupConfigured ?? false) ? 'API متصل' : 'API غير مضبوط' }}
-</span>
-@if(!empty($stats['total_configs']))
-<span class="backup-hub-pill"><i class="fe fe-database"></i> {{ $stats['total_configs'] }} جدول نسخ</span>
-@endif
-@php $pills = ob_get_clean(); ob_start(); @endphp
-<a href="{{ route('admin.coolify.backups.index', array_merge(request()->query(), ['tab' => 'databases', 'refresh' => 1])) }}" class="btn btn-light btn-sm">
-    <i class="fe fe-refresh-cw"></i> تحديث
-</a>
-<a href="{{ route('admin.coolify.backups.create') }}" class="btn btn-primary btn-sm">
-    <i class="fe fe-plus"></i> جدولة جديدة
-</a>
-<a href="{{ route('admin.coolify.backups.index') }}" class="btn btn-outline-primary btn-sm">
-    <i class="fe fe-home"></i> نظرة عامة
-</a>
-@php $actions = ob_get_clean(); @endphp
 
-@include('admin.coolify.backups.partials.page-shell-start', compact('title', 'subtitle', 'tab', 'heroVariant', 'pills', 'actions', 'backupConfigured'))
+@include('admin.coolify.backups.partials.page-shell-start', compact('title', 'subtitle', 'tab', 'heroVariant', 'backupConfigured') + ['stats' => $stats ?? []])
 
 @if($error ?? false)
 <div class="alert alert-warning border-0 shadow-sm mb-4">{{ $error }}</div>
