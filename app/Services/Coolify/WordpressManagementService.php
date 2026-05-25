@@ -526,9 +526,12 @@ class WordpressManagementService
             $failMessage = Str::limit(trim($output), 400);
         }
 
-        $message = $success ? 'تم تنفيذ الإجراء' : $failMessage;
+                $message = $success ? 'تم تنفيذ الإجراء' : $failMessage;
         if ($success && $this->shouldRefreshExtensionsOnly($action)) {
             $message = 'تم التنفيذ وتحديث قائمة الإضافات/القوالب';
+        }
+        if ($success && $action === 'user_reset_password') {
+            $message = 'تم تغيير كلمة المرور بنجاح';
         }
 
         return [
@@ -551,7 +554,14 @@ class WordpressManagementService
     protected function shouldFullRefreshSiteInfo(string $action): bool
     {
         return ! $this->shouldRefreshExtensionsOnly($action)
-            && ! in_array($action, ['diagnose', 'bootstrap_mcp'], true);
+            && ! in_array($action, [
+                'diagnose',
+                'bootstrap_mcp',
+                'user_reset_password',
+                'user_create',
+                'user_update_role',
+                'user_delete',
+            ], true);
     }
 
     /**

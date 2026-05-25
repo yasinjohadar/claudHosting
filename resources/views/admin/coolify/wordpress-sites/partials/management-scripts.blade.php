@@ -17,10 +17,12 @@
         const timer = setTimeout(() => controller.abort(), timeoutMs);
         try {
             const res = await fetch(url, { ...options, signal: controller.signal });
+            const data = await res.json().catch(() => ({}));
             if (!res.ok) {
-                throw new Error('HTTP ' + res.status);
+                const msg = data.message || data.error || (Array.isArray(data.errors) ? Object.values(data.errors).flat().join(' ') : '');
+                throw new Error(msg || ('HTTP ' + res.status));
             }
-            return await res.json();
+            return data;
         } finally {
             clearTimeout(timer);
         }
@@ -572,7 +574,8 @@
         target.querySelector('.wp-pass-result-copy')?.addEventListener('click', () => {
             copyPasswordText(password, null);
         });
-        target.classList.remove('d-none');
+        target.classList.remove('d-none', 'alert-warning');
+        target.classList.add('alert-success');
         if (containerId === 'wpPassResult') hidePasswordModal();
     }
 
@@ -596,13 +599,69 @@
             if (icon) { icon.classList.remove('fe-eye-off'); icon.classList.add('fe-eye'); }
         }
     });
-    document.getElementById('wpPassApply')?.addEventListener('click', () => {
+    async function applyUserPasswordReset() {
         const login = document.getElementById('wpPassModalLogin')?.value || '';
         const password = document.getElementById('wpPassInput')?.value || '';
+        const btn = document.getElementById('wpPassApply');
+        const errEl = document.getElementById('wpPassModalError');
         if (!login) return;
+        if (!wpExec) { alert('اضبط مفتاح SSH في إعدادات Coolify أولاً'); return; }
         if (!confirm('تطبيق كلمة المرور على المستخدم «' + login + '»؟')) return;
-        runAction('user_reset_password', { login, password });
-    });
+
+        const btnHtml = btn ? btn.innerHTML : '';
+        if (btn) {
+            btn.disabled = true;
+            btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> جاري التطبيق…';
+        }
+        if (errEl) errEl.classList.add('d-none');
+        showJob('جاري تطبيق كلمة المرور على WordPress…', 'info');
+
+        try {
+            const body = new URLSearchParams({ _token: csrf, action: 'user_reset_password', login });
+            if (password !== '') body.append('password', password);
+
+            const d = await fetchJson(wpActionUrl, {
+                method: 'POST',
+                headers: { 'Accept': 'application/json', 'Content-Type': 'application/x-www-form-urlencoded' },
+                body,
+            }, 120000);
+
+            if (d.success) {
+                const appliedLogin = d.login || login;
+                const appliedPassword = d.generated_password || password;
+                hidePasswordModal();
+                showGeneratedPassword(appliedLogin, appliedPassword, 'wpPassResult');
+                showJob('تم تغيير كلمة مرور «' + appliedLogin + '» بنجاح.', 'success');
+                const resultEl = document.getElementById('wpPassResult');
+                if (resultEl) resultEl.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                refreshLog();
+            } else {
+                const msg = (d.message || '') + (d.output ? '\n' + d.output : '');
+                const detail = msg.trim() || 'فشل تطبيق كلمة المرور';
+                if (errEl) {
+                    errEl.textContent = detail;
+                    errEl.classList.remove('d-none');
+                }
+                showJob(detail, 'danger');
+            }
+        } catch (err) {
+            const msg = err.name === 'AbortError'
+                ? 'انتهت مهلة العملية — تحقق من SSH أو جرّب مرة أخرى'
+                : ('خطأ: ' + (err.message || err));
+            if (errEl) {
+                errEl.textContent = msg;
+                errEl.classList.remove('d-none');
+            }
+            showJob(msg, 'danger');
+        } finally {
+            if (btn) {
+                btn.disabled = !wpExec;
+                btn.innerHTML = btnHtml;
+            }
+        }
+    }
+
+    document.getElementById('wpPassApply')?.addEventListener('click', () => applyUserPasswordReset());
     document.getElementById('wpPasswordModal')?.addEventListener('hidden.bs.modal', () => {
         const input = document.getElementById('wpPassInput');
         const loginHidden = document.getElementById('wpPassModalLogin');
@@ -610,6 +669,10 @@
         if (input) { input.value = ''; input.type = 'password'; }
         if (loginHidden) loginHidden.value = '';
         if (feedback) feedback.classList.add('d-none');
+        const errEl = document.getElementById('wpPassModalError');
+        if (errEl) errEl.classList.add('d-none');
+        const applyBtn = document.getElementById('wpPassApply');
+        if (applyBtn) applyBtn.disabled = !wpExec;
         const icon = document.querySelector('#wpPassToggleVis i');
         if (icon) { icon.classList.remove('fe-eye-off'); icon.classList.add('fe-eye'); }
     });

@@ -115,7 +115,7 @@ return [
         'theme_delete' => ['type' => 'wp', 'command' => 'theme delete {slug}', 'timeout' => 120, 'params' => ['slug'], 'confirm' => 'حذف القالب نهائياً؟', 'dangerous' => true],
 
         // --- users ---
-        'user_reset_password' => ['type' => 'special', 'handler' => 'user_reset_password', 'params' => ['login']],
+        'user_reset_password' => ['type' => 'special', 'handler' => 'user_reset_password', 'params' => ['login', 'password']],
         'user_create' => ['type' => 'special', 'handler' => 'user_create', 'params' => ['login', 'email']],
         'user_update_role' => ['type' => 'wp', 'command' => 'user set-role {login} {role}', 'timeout' => 60, 'params' => ['login', 'role']],
         'user_delete' => ['type' => 'wp', 'command' => 'user delete {user_id} --reassign=1', 'timeout' => 60, 'params' => ['user_id'], 'confirm' => 'حذف المستخدم؟', 'dangerous' => true],

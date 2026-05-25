@@ -109,6 +109,7 @@
                             </div>
                             <div class="modal-body">
                                 <input type="hidden" id="wpPassModalLogin" value="">
+                                <div id="wpPassModalError" class="alert alert-danger py-2 small d-none mb-2" role="alert"></div>
                                 <label class="form-label small" for="wpPassInput">كلمة المرور الجديدة</label>
                                 <div class="input-group mb-2">
                                     <input type="password" id="wpPassInput" class="form-control font-monospace" dir="ltr" autocomplete="new-password" placeholder="أدخل أو ولّد كلمة مرور">
