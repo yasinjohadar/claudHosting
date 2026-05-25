@@ -51,9 +51,12 @@
         return btns.join('');
     }
 
+    const listMutatingActions = ['plugin_update', 'theme_update', 'plugin_install', 'theme_install', 'plugin_activate', 'plugin_deactivate', 'plugin_delete', 'theme_activate', 'theme_delete', 'plugin_update_all', 'theme_update_all'];
+
     function bindRowActions(el) {
         el?.querySelectorAll('.wp-row-action').forEach(btn => {
-            btn.addEventListener('click', () => {
+            btn.addEventListener('click', (e) => {
+                e.preventDefault();
                 if (btn.disabled) return;
                 const tr = btn.closest('tr');
                 if (tr) tr.classList.add('wp-pt-row-busy');
@@ -329,6 +332,7 @@
             fetchInfo(false);
         }
         refreshLog();
+        fetch(wpJobUrl + '?clear=1', { headers: { 'Accept': 'application/json' } });
     }
 
     async function refreshLog() {
@@ -350,24 +354,45 @@
             if (!confirm('أمر خطير — هل تريد المتابعة؟')) return;
             params.confirm_dangerous = '1';
         }
-        showJob('جاري الإرسال...', 'info');
-        const body = new URLSearchParams({ _token: csrf, action });
-        Object.entries(params).forEach(([k, v]) => { if (v !== undefined && v !== null && v !== '') body.append(k, v); });
-        const r = await fetch(wpActionUrl, { method: 'POST', headers: { 'Accept': 'application/json', 'Content-Type': 'application/x-www-form-urlencoded' }, body });
-        const d = await r.json();
-        if (d.async) {
-            if (pluginThemeActions.includes(action)) showJobProgress(true, 'إرسال للطابور…');
-            pollJob();
-            return;
+        const isListAction = listMutatingActions.includes(action);
+        if (isListAction) {
+            setTablesLoading(true);
+            showJobProgress(true, 'جاري التنفيذ على السيرفر…');
         }
-        showJobProgress(false);
-        showJob(d.success ? (d.message || 'تم') : ((d.message || 'فشل') + (d.output ? '\n\n' + d.output : '')), d.success ? 'success' : 'danger');
-        if (d.output) routeOutput(action, d.output);
-        if (d.generated_password) {
-            const pr = document.getElementById('wpPassResult') || document.getElementById('wpUserCreateResult');
-            if (pr) { pr.textContent = 'كلمة المرور: ' + d.generated_password; pr.classList.remove('d-none'); }
+        showJob('جاري التنفيذ…', 'info');
+        try {
+            const body = new URLSearchParams({ _token: csrf, action });
+            Object.entries(params).forEach(([k, v]) => { if (v !== undefined && v !== null && v !== '') body.append(k, v); });
+            const r = await fetch(wpActionUrl, { method: 'POST', headers: { 'Accept': 'application/json', 'Content-Type': 'application/x-www-form-urlencoded' }, body });
+            const d = await r.json();
+            if (d.async) {
+                if (pluginThemeActions.includes(action)) showJobProgress(true, 'إرسال للطابور…');
+                pollJob();
+                return;
+            }
+            showJobProgress(false);
+            const detail = d.output ? ((d.message || '') + '\n\n' + d.output).trim() : (d.message || '');
+            showJob(d.success ? (detail || 'تم') : (detail || 'فشل'), d.success ? 'success' : 'danger');
+            if (d.output) routeOutput(action, d.output);
+            if (d.generated_password) {
+                const pr = document.getElementById('wpPassResult') || document.getElementById('wpUserCreateResult');
+                if (pr) { pr.textContent = 'كلمة المرور: ' + d.generated_password; pr.classList.remove('d-none'); }
+            }
+            if (d.success && listMutatingActions.includes(action)) {
+                await fetchInfo(true);
+            } else if (d.success && action !== 'diagnose') {
+                await fetchInfo(false);
+            }
+            refreshLog();
+        } catch (err) {
+            showJob('خطأ: ' + (err.message || err), 'danger');
+        } finally {
+            if (isListAction) {
+                setTablesLoading(false);
+                showJobProgress(false);
+                document.querySelectorAll('.wp-pt-row-busy').forEach(tr => tr.classList.remove('wp-pt-row-busy'));
+            }
         }
-        if (d.success && action !== 'diagnose') { fetchInfo(false); refreshLog(); }
     }
 
     document.getElementById('wpBtnRefresh')?.addEventListener('click', () => fetchInfo(true));
@@ -467,13 +492,9 @@
         });
         fetch(wpJobUrl).then(r => r.json()).then(d => {
             const job = d.job;
-            if (!job) return;
-            if (job.status === 'running') {
+            if (job?.status === 'running') {
                 jobPollAttempts = 0;
                 pollJob();
-            } else if (job.status === 'failed' && pluginThemeActions.includes(job.action)) {
-                setTablesLoading(false);
-                showJob(formatJobDoneMessage(job), 'danger');
             }
         });
     }

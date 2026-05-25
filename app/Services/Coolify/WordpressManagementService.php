@@ -758,7 +758,45 @@ class WordpressManagementService
             ]);
         }
 
+        $terminalStatus = $job['status'] ?? '';
+        if (in_array($terminalStatus, ['failed', 'completed'], true)) {
+            $age = $this->wpJobFinishedSecondsAgo($job);
+            if ($age === null || $age > 20) {
+                $this->clearWpJobRecord($site);
+
+                return ['success' => true, 'job' => null];
+            }
+        }
+
         return ['success' => true, 'job' => $job];
+    }
+
+    public function clearWpJobRecord(CoolifyWordpressSite $site): void
+    {
+        $site->refresh();
+        $metadata = $site->metadata ?? [];
+        if (! isset($metadata['wp_job'])) {
+            return;
+        }
+        unset($metadata['wp_job']);
+        $site->update(['metadata' => $metadata]);
+    }
+
+    /**
+     * @param  array<string, mixed>  $job
+     */
+    protected function wpJobFinishedSecondsAgo(array $job): ?int
+    {
+        $finished = $job['finished_at'] ?? $job['started_at'] ?? null;
+        if (! is_string($finished) || $finished === '') {
+            return null;
+        }
+
+        try {
+            return (int) \Illuminate\Support\Carbon::parse($finished)->diffInSeconds(now());
+        } catch (\Throwable) {
+            return null;
+        }
     }
 
     public function clearStuckWpJob(CoolifyWordpressSite $site, int $maxMinutes = 10): void

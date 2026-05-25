@@ -303,6 +303,13 @@ class CoolifyWordpressSiteController extends Controller
     public function wpJob(string $uuid): JsonResponse
     {
         $site = CoolifyWordpressSite::query()->where('uuid', $uuid)->firstOrFail();
+
+        if (request()->boolean('clear')) {
+            $this->wpManagement->clearWpJobRecord($site);
+
+            return response()->json(['success' => true, 'job' => null]);
+        }
+
         $status = $this->wpManagement->getJobStatus($site);
 
         return response()->json([

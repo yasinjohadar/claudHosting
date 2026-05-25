@@ -100,17 +100,17 @@ return [
         'maintenance_deactivate' => ['type' => 'wp', 'command' => 'maintenance-mode deactivate', 'timeout' => 60],
 
         // --- plugins ---
-        'plugin_update_all' => ['type' => 'wp', 'command' => 'plugin update --all', 'timeout' => 900, 'async' => true],
-        'plugin_update' => ['type' => 'wp', 'command' => 'plugin update {slug}', 'timeout' => 300, 'params' => ['slug'], 'async' => true],
-        'plugin_install' => ['type' => 'wp', 'command' => 'plugin install {slug}', 'timeout' => 300, 'params' => ['slug'], 'async' => true],
+        'plugin_update_all' => ['type' => 'wp', 'command' => 'plugin update --all', 'timeout' => 900, 'async' => false],
+        'plugin_update' => ['type' => 'wp', 'command' => 'plugin update {slug}', 'timeout' => 300, 'params' => ['slug'], 'async' => false],
+        'plugin_install' => ['type' => 'wp', 'command' => 'plugin install {slug}', 'timeout' => 300, 'params' => ['slug'], 'async' => false],
         'plugin_activate' => ['type' => 'wp', 'command' => 'plugin activate {slug}', 'timeout' => 60, 'params' => ['slug']],
         'plugin_deactivate' => ['type' => 'wp', 'command' => 'plugin deactivate {slug}', 'timeout' => 60, 'params' => ['slug']],
         'plugin_delete' => ['type' => 'wp', 'command' => 'plugin delete {slug}', 'timeout' => 120, 'params' => ['slug'], 'confirm' => 'حذف الإضافة نهائياً؟', 'dangerous' => true],
 
         // --- themes ---
-        'theme_update_all' => ['type' => 'wp', 'command' => 'theme update --all', 'timeout' => 600, 'async' => true],
-        'theme_update' => ['type' => 'wp', 'command' => 'theme update {slug}', 'timeout' => 300, 'params' => ['slug'], 'async' => true],
-        'theme_install' => ['type' => 'wp', 'command' => 'theme install {slug}', 'timeout' => 300, 'params' => ['slug'], 'async' => true],
+        'theme_update_all' => ['type' => 'wp', 'command' => 'theme update --all', 'timeout' => 600, 'async' => false],
+        'theme_update' => ['type' => 'wp', 'command' => 'theme update {slug}', 'timeout' => 300, 'params' => ['slug'], 'async' => false],
+        'theme_install' => ['type' => 'wp', 'command' => 'theme install {slug}', 'timeout' => 300, 'params' => ['slug'], 'async' => false],
         'theme_activate' => ['type' => 'wp', 'command' => 'theme activate {slug}', 'timeout' => 60, 'params' => ['slug']],
         'theme_delete' => ['type' => 'wp', 'command' => 'theme delete {slug}', 'timeout' => 120, 'params' => ['slug'], 'confirm' => 'حذف القالب نهائياً؟', 'dangerous' => true],
 
