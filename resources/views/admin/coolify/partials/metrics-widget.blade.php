@@ -96,6 +96,8 @@
             loading.classList.add('d-none');
             content.classList.add('d-none');
             err.classList.remove('d-none');
+            err.classList.remove('alert-danger', 'alert-warning');
+            err.classList.add((data.message || '').includes('تعذّر تحديد السيرفر') ? 'alert-warning' : 'alert-danger');
             err.textContent = data.message || 'فشل جلب المقاييس';
             return;
         }

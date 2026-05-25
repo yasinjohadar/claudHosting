@@ -23,7 +23,7 @@ class CoolifyServiceComposeService
         }
 
         $service = is_array($response['data'] ?? null) ? $response['data'] : [];
-        $serverUuid = (string) ($service['server_uuid'] ?? $service['destination']['server']['uuid'] ?? '');
+        $serverUuid = $this->coolify->extractResourceServerUuid($service);
         $host = $this->resolveServerHost($serverUuid);
         if ($host === '') {
             return ['success' => false, 'message' => 'لا يوجد عنوان IP للسيرفر'];

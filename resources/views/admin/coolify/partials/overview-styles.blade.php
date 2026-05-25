@@ -1,4 +1,7 @@
 <style>
+.coolify-resource-page {
+    padding-top: 0.25rem;
+}
 .coolify-dash-hero {
     border-radius: 1rem;
     padding: 1.35rem 1.5rem;

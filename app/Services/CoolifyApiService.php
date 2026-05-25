@@ -987,12 +987,145 @@ class CoolifyApiService
     }
 
     /**
+     * يستخرج UUID السيرفر من مورد Coolify (تطبيق/خدمة/قاعدة) عبر عدة مسارات في JSON الـ API.
+     *
+     * @param  array<string, mixed>  $resource
+     */
+    public function extractResourceServerUuid(array $resource): string
+    {
+        foreach ($this->resourceServerUuidCandidates($resource) as $candidate) {
+            if ($candidate !== '' && $this->serverExists($candidate)) {
+                return $candidate;
+            }
+        }
+
+        $destinationUuid = trim((string) ($resource['destination_uuid'] ?? ''));
+        if ($destinationUuid !== '') {
+            $fromDestination = $this->findServerUuidByDestination($destinationUuid);
+            if ($fromDestination !== '') {
+                return $fromDestination;
+            }
+        }
+
+        $projectUuid = trim((string) ($resource['project_uuid'] ?? ''));
+        $resourceUuid = trim((string) ($resource['uuid'] ?? $resource['id'] ?? ''));
+        if ($projectUuid !== '' && $resourceUuid !== '') {
+            $merged = $this->findResourceInProject($projectUuid, $resourceUuid);
+            if (is_array($merged)) {
+                $fromProject = $this->extractResourceServerUuid($merged);
+                if ($fromProject !== '') {
+                    return $fromProject;
+                }
+            }
+        }
+
+        $default = trim($this->settings->getWordpressDefaultServerUuid());
+        if ($default !== '' && $this->serverExists($default)) {
+            return $default;
+        }
+
+        return '';
+    }
+
+    /**
+     * @param  array<string, mixed>  $resource
+     * @return array<int, string>
+     */
+    protected function resourceServerUuidCandidates(array $resource): array
+    {
+        $destination = $resource['destination'] ?? null;
+        $server = $resource['server'] ?? null;
+        $environment = $resource['environment'] ?? null;
+
+        $fromDestination = is_array($destination)
+            ? array_filter([
+                trim((string) ($destination['server_uuid'] ?? '')),
+                is_array($destination['server'] ?? null)
+                    ? trim((string) ($destination['server']['uuid'] ?? $destination['server']['id'] ?? ''))
+                    : '',
+            ])
+            : [];
+
+        $fromEnvironment = is_array($environment)
+            ? array_filter([
+                trim((string) ($environment['server_uuid'] ?? '')),
+                is_array($environment['server'] ?? null)
+                    ? trim((string) ($environment['server']['uuid'] ?? $environment['server']['id'] ?? ''))
+                    : '',
+            ])
+            : [];
+
+        $fromServer = is_array($server)
+            ? [trim((string) ($server['uuid'] ?? $server['id'] ?? ''))]
+            : [];
+
+        return array_values(array_unique(array_filter(array_merge(
+            [
+                trim((string) ($resource['server_uuid'] ?? '')),
+            ],
+            $fromServer,
+            $fromDestination,
+            $fromEnvironment
+        ), fn (string $v) => $v !== '')));
+    }
+
+    protected function serverExists(string $uuid): bool
+    {
+        return Cache::remember('coolify_server_exists_'.$uuid, 300, function () use ($uuid) {
+            $response = $this->getServer($uuid);
+
+            return (bool) ($response['success'] ?? false);
+        });
+    }
+
+    protected function findServerUuidByDestination(string $destinationUuid): string
+    {
+        return Cache::remember('coolify_dest_server_'.$destinationUuid, 300, function () use ($destinationUuid) {
+            if ($this->serverExists($destinationUuid)) {
+                return $destinationUuid;
+            }
+
+            foreach ($this->normalizeList($this->listServers()['data'] ?? []) as $server) {
+                if (! is_array($server)) {
+                    continue;
+                }
+                $serverUuid = trim((string) ($server['uuid'] ?? ''));
+                if ($serverUuid === '') {
+                    continue;
+                }
+                foreach ($this->extractServerDestinations($server) as $destination) {
+                    $destId = trim((string) ($destination['uuid'] ?? $destination['id'] ?? ''));
+                    if ($destId !== '' && $destId === $destinationUuid) {
+                        return $serverUuid;
+                    }
+                }
+            }
+
+            return '';
+        });
+    }
+
+    /**
+     * @return array<string, mixed>|null
+     */
+    protected function findResourceInProject(string $projectUuid, string $resourceUuid): ?array
+    {
+        foreach ($this->collectProjectResourcesFromEnvironments($projectUuid) as $resource) {
+            if ((string) ($resource['uuid'] ?? '') === $resourceUuid) {
+                return $resource;
+            }
+        }
+
+        return null;
+    }
+
+    /**
      * @param  array<string, mixed>  $resource
      * @return array{host: string, server_uuid: string|null}|null
      */
     public function resolveResourceServer(array $resource): ?array
     {
-        $serverUuid = (string) ($resource['server_uuid'] ?? $resource['destination_uuid'] ?? '');
+        $serverUuid = $this->extractResourceServerUuid($resource);
         if ($serverUuid === '') {
             return null;
         }

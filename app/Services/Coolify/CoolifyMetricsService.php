@@ -156,14 +156,12 @@ class CoolifyMetricsService
                 return $this->failure('المورد غير موجود');
             }
 
-            $serverUuid = (string) ($resource['server_uuid'] ?? $resource['destination']['server']['uuid'] ?? '');
-            if ($serverUuid === '') {
-                $resolved = $this->coolify->resolveResourceServer($resource);
-                $serverUuid = (string) ($resolved['server_uuid'] ?? '');
-            }
+            $serverUuid = $this->coolify->extractResourceServerUuid($resource);
 
             if ($serverUuid === '') {
-                return $this->failure('سيرفر المورد غير معروف');
+                return $this->failure(
+                    'تعذّر تحديد السيرفر لهذا المورد. في Coolify تأكد من ربط الخدمة بمشروع وسيرفر، أو عيّن «السيرفر الافتراضي» في إعدادات Coolify → مواقع WordPress.'
+                );
             }
 
             $hints = $this->buildMatchHintsFromResource($resource, $type, $uuid);

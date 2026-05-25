@@ -1,11 +1,22 @@
 @extends('admin.layouts.master')
 @section('page-title') {{ $service['name'] ?? 'خدمة' }} @stop
+@push('styles')
+@include('admin.coolify.partials.overview-styles')
+@endpush
 @section('content')
 <div class="main-content app-content">
-    <div class="container-fluid">
-        <div class="d-md-flex justify-content-between my-4">
-            <h4>{{ $service['name'] ?? 'خدمة' }}</h4>
-            <div class="d-flex gap-2">
+    <div class="container-fluid coolify-resource-page">
+        <div class="d-md-flex justify-content-between align-items-start my-4 flex-wrap gap-3">
+            <div>
+                <h4 class="mb-1">{{ $service['name'] ?? 'خدمة' }}</h4>
+                <nav aria-label="breadcrumb">
+                    <ol class="breadcrumb mb-0">
+                        <li class="breadcrumb-item"><a href="{{ route('admin.coolify.services.index') }}">خدمات Compose</a></li>
+                        <li class="breadcrumb-item active">{{ $service['name'] ?? $uuid }}</li>
+                    </ol>
+                </nav>
+            </div>
+            <div class="d-flex flex-wrap gap-2 align-items-center">
                 @include('admin.coolify.partials.lifecycle-buttons', [
                     'startRoute' => route('admin.coolify.services.start', $uuid),
                     'stopRoute' => route('admin.coolify.services.stop', $uuid),
@@ -17,18 +28,57 @@
                 @include('admin.coolify.partials.delete-form', ['action' => route('admin.coolify.services.destroy', $uuid)])
             </div>
         </div>
+
         @include('admin.coolify.partials.alerts')
+
+        <div class="card custom-card mb-3">
+            <div class="card-body row g-3">
+                <div class="col-md-3">
+                    <span class="text-muted small d-block">النوع</span>
+                    <strong>{{ $service['type'] ?? '—' }}</strong>
+                </div>
+                <div class="col-md-3">
+                    <span class="text-muted small d-block">الحالة</span>
+                    @include('admin.coolify.partials.status-badges', ['item' => $service])
+                </div>
+                <div class="col-md-3">
+                    <span class="text-muted small d-block">المشروع</span>
+                    @if(!empty($service['project_uuid']))
+                    <a href="{{ route('admin.coolify.projects.show', $service['project_uuid']) }}" class="fw-semibold">{{ $service['project_uuid'] }}</a>
+                    @else
+                    <span>—</span>
+                    @endif
+                </div>
+                <div class="col-md-3">
+                    <span class="text-muted small d-block">السيرفر (للمراقبة وSSH)</span>
+                    @if(!empty($serverUuid))
+                    <a href="{{ route('admin.coolify.servers.show', $serverUuid) }}" class="fw-semibold">عرض السيرفر</a>
+                    @if(!empty($serverResolved['host']))
+                    <span class="text-muted small d-block"><code>{{ $serverResolved['host'] }}</code></span>
+                    @endif
+                    @else
+                    <span class="text-warning small">غير مربوط في API — راجع Coolify أو الإعدادات الافتراضية</span>
+                    @endif
+                </div>
+            </div>
+        </div>
+
+        @if(empty($serverUuid))
+        <div class="alert alert-warning border-0 shadow-sm mb-3">
+            <strong><i class="fe fe-info me-1"></i> مراقبة الموارد غير متاحة</strong>
+            <p class="small mb-2 mt-2">Coolify لم يُرجع <code>server_uuid</code> لهذه الخدمة. المراقبة تعتمد على SSH إلى السيرفر الذي يشغّل الحاويات.</p>
+            <a href="{{ route('admin.coolify.settings.index', ['tab' => 'wordpress']) }}" class="btn btn-sm btn-warning">إعدادات السيرفر الافتراضي</a>
+        </div>
+        @else
         @include('admin.coolify.partials.metrics-widget', [
             'metricsScope' => 'resource',
             'metricsType' => 'service',
             'metricsUuid' => $uuid,
             'metricsTitle' => 'مراقبة الخدمة (Compose)',
-            'serverUuid' => $service['server_uuid'] ?? ($service['destination']['server']['uuid'] ?? null),
+            'serverUuid' => $serverUuid,
         ])
-        <div class="card custom-card mb-3"><div class="card-body">
-            <p><strong>النوع:</strong> {{ $service['type'] ?? '—' }}</p>
-            <p><strong>الحالة:</strong> @include('admin.coolify.partials.status-badges', ['item' => $service])</p>
-        </div></div>
+        @endif
+
         @include('admin.coolify.partials.env-editor', [
             'uuid' => $uuid,
             'envs' => $envs,
@@ -37,10 +87,11 @@
             'destroyRoutePrefix' => 'admin.coolify.services.envs.destroy',
             'bulkRoute' => route('admin.coolify.services.envs.bulk', $uuid),
         ])
-        <details class="card custom-card"><summary class="card-header">تفاصيل API</summary>
+
+        <details class="card custom-card mt-3">
+            <summary class="card-header">تفاصيل API (JSON)</summary>
             <div class="card-body">@include('admin.coolify.partials.json-block', ['data' => $service])</div>
         </details>
     </div>
 </div>
 @endsection
-

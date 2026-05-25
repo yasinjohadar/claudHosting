@@ -87,8 +87,10 @@ class CoolifyServiceController extends Controller
         }
 
         $envs = $this->coolifyList($this->coolify->listServiceEnvs($uuid));
+        $serverUuid = $this->coolify->extractResourceServerUuid($service);
+        $serverResolved = $serverUuid !== '' ? $this->coolify->resolveResourceServer($service) : null;
 
-        return view('admin.coolify.services.show', compact('service', 'uuid', 'envs'));
+        return view('admin.coolify.services.show', compact('service', 'uuid', 'envs', 'serverUuid', 'serverResolved'));
     }
 
     public function edit(string $uuid)
