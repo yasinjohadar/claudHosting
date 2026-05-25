@@ -268,4 +268,22 @@
     border-radius: 0.5rem;
 }
 .site-provision-log-wrap { min-height: 4rem; }
+.wp-pt-table-wrap { border: 1px solid var(--default-border); border-radius: 0.5rem; overflow: hidden; }
+.wp-pt-table thead th {
+    font-size: 0.72rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    background: rgba(var(--primary-rgb, 132, 90, 223), 0.05);
+}
+.wp-pt-job-output {
+    font-size: 0.72rem;
+    max-height: 140px;
+    overflow: auto;
+    white-space: pre-wrap;
+    padding: 0.65rem 0.75rem;
+    background: rgba(15, 23, 42, 0.04);
+    border: 1px solid var(--default-border);
+    border-radius: 0.5rem;
+}
+.wp-pt-row-busy { opacity: 0.55; pointer-events: none; }
 </style>

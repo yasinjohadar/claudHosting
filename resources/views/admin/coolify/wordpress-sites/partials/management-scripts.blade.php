@@ -17,28 +17,133 @@
         return raw.replace(/\.php$/i, '');
     }
 
-    function actionButtons(type, slug, status) {
+    function hasUpdate(r) {
+        return String(r.update || '').toLowerCase() === 'available';
+    }
+
+    function statusBadge(status, type) {
+        const s = String(status || '').toLowerCase();
+        if (s === 'active') {
+            return '<span class="badge bg-success-transparent text-success">مفعّل' + (type === 'theme' ? ' (نشط)' : '') + '</span>';
+        }
+        if (s === 'inactive') return '<span class="badge bg-secondary-transparent text-secondary">غير مفعّل</span>';
+        return `<span class="badge bg-light text-dark">${status || '—'}</span>`;
+    }
+
+    function actionButtons(type, slug, row) {
         if (!wpExec || !slug) return '—';
         const prefix = type === 'plugin' ? 'plugin' : 'theme';
+        const status = row.status || '';
+        const upd = hasUpdate(row);
         const btns = [];
-        if (status !== 'active') btns.push(`<button type="button" class="btn btn-link btn-sm p-0 me-1 wp-row-action" data-action="${prefix}_activate" data-slug="${slug}">تفعيل</button>`);
-        if (status === 'active' && type === 'plugin') btns.push(`<button type="button" class="btn btn-link btn-sm p-0 me-1 wp-row-action" data-action="${prefix}_deactivate" data-slug="${slug}">إيقاف</button>`);
-        btns.push(`<button type="button" class="btn btn-link btn-sm p-0 me-1 wp-row-action" data-action="${prefix}_update" data-slug="${slug}">تحديث</button>`);
-        if (status !== 'active') btns.push(`<button type="button" class="btn btn-link btn-sm p-0 text-danger wp-row-action" data-action="${prefix}_delete" data-slug="${slug}" data-confirm="حذف ${slug}؟">حذف</button>`);
+        if (status !== 'active') {
+            btns.push(`<button type="button" class="btn btn-outline-success btn-sm py-0 me-1 wp-row-action" data-action="${prefix}_activate" data-slug="${slug}">تفعيل</button>`);
+        }
+        if (status === 'active' && type === 'plugin') {
+            btns.push(`<button type="button" class="btn btn-outline-secondary btn-sm py-0 me-1 wp-row-action" data-action="${prefix}_deactivate" data-slug="${slug}">إيقاف</button>`);
+        }
+        const updTitle = row.update_version ? ` title="إلى ${row.update_version}"` : '';
+        btns.push(`<button type="button" class="btn btn-primary btn-sm py-0 me-1 wp-row-action" data-action="${prefix}_update" data-slug="${slug}"${updTitle} ${upd ? '' : 'disabled'}>تحديث</button>`);
+        if (status !== 'active') {
+            btns.push(`<button type="button" class="btn btn-outline-danger btn-sm py-0 wp-row-action" data-action="${prefix}_delete" data-slug="${slug}" data-confirm="حذف ${slug}؟">حذف</button>`);
+        }
         return btns.join('');
+    }
+
+    function bindRowActions(el) {
+        el?.querySelectorAll('.wp-row-action').forEach(btn => {
+            btn.addEventListener('click', () => {
+                if (btn.disabled) return;
+                const tr = btn.closest('tr');
+                if (tr) tr.classList.add('wp-pt-row-busy');
+                runAction(btn.dataset.action, { slug: btn.dataset.slug }, btn.dataset.confirm || '');
+            });
+        });
+    }
+
+    function renderExtensionTable(el, items, type) {
+        if (!el) return;
+        if (!items || !items.length) {
+            el.innerHTML = '<p class="text-muted mb-0 py-3 text-center">لا توجد عناصر</p>';
+            return;
+        }
+        const isPlugin = type === 'plugin';
+        const rows = items.map(row => {
+            const slug = slugFromRow(row, type);
+            const upd = hasUpdate(row);
+            const rowClass = upd ? 'table-warning' : (String(row.status) === 'active' && type === 'theme' ? 'table-success' : '');
+            return `<tr class="${rowClass}" data-slug="${slug}">
+                <td><code>${slug}</code>${upd ? ' <span class="badge bg-warning text-dark">تحديث</span>' : ''}</td>
+                <td>${row.version || '—'}</td>
+                <td>${upd ? (row.update_version || '—') : '<span class="text-muted">—</span>'}</td>
+                <td>${statusBadge(row.status, type)}</td>
+                <td class="text-nowrap">${actionButtons(type, slug, row)}</td>
+            </tr>`;
+        }).join('');
+        el.innerHTML = `<table class="table table-sm table-hover mb-0 wp-pt-table">
+            <thead><tr>
+                <th>${isPlugin ? 'الإضافة' : 'القالب'}</th>
+                <th>الإصدار</th>
+                <th>تحديث إلى</th>
+                <th>الحالة</th>
+                <th>إجراءات</th>
+            </tr></thead>
+            <tbody>${rows}</tbody>
+        </table>`;
+        bindRowActions(el);
     }
 
     function renderTable(el, items, cols) {
         if (!el) return;
-        if (!items || !items.length) { el.innerHTML = '<p class="text-muted">لا توجد بيانات — حدّث المعلومات</p>'; return; }
+        if (!items || !items.length) { el.innerHTML = '<p class="text-muted">لا توجد بيانات — حدّث القائمة</p>'; return; }
         const headers = cols.map(c => `<th>${c.label}</th>`).join('');
         const rows = items.map(row => `<tr>${cols.map(c => `<td>${c.render(row)}</td>`).join('')}</tr>`).join('');
         el.innerHTML = `<table class="table table-sm mb-0"><thead><tr>${headers}</tr></thead><tbody>${rows}</tbody></table>`;
-        el.querySelectorAll('.wp-row-action').forEach(btn => {
-            btn.addEventListener('click', () => {
-                runAction(btn.dataset.action, { slug: btn.dataset.slug }, btn.dataset.confirm || '');
-            });
+        bindRowActions(el);
+        el.querySelectorAll('.wp-user-role, .wp-user-delete').forEach(btn => {
+            if (btn.classList.contains('wp-user-role')) {
+                btn.addEventListener('click', () => {
+                    const role = prompt('الدور الجديد (administrator, editor, author, subscriber):', 'subscriber');
+                    if (!role) return;
+                    runAction('user_update_role', { login: btn.dataset.login, role });
+                });
+            } else {
+                btn.addEventListener('click', () => {
+                    if (!confirm('حذف المستخدم «' + btn.dataset.login + '»؟')) return;
+                    runAction('user_delete', { user_id: btn.dataset.id, confirm_dangerous: '1' });
+                });
+            }
         });
+    }
+
+    function setTablesLoading(loading) {
+        const msg = loading
+            ? '<p class="text-muted mb-0 py-4 text-center"><span class="spinner-border spinner-border-sm me-2"></span>جاري تحميل القائمة من WP-CLI…</p>'
+            : null;
+        if (loading && msg) {
+            const p = document.getElementById('wpPluginsTable');
+            const t = document.getElementById('wpThemesTable');
+            if (p) p.innerHTML = msg;
+            if (t) t.innerHTML = msg;
+        }
+        document.querySelectorAll('#wpTabPlugins .wp-action-btn, #wpBtnRefreshList').forEach(btn => { btn.disabled = loading || !wpExec; });
+    }
+
+    function updateUpdateBadges(data) {
+        const pc = document.getElementById('wpPluginsUpdateBadge');
+        const tc = document.getElementById('wpThemesUpdateBadge');
+        const pl = document.getElementById('wpPluginsCountLabel');
+        const tl = document.getElementById('wpThemesCountLabel');
+        const pu = data?.plugins_updates_count ?? 0;
+        const tu = data?.themes_updates_count ?? 0;
+        if (pc) pc.textContent = pu;
+        if (tc) tc.textContent = tu;
+        if (pl) pl.textContent = '(' + (data?.plugins?.length || 0) + ' إضافة' + (pu ? '، ' + pu + ' تحديث' : '') + ')';
+        if (tl) tl.textContent = '(' + (data?.themes?.length || 0) + ' قالب' + (tu ? '، ' + tu + ' تحديث' : '') + ')';
+        const btnP = document.getElementById('wpBtnUpdateAllPlugins');
+        const btnT = document.getElementById('wpBtnUpdateAllThemes');
+        if (btnP) btnP.disabled = !wpExec || pu === 0;
+        if (btnT) btnT.disabled = !wpExec || tu === 0;
     }
 
     function applyInfo(data) {
@@ -66,18 +171,10 @@
                 <p><strong>وضع الصيانة:</strong> ${data.maintenance ? 'مفعّل' : 'غير مفعّل'}</p>
                 <p><strong>آخر فحص:</strong> ${data.fetched_at || '—'}</p>${updatesHtml}`;
         }
-        renderTable(document.getElementById('wpPluginsTable'), data.plugins, [
-            { label: 'الإضافة', render: r => `<code>${slugFromRow(r, 'plugin')}</code>` },
-            { label: 'الإصدار', render: r => r.version || '—' },
-            { label: 'الحالة', render: r => r.status || '—' },
-            { label: 'إجراءات', render: r => actionButtons('plugin', slugFromRow(r, 'plugin'), r.status) },
-        ]);
-        renderTable(document.getElementById('wpThemesTable'), data.themes, [
-            { label: 'القالب', render: r => `<code>${slugFromRow(r, 'theme')}</code>` },
-            { label: 'الإصدار', render: r => r.version || '—' },
-            { label: 'الحالة', render: r => r.status || '—' },
-            { label: 'إجراءات', render: r => actionButtons('theme', slugFromRow(r, 'theme'), r.status) },
-        ]);
+        renderExtensionTable(document.getElementById('wpPluginsTable'), data.plugins, 'plugin');
+        renderExtensionTable(document.getElementById('wpThemesTable'), data.themes, 'theme');
+        updateUpdateBadges(data);
+        document.querySelectorAll('.wp-pt-row-busy').forEach(tr => tr.classList.remove('wp-pt-row-busy'));
         renderTable(document.getElementById('wpUsersTable'), data.users, [
             { label: 'المعرّف', render: r => r.ID || r.id || '—' },
             { label: 'المستخدم', render: r => `<code>${r.user_login || r.login || '—'}</code>` },
@@ -91,18 +188,24 @@
                     <button type="button" class="btn btn-link btn-sm p-0 text-danger wp-user-delete" data-id="${id}" data-login="${login}">حذف</button>`;
             }},
         ]);
-        document.querySelectorAll('.wp-user-role').forEach(btn => btn.addEventListener('click', () => {
-            const role = prompt('الدور الجديد (administrator, editor, author, subscriber):', 'subscriber');
-            if (!role) return;
-            runAction('user_update_role', { login: btn.dataset.login, role });
-        }));
-        document.querySelectorAll('.wp-user-delete').forEach(btn => btn.addEventListener('click', () => {
-            if (!confirm('حذف المستخدم «' + btn.dataset.login + '»؟')) return;
-            runAction('user_delete', { user_id: btn.dataset.id, confirm_dangerous: '1' });
-        }));
     }
 
     let jobPollTimer = null;
+    const pluginThemeActions = ['refresh_info', 'plugin_update_all', 'theme_update_all', 'plugin_update', 'theme_update', 'plugin_install', 'theme_install'];
+
+    function showJobProgress(show, label) {
+        const wrap = document.getElementById('wpJobProgressWrap');
+        const lbl = document.getElementById('wpJobProgressLabel');
+        if (wrap) wrap.classList.toggle('d-none', !show);
+        if (lbl && label) lbl.textContent = label;
+    }
+
+    function setJobOutput(text) {
+        const out = document.getElementById('wpJobOutput');
+        if (!out) return;
+        out.textContent = text || '';
+        out.scrollTop = out.scrollHeight;
+    }
     function showJob(msg, type) {
         const el = document.getElementById('wpJobAlert');
         if (!el) return;
@@ -133,10 +236,14 @@
     async function fetchInfo(refresh) {
         if (!wpExec) return;
         if (refresh) {
+            setTablesLoading(true);
+            showJobProgress(true, 'جلب قائمة الإضافات والقوالب من WP-CLI…');
             showJob('جاري تحديث معلومات WordPress…', 'info');
             const r = await fetch(wpInfoUrl + '?refresh=1', { headers: { 'Accept': 'application/json' } });
             const d = await r.json();
             if (d.async) { pollJob(); return d; }
+            setTablesLoading(false);
+            showJobProgress(false);
             if (d.success && d.data) applyInfo(d.data);
             else if (d.message) showJob(d.message, d.success ? 'success' : 'warning');
             return d;
@@ -148,22 +255,41 @@
     }
 
     async function pollJob() {
-        const r = await fetch(wpJobUrl, { headers: { 'Accept': 'application/json' } });
+        const r = await fetch(wpJobUrl, { headers: { 'Accept': 'application/json' }, cache: 'no-store' });
         const d = await r.json();
         const job = d.job;
+        const isPt = job && pluginThemeActions.includes(job.action);
         if (!job || job.status === 'running') {
-            showJob('جاري تنفيذ: ' + (job && job.action ? job.action : '...'), 'info');
-            jobPollTimer = setTimeout(pollJob, 2500);
+            const label = (job && job.progress_label) ? job.progress_label : ('جاري: ' + (job?.action || '…'));
+            if (isPt) {
+                showJobProgress(true, label);
+                if (job?.output) setJobOutput(job.output);
+            } else {
+                showJob(label, 'info');
+            }
+            jobPollTimer = setTimeout(pollJob, 2000);
             return;
         }
         clearTimeout(jobPollTimer);
-        showJob(job.status === 'completed' ? ('اكتمل: ' + job.action) : ('فشل: ' + job.action), job.status === 'completed' ? 'success' : 'danger');
-        if (job.output) routeOutput(job.action, job.output);
+        showJobProgress(false);
+        const doneMsg = job.progress_label || job.action;
+        showJob(job.status === 'completed' ? ('اكتمل: ' + doneMsg) : ('فشل: ' + doneMsg), job.status === 'completed' ? 'success' : 'danger');
+        if (job.output) {
+            setJobOutput(job.output);
+            routeOutput(job.action, job.output);
+        }
         if (job.generated_password) {
             const pr = document.getElementById('wpPassResult') || document.getElementById('wpUserCreateResult');
             if (pr) { pr.textContent = 'كلمة المرور لـ ' + (job.login || '') + ': ' + job.generated_password; pr.classList.remove('d-none'); }
         }
-        fetchInfo(true);
+        setTablesLoading(false);
+        if (job.action === 'refresh_info') {
+            fetchInfo(false);
+        } else if (pluginThemeActions.includes(job.action)) {
+            fetchInfo(true);
+        } else {
+            fetchInfo(false);
+        }
         refreshLog();
     }
 
@@ -191,7 +317,12 @@
         Object.entries(params).forEach(([k, v]) => { if (v !== undefined && v !== null && v !== '') body.append(k, v); });
         const r = await fetch(wpActionUrl, { method: 'POST', headers: { 'Accept': 'application/json', 'Content-Type': 'application/x-www-form-urlencoded' }, body });
         const d = await r.json();
-        if (d.async) { pollJob(); return; }
+        if (d.async) {
+            if (pluginThemeActions.includes(action)) showJobProgress(true, 'إرسال للطابور…');
+            pollJob();
+            return;
+        }
+        showJobProgress(false);
         showJob(d.success ? (d.message || 'تم') : ((d.message || 'فشل') + (d.output ? '\n\n' + d.output : '')), d.success ? 'success' : 'danger');
         if (d.output) routeOutput(action, d.output);
         if (d.generated_password) {
@@ -202,6 +333,16 @@
     }
 
     document.getElementById('wpBtnRefresh')?.addEventListener('click', () => fetchInfo(true));
+    document.getElementById('wpBtnRefreshList')?.addEventListener('click', () => fetchInfo(true));
+    document.getElementById('wpBtnCopyMcpConfig')?.addEventListener('click', () => {
+        const pre = document.getElementById('wpMcpSnippetPre');
+        const text = pre?.textContent?.trim() || '';
+        if (!text) return;
+        navigator.clipboard.writeText(text).then(() => {
+            const btn = document.getElementById('wpBtnCopyMcpConfig');
+            if (btn) { const o = btn.textContent; btn.textContent = 'تم النسخ'; setTimeout(() => { btn.textContent = o; }, 2000); }
+        }).catch(() => alert('تعذر النسخ — انسخ يدوياً من المعاينة'));
+    });
     document.querySelectorAll('.wp-action').forEach(btn => btn.addEventListener('click', () => {
         runAction(btn.dataset.action, {}, btn.dataset.confirm || '');
     }));

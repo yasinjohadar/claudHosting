@@ -94,31 +94,7 @@
                 <pre id="wpCoreOutput" class="p-2 bg-light rounded small mb-0" dir="ltr" style="max-height:160px;overflow:auto;white-space:pre-wrap;"></pre>
             </div>
             <div class="tab-pane fade" id="wpTabPlugins">
-                <div class="d-flex gap-2 mb-2 flex-wrap">
-                    <button type="button" class="btn btn-primary btn-sm wp-action-btn wp-action" data-action="plugin_update_all" @disabled(!$wpExec)>تحديث كل الإضافات</button>
-                    <button type="button" class="btn btn-primary btn-sm wp-action-btn wp-action" data-action="theme_update_all" @disabled(!$wpExec)>تحديث كل القوالب</button>
-                </div>
-                <div class="row g-2 mb-3">
-                    <div class="col-md-6">
-                        <label class="form-label small">تثبيت إضافة (slug)</label>
-                        <div class="input-group input-group-sm">
-                            <input type="text" id="wpInstallPluginSlug" class="form-control" dir="ltr" placeholder="hello-dolly" @disabled(!$wpExec)>
-                            <span class="input-group-text"><input type="checkbox" id="wpInstallPluginActivate" checked @disabled(!$wpExec)> تفعيل</span>
-                            <button type="button" class="btn btn-outline-primary" id="wpBtnInstallPlugin" @disabled(!$wpExec)>تثبيت</button>
-                        </div>
-                    </div>
-                    <div class="col-md-6">
-                        <label class="form-label small">تثبيت قالب</label>
-                        <div class="input-group input-group-sm">
-                            <input type="text" id="wpInstallThemeSlug" class="form-control" dir="ltr" placeholder="twentytwentyfour" @disabled(!$wpExec)>
-                            <button type="button" class="btn btn-outline-primary" id="wpBtnInstallTheme" @disabled(!$wpExec)>تثبيت</button>
-                        </div>
-                    </div>
-                </div>
-                <div class="row g-2">
-                    <div class="col-md-6"><h6 class="small">الإضافات</h6><div id="wpPluginsTable" class="table-responsive small"></div></div>
-                    <div class="col-md-6"><h6 class="small">القوالب</h6><div id="wpThemesTable" class="table-responsive small"></div></div>
-                </div>
+                @include('admin.coolify.wordpress-sites.partials.wp-plugins-themes-panel')
             </div>
             <div class="tab-pane fade" id="wpTabUsers">
                 <div id="wpUsersTable" class="table-responsive small mb-2"></div>
@@ -177,12 +153,29 @@
                     @endif
                     <button type="button" class="btn btn-info btn-sm wp-action-btn wp-action" data-action="bootstrap_mcp" data-confirm="تركيب إضافة MCP Server + حزمة WP-CLI AI على هذا الموقع؟" @disabled(!$wpExec)>تركيب MCP + WP-CLI AI</button>
                 </div>
+                <div class="alert alert-info border-0 py-2 small mb-3">
+                    <strong>MCP ≠ إدارة الإضافات في اللوحة.</strong>
+                    MCP يوفّر لـ <strong>Cursor IDE</strong> وصول REST إلى الموقع (للمطورين).
+                    تحديث الإضافات والقوالب هنا يتم عبر <strong>WP-CLI + SSH</strong> من تبويب «إضافات وقوالب».
+                </div>
                 @if($wpMcpReady)
                 <div class="alert alert-success py-2 small mb-2">
-                    MCP مُثبَّت — {{ $site->metadata['wp_mcp_bootstrapped_at'] ?? '' }}
+                    <div class="d-flex flex-wrap justify-content-between align-items-center gap-2">
+                        <span>MCP مُثبَّت — {{ $site->metadata['wp_mcp_bootstrapped_at'] ?? '' }}</span>
+                        @if($wpMcpSnippet)
+                        <button type="button" class="btn btn-sm btn-outline-success" id="wpBtnCopyMcpConfig">نسخ إعداد Cursor MCP</button>
+                        @endif
+                    </div>
+                    @if(!empty($site->metadata['wp_mcp_user']))
+                    <p class="small mb-1 mt-2">المستخدم: <code>{{ $site->metadata['wp_mcp_user'] }}</code>
+                        @if(!empty($site->metadata['wp_mcp_endpoint']))
+                        — Endpoint: <code dir="ltr">{{ $site->metadata['wp_mcp_endpoint'] }}</code>
+                        @endif
+                    </p>
+                    @endif
                     @if($wpMcpSnippet)
-                    <details class="mt-2"><summary class="fw-bold">إعداد Cursor MCP (انسخ إلى Settings → MCP)</summary>
-                    <pre class="small mb-0 mt-2" dir="ltr" style="white-space:pre-wrap;max-height:200px;overflow:auto;">{{ $wpMcpSnippet }}</pre>
+                    <details class="mt-2"><summary class="fw-bold">معاينة إعداد Cursor MCP</summary>
+                    <pre class="small mb-0 mt-2" id="wpMcpSnippetPre" dir="ltr" style="white-space:pre-wrap;max-height:200px;overflow:auto;">{{ $wpMcpSnippet }}</pre>
                     </details>
                     @endif
                 </div>

@@ -52,6 +52,13 @@ class WordpressCliActionRunner
         return $this->actions()[$action] ?? null;
     }
 
+    public function label(string $action): ?string
+    {
+        $labels = config('wordpress_cli.action_labels', []);
+
+        return is_string($labels[$action] ?? null) ? $labels[$action] : null;
+    }
+
     /**
      * @param  array<string, mixed>  $params
      * @return array{success: bool, message?: string, command?: string, timeout?: int, handler?: string, lifecycle?: string}

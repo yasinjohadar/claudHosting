@@ -29,6 +29,30 @@ return [
         ],
     ],
 
+    'action_labels' => [
+        'refresh_info' => 'جلب معلومات WordPress',
+        'diagnose' => 'تشخيص الاتصال',
+        'plugin_update_all' => 'تحديث كل الإضافات',
+        'theme_update_all' => 'تحديث كل القوالب',
+        'plugin_update' => 'تحديث إضافة',
+        'theme_update' => 'تحديث قالب',
+        'plugin_install' => 'تثبيت إضافة',
+        'theme_install' => 'تثبيت قالب',
+        'plugin_activate' => 'تفعيل إضافة',
+        'plugin_deactivate' => 'إيقاف إضافة',
+        'plugin_delete' => 'حذف إضافة',
+        'theme_activate' => 'تفعيل قالب',
+        'theme_delete' => 'حذف قالب',
+        'core_update' => 'تحديث Core',
+        'core_reinstall' => 'إعادة تثبيت Core',
+        'bootstrap_mcp' => 'تركيب MCP',
+        'db_export' => 'تصدير قاعدة البيانات',
+        'db_repair' => 'إصلاح قاعدة البيانات',
+        'raw_cli' => 'تشغيل WP-CLI',
+        'docker_compose_pull' => 'سحب صور Docker',
+        'docker_compose_restart' => 'إعادة تشغيل Docker',
+    ],
+
     'quick_commands' => [
         'plugin list --status=active',
         'theme list',
@@ -77,7 +101,7 @@ return [
 
         // --- plugins ---
         'plugin_update_all' => ['type' => 'wp', 'command' => 'plugin update --all', 'timeout' => 900, 'async' => true],
-        'plugin_update' => ['type' => 'wp', 'command' => 'plugin update {slug}', 'timeout' => 300, 'params' => ['slug']],
+        'plugin_update' => ['type' => 'wp', 'command' => 'plugin update {slug}', 'timeout' => 300, 'params' => ['slug'], 'async' => true],
         'plugin_install' => ['type' => 'wp', 'command' => 'plugin install {slug}', 'timeout' => 300, 'params' => ['slug'], 'async' => true],
         'plugin_activate' => ['type' => 'wp', 'command' => 'plugin activate {slug}', 'timeout' => 60, 'params' => ['slug']],
         'plugin_deactivate' => ['type' => 'wp', 'command' => 'plugin deactivate {slug}', 'timeout' => 60, 'params' => ['slug']],
@@ -85,7 +109,7 @@ return [
 
         // --- themes ---
         'theme_update_all' => ['type' => 'wp', 'command' => 'theme update --all', 'timeout' => 600, 'async' => true],
-        'theme_update' => ['type' => 'wp', 'command' => 'theme update {slug}', 'timeout' => 300, 'params' => ['slug']],
+        'theme_update' => ['type' => 'wp', 'command' => 'theme update {slug}', 'timeout' => 300, 'params' => ['slug'], 'async' => true],
         'theme_install' => ['type' => 'wp', 'command' => 'theme install {slug}', 'timeout' => 300, 'params' => ['slug'], 'async' => true],
         'theme_activate' => ['type' => 'wp', 'command' => 'theme activate {slug}', 'timeout' => 60, 'params' => ['slug']],
         'theme_delete' => ['type' => 'wp', 'command' => 'theme delete {slug}', 'timeout' => 120, 'params' => ['slug'], 'confirm' => 'حذف القالب نهائياً؟', 'dangerous' => true],

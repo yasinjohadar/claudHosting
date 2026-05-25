@@ -196,16 +196,29 @@ class WordpressManagementService
         }
 
         $coreUpdate = $this->cli->run($site, 'core check-update --format=json', 45);
-        $plugins = $this->cli->run($site, 'plugin list --format=json', 45);
-        $themes = $this->cli->run($site, 'theme list --format=json', 45);
+        $plugins = $this->cli->run(
+            $site,
+            'plugin list --format=json --fields=name,status,version,update,update_version',
+            60
+        );
+        $themes = $this->cli->run(
+            $site,
+            'theme list --format=json --fields=name,status,version,update,update_version',
+            60
+        );
         $users = $this->cli->run($site, 'user list --format=json', 45);
         $cliInfo = $this->cli->run($site, 'cli info --format=json', 45);
+
+        $pluginList = $this->parseJsonLines($plugins['output'] ?? '');
+        $themeList = $this->parseJsonLines($themes['output'] ?? '');
 
         $info = [
             'core_version' => trim($coreVersion['output'] ?? ''),
             'core_updates' => $this->parseJsonLines($coreUpdate['output'] ?? ''),
-            'plugins' => $this->parseJsonLines($plugins['output'] ?? ''),
-            'themes' => $this->parseJsonLines($themes['output'] ?? ''),
+            'plugins' => $pluginList,
+            'themes' => $themeList,
+            'plugins_updates_count' => $this->countAvailableUpdates($pluginList),
+            'themes_updates_count' => $this->countAvailableUpdates($themeList),
             'users' => $this->parseJsonLines($users['output'] ?? ''),
             'cli' => $this->parseJsonObject($cliInfo['output'] ?? ''),
             'container' => $containerMeta,
@@ -528,6 +541,7 @@ class WordpressManagementService
                     'params' => $params,
                     'status' => 'running',
                     'output' => '',
+                    'progress_label' => $this->actionProgressLabel($action, $params),
                     'user_id' => $userId,
                     'started_at' => now()->toIso8601String(),
                     'finished_at' => null,
@@ -728,5 +742,47 @@ class WordpressManagementService
         $job = ($site->metadata ?? [])['wp_job'] ?? null;
 
         return ['success' => true, 'job' => is_array($job) ? $job : null];
+    }
+
+    /**
+     * @param  array<int, array<string, mixed>>  $items
+     */
+    protected function countAvailableUpdates(array $items): int
+    {
+        $count = 0;
+        foreach ($items as $item) {
+            if (! is_array($item)) {
+                continue;
+            }
+            if (strtolower((string) ($item['update'] ?? '')) === 'available') {
+                $count++;
+            }
+        }
+
+        return $count;
+    }
+
+    /**
+     * @param  array<string, mixed>  $params
+     */
+    public function actionProgressLabel(string $action, array $params = []): string
+    {
+        $slug = trim((string) ($params['slug'] ?? ''));
+
+        return match ($action) {
+            'refresh_info' => 'جلب معلومات WordPress',
+            'plugin_update_all' => 'تحديث كل الإضافات',
+            'theme_update_all' => 'تحديث كل القوالب',
+            'plugin_update' => $slug !== '' ? 'تحديث الإضافة: '.$slug : 'تحديث إضافة',
+            'theme_update' => $slug !== '' ? 'تحديث القالب: '.$slug : 'تحديث قالب',
+            'plugin_install' => $slug !== '' ? 'تثبيت الإضافة: '.$slug : 'تثبيت إضافة',
+            'theme_install' => $slug !== '' ? 'تثبيت القالب: '.$slug : 'تثبيت قالب',
+            'core_update' => 'تحديث WordPress Core',
+            'core_reinstall' => 'إعادة تثبيت ملفات Core',
+            'bootstrap_mcp' => 'تركيب MCP + WP-CLI',
+            'db_export' => 'تصدير قاعدة البيانات',
+            'docker_compose_pull' => 'سحب صور Docker',
+            default => $this->actionRunner->label($action) ?? $action,
+        };
     }
 }
