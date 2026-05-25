@@ -4,7 +4,7 @@
 @endphp
 <div class="wp-pt-panel">
     <div class="alert alert-light border small mb-3 py-2">
-        <strong>إدارة عبر WP-CLI</strong> (مثل cPanel) — القائمة من السيرفر مباشرة. <strong>MCP</strong> في تبويب «صيانة» للمطورين في Cursor فقط، وليس لتحديث الإضافات هنا.
+        <strong>من السيرفر مباشرة</strong> — الإضافات والقوالب تُجلب وتُدار عبر SSH + WP-CLI على حاوية WordPress (مثل cPanel).
     </div>
 
     <div id="wpJobProgressWrap" class="d-none mb-3">

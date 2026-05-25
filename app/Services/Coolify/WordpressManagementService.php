@@ -739,9 +739,58 @@ class WordpressManagementService
      */
     public function getJobStatus(CoolifyWordpressSite $site): array
     {
+        $site->refresh();
         $job = ($site->metadata ?? [])['wp_job'] ?? null;
+        if (! is_array($job)) {
+            return ['success' => true, 'job' => null];
+        }
 
-        return ['success' => true, 'job' => is_array($job) ? $job : null];
+        if (($job['status'] ?? '') === 'running' && $this->wpJobIsStale($job)) {
+            $job = array_merge($job, [
+                'status' => 'failed',
+                'progress_label' => 'انتهت المهلة — شغّل معالج الطابور (queue:work) أو اضغط «تحديث القائمة» مرة أخرى',
+                'output' => (string) ($job['output'] ?? ''),
+                'finished_at' => now()->toIso8601String(),
+            ]);
+        }
+
+        return ['success' => true, 'job' => $job];
+    }
+
+    public function clearStuckWpJob(CoolifyWordpressSite $site, int $maxMinutes = 10): void
+    {
+        $site->refresh();
+        $metadata = $site->metadata ?? [];
+        $job = $metadata['wp_job'] ?? null;
+        if (! is_array($job) || ($job['status'] ?? '') !== 'running') {
+            return;
+        }
+
+        if (! $this->wpJobIsStale($job, $maxMinutes)) {
+            return;
+        }
+
+        $job['status'] = 'failed';
+        $job['progress_label'] = 'أُلغيت مهمة عالقة — سيتم الجلب مباشرة من السيرفر';
+        $job['finished_at'] = now()->toIso8601String();
+        $site->update(['metadata' => array_merge($metadata, ['wp_job' => $job])]);
+    }
+
+    /**
+     * @param  array<string, mixed>  $job
+     */
+    protected function wpJobIsStale(array $job, int $maxMinutes = 15): bool
+    {
+        $started = $job['started_at'] ?? null;
+        if (! is_string($started) || $started === '') {
+            return true;
+        }
+
+        try {
+            return \Illuminate\Support\Carbon::parse($started)->diffInMinutes(now()) >= $maxMinutes;
+        } catch (\Throwable) {
+            return true;
+        }
     }
 
     /**

@@ -83,7 +83,7 @@ return [
     */
     'actions' => [
         // --- existing / core ---
-        'refresh_info' => ['type' => 'special', 'handler' => 'refresh_info', 'async' => true],
+        'refresh_info' => ['type' => 'special', 'handler' => 'refresh_info', 'async' => false],
         'diagnose' => ['type' => 'special', 'handler' => 'diagnose', 'async' => true],
         'bootstrap_mcp' => ['type' => 'special', 'handler' => 'bootstrap_mcp', 'async' => true],
         'redis_apply_env' => ['type' => 'special', 'handler' => 'redis_apply_env', 'async' => false],

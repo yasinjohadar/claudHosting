@@ -2,6 +2,7 @@
 <script>
 (function() {
     const wpExec = @json($wpExec);
+    const wpInfoInitial = @json($wpInfoData ?? []);
     const wpInfoUrl = @json(route('admin.coolify.wordpress-sites.wp-info', $uuid));
     const wpActionUrl = @json(route('admin.coolify.wordpress-sites.wp-action', $uuid));
     const wpJobUrl = @json(route('admin.coolify.wordpress-sites.wp-job', $uuid));
@@ -191,7 +192,18 @@
     }
 
     let jobPollTimer = null;
+    let jobPollAttempts = 0;
+    const jobPollMaxAttempts = 120;
     const pluginThemeActions = ['refresh_info', 'plugin_update_all', 'theme_update_all', 'plugin_update', 'theme_update', 'plugin_install', 'theme_install'];
+
+    function formatJobDoneMessage(job) {
+        const detail = (job.output || job.progress_label || job.action || '').trim();
+        if (job.status === 'completed') {
+            return detail ? ('اكتمل: ' + detail) : 'اكتمل';
+        }
+        if (!detail) return 'فشل التنفيذ';
+        return detail.startsWith('فشل') ? detail : ('فشل: ' + detail);
+    }
 
     function showJobProgress(show, label) {
         const wrap = document.getElementById('wpJobProgressWrap');
@@ -237,16 +249,34 @@
         if (!wpExec) return;
         if (refresh) {
             setTablesLoading(true);
-            showJobProgress(true, 'جلب قائمة الإضافات والقوالب من WP-CLI…');
-            showJob('جاري تحديث معلومات WordPress…', 'info');
-            const r = await fetch(wpInfoUrl + '?refresh=1', { headers: { 'Accept': 'application/json' } });
-            const d = await r.json();
-            if (d.async) { pollJob(); return d; }
-            setTablesLoading(false);
-            showJobProgress(false);
-            if (d.success && d.data) applyInfo(d.data);
-            else if (d.message) showJob(d.message, d.success ? 'success' : 'warning');
-            return d;
+            showJobProgress(true, 'جلب قائمة الإضافات والقوالب من السيرفر (WP-CLI)…');
+            showJob('جاري الاتصال بالسيرفر وجلب القائمة… قد يستغرق دقيقة.', 'info');
+            try {
+                const r = await fetch(wpInfoUrl + '?refresh=1', { headers: { 'Accept': 'application/json' } });
+                const d = await r.json();
+                if (d.async) {
+                    if (!d.success) {
+                        showJob(d.message || 'تعذر بدء العملية', 'danger');
+                        return d;
+                    }
+                    jobPollAttempts = 0;
+                    pollJob();
+                    return d;
+                }
+                if (d.success && d.data) {
+                    applyInfo(d.data);
+                    showJob(d.message || 'تم تحديث القائمة من السيرفر', 'success');
+                } else {
+                    showJob(d.message || 'فشل جلب البيانات من السيرفر — تحقق من SSH وWP-CLI', 'danger');
+                }
+                return d;
+            } catch (e) {
+                showJob('خطأ في الاتصال بالخادم: ' + (e.message || e), 'danger');
+            } finally {
+                setTablesLoading(false);
+                showJobProgress(false);
+            }
+            return;
         }
         const r = await fetch(wpInfoUrl, { headers: { 'Accept': 'application/json' } });
         const d = await r.json();
@@ -255,11 +285,19 @@
     }
 
     async function pollJob() {
+        jobPollAttempts++;
         const r = await fetch(wpJobUrl, { headers: { 'Accept': 'application/json' }, cache: 'no-store' });
         const d = await r.json();
         const job = d.job;
         const isPt = job && pluginThemeActions.includes(job.action);
         if (!job || job.status === 'running') {
+            if (jobPollAttempts >= jobPollMaxAttempts) {
+                clearTimeout(jobPollTimer);
+                setTablesLoading(false);
+                showJobProgress(false);
+                showJob('انتهت مهلة الانتظار — شغّل queue:work على السيرفر أو اضغط «تحديث القائمة» (الجلب المباشر لا يحتاج طابوراً).', 'danger');
+                return;
+            }
             const label = (job && job.progress_label) ? job.progress_label : ('جاري: ' + (job?.action || '…'));
             if (isPt) {
                 showJobProgress(true, label);
@@ -271,9 +309,9 @@
             return;
         }
         clearTimeout(jobPollTimer);
+        jobPollAttempts = 0;
         showJobProgress(false);
-        const doneMsg = job.progress_label || job.action;
-        showJob(job.status === 'completed' ? ('اكتمل: ' + doneMsg) : ('فشل: ' + doneMsg), job.status === 'completed' ? 'success' : 'danger');
+        showJob(formatJobDoneMessage(job), job.status === 'completed' ? 'success' : 'danger');
         if (job.output) {
             setJobOutput(job.output);
             routeOutput(job.action, job.output);
@@ -406,9 +444,38 @@
         });
     }
 
+    const wpPluginsTab = document.querySelector('[data-bs-target="#wpTabPlugins"]');
+    if (wpPluginsTab) {
+        wpPluginsTab.addEventListener('shown.bs.tab', () => {
+            const p = document.getElementById('wpPluginsTable');
+            if (p && p.querySelector('table')) return;
+            if (wpExec) fetchInfo(true);
+        });
+    }
+
+    if (wpInfoInitial && Object.keys(wpInfoInitial).length) {
+        applyInfo(wpInfoInitial);
+    }
+
     if (wpExec) {
-        fetchInfo(false);
-        fetch(wpJobUrl).then(r => r.json()).then(d => { if (d.job && d.job.status === 'running') pollJob(); });
+        fetchInfo(false).then(d => {
+            const data = (d && d.data) || wpInfoInitial;
+            const hasList = data && (data.plugins?.length || data.themes?.length);
+            if (!hasList && document.getElementById('wpTabPlugins')?.classList.contains('show')) {
+                fetchInfo(true);
+            }
+        });
+        fetch(wpJobUrl).then(r => r.json()).then(d => {
+            const job = d.job;
+            if (!job) return;
+            if (job.status === 'running') {
+                jobPollAttempts = 0;
+                pollJob();
+            } else if (job.status === 'failed' && pluginThemeActions.includes(job.action)) {
+                setTablesLoading(false);
+                showJob(formatJobDoneMessage(job), 'danger');
+            }
+        });
     }
 })();
 </script>

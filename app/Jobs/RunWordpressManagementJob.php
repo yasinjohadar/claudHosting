@@ -78,7 +78,9 @@ class RunWordpressManagementJob implements ShouldQueue
         $wpJob['output'] = $output;
         $wpJob['progress_label'] = $status === 'completed'
             ? 'اكتمل'
-            : ($status === 'failed' ? 'فشل' : ($wpJob['progress_label'] ?? ''));
+            : ($status === 'failed'
+                ? (strlen(trim($output)) > 0 ? mb_substr(trim($output), 0, 200) : 'فشل التنفيذ')
+                : ($wpJob['progress_label'] ?? ''));
         $wpJob['finished_at'] = now()->toIso8601String();
         if ($status === 'completed' && isset($result['generated_password'])) {
             $wpJob['generated_password'] = $result['generated_password'];

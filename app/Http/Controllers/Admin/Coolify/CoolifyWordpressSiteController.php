@@ -188,6 +188,7 @@ class CoolifyWordpressSiteController extends Controller
         $site = CoolifyWordpressSite::query()->where('uuid', $uuid)->firstOrFail();
 
         if (request()->boolean('refresh')) {
+            $this->wpManagement->clearStuckWpJob($site);
             $queued = $this->wpManagement->executeAction($site, 'refresh_info', [], Auth::id());
             if ($queued['async'] ?? false) {
                 return response()->json([
