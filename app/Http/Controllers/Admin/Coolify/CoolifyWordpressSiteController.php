@@ -593,16 +593,31 @@ class CoolifyWordpressSiteController extends Controller
 
         $result = $this->wordpressCloudflare->syncFromExistingDns($site);
 
+        $mainFqdn = $result['main_fqdn'] ?? (($result['metadata']['cloudflare']['fqdn'] ?? null) ?: $site->slug);
+        $fbFqdn = $result['filebrowser_fqdn'] ?? null;
+        $fbWarning = $result['filebrowser_warning'] ?? $result['message'] ?? null;
+
         if (! ($result['ok'] ?? false)) {
-            return back()->with('error', $result['message'] ?? 'فشل مزامنة Cloudflare');
+            $message = is_string($fbWarning) && $fbWarning !== ''
+                ? $fbWarning
+                : ($result['message'] ?? 'فشل مزامنة Cloudflare');
+
+            return back()->with('error', $message);
         }
 
-        $meta = $result['metadata'] ?? [];
-        $fqdn = $meta['fqdn'] ?? $site->slug;
+        $success = 'تمت مزامنة Cloudflare: '.$mainFqdn;
+        if ($fbFqdn !== null && $fbFqdn !== '') {
+            $success .= ' + FileBrowser: '.$fbFqdn;
+        }
+        if (is_string($fbWarning) && $fbWarning !== '') {
+            return redirect()
+                ->to($this->wordpressSiteShowUrl($site->fresh()))
+                ->with('warning', $success.' — تحذير: '.$fbWarning);
+        }
 
         return redirect()
-            ->to($this->wordpressSiteShowUrl($site))
-            ->with('success', 'تمت مزامنة Cloudflare من السجل الحالي: '.$fqdn);
+            ->to($this->wordpressSiteShowUrl($site->fresh()))
+            ->with('success', $success);
     }
 
     protected function wordpressSiteShowUrl(CoolifyWordpressSite $site): string

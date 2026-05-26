@@ -8,7 +8,7 @@
     @csrf
     <button type="submit" class="btn {{ $hasCf ? 'btn-outline-info' : 'btn-info' }} btn-sm">
         <i class="fe fe-refresh-cw"></i>
-        {{ $hasCf ? 'إعادة مزامنة Cloudflare' : 'مزامنة من Cloudflare' }}
+        {{ $hasCf ? 'مزامنة DNS (الموقع + الملفات)' : 'مزامنة DNS (الموقع + الملفات)' }}
     </button>
 </form>
 @endif

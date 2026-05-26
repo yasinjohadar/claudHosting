@@ -124,14 +124,29 @@ class WordpressCloudflareService
 
         $mergedMeta = array_merge($site->metadata ?? [], $metadata);
 
-        $fbWarning = $this->applyFilebrowserDns($site, $proxied, $zoneId, $log);
-        if ($fbWarning !== null) {
-            $mergedMeta['filebrowser_dns_warning'] = $fbWarning;
-        }
-
         $site->update([
             'metadata' => $mergedMeta,
         ]);
+        $site->refresh();
+
+        $fbWarning = null;
+        if ($this->settings->getWordpressFilebrowserEnabled()) {
+            $withFb = array_merge($mergedMeta, ['filebrowser_enabled' => true]);
+            $site->update(['metadata' => $withFb]);
+            $site->refresh();
+            $wrongHint = $this->detectWrongFilebrowserDnsHint($site, $zoneId);
+            $fbWarning = $this->applyFilebrowserDns($site, $proxied, $zoneId, $log);
+            if ($wrongHint !== null) {
+                $fbWarning = trim(($fbWarning ?? '').' '.$wrongHint);
+            }
+            $mergedMeta = $site->fresh()->metadata ?? [];
+            if ($fbWarning !== null && $fbWarning !== '') {
+                $mergedMeta['filebrowser_dns_warning'] = $fbWarning;
+            } else {
+                unset($mergedMeta['filebrowser_dns_warning']);
+            }
+            $site->update(['metadata' => $mergedMeta]);
+        }
 
         $this->log($log, 'cloudflare_done', 'اكتمل ربط Cloudflare ('.$preset.')');
 
@@ -366,10 +381,132 @@ class WordpressCloudflareService
         unset($merged['domain_warning']);
 
         $site->update(['metadata' => $merged]);
+        $site->refresh();
+
+        return $this->finalizeSyncWithFilebrowserDns($site, $zoneId, $cloudflareMeta);
+    }
+
+    /**
+     * مزامنة سجل WordPress من Cloudflare ثم إنشاء/تصحيح سجل FileBrowser (files.{slug}).
+     *
+     * @param  array<string, mixed>  $mainCloudflareMeta
+     * @return array{ok: bool, message?: string, metadata?: array<string, mixed>, main_fqdn?: string, filebrowser_fqdn?: string, filebrowser_warning?: string|null}
+     */
+    protected function finalizeSyncWithFilebrowserDns(
+        CoolifyWordpressSite $site,
+        string $zoneId,
+        array $mainCloudflareMeta
+    ): array {
+        $mainFqdn = (string) ($mainCloudflareMeta['fqdn'] ?? '');
+
+        if (! $this->settings->getWordpressFilebrowserEnabled()) {
+            return [
+                'ok' => true,
+                'metadata' => $site->metadata ?? [],
+                'main_fqdn' => $mainFqdn,
+            ];
+        }
+
+        $merged = $site->metadata ?? [];
+        $merged['filebrowser_enabled'] = true;
+        $site->update(['metadata' => $merged]);
+        $site->refresh();
+
+        $proxied = (bool) ($mainCloudflareMeta['proxied'] ?? $this->settings->getWordpressCloudflareProxied());
+        $wrongRecordHint = $this->detectWrongFilebrowserDnsHint($site, $zoneId);
+        $fbWarning = $this->applyFilebrowserDns($site, $proxied, $zoneId, null);
+
+        $site->refresh();
+        $merged = $site->metadata ?? [];
+        if ($fbWarning === null) {
+            unset($merged['filebrowser_dns_warning']);
+        } else {
+            $merged['filebrowser_dns_warning'] = $fbWarning;
+        }
+        if ($wrongRecordHint !== null) {
+            $merged['filebrowser_dns_warning'] = trim(
+                ($merged['filebrowser_dns_warning'] ?? '').' '.$wrongRecordHint
+            );
+        }
+        $site->update(['metadata' => $merged]);
+
+        $fbMeta = ($site->fresh()->metadata ?? [])['cloudflare_filebrowser'] ?? [];
+        $fbFqdn = (string) ($fbMeta['fqdn'] ?? $this->settings->buildWordpressFilebrowserPublicUrl($site->slug));
+        $fbFqdn = preg_replace('#^https?://#', '', $fbFqdn);
+
+        $finalWarning = $merged['filebrowser_dns_warning'] ?? null;
 
         return [
-            'ok' => true,
-            'metadata' => $cloudflareMeta,
+            'ok' => $fbWarning === null && $wrongRecordHint === null,
+            'message' => $finalWarning,
+            'metadata' => $site->fresh()->metadata ?? [],
+            'main_fqdn' => $mainFqdn,
+            'filebrowser_fqdn' => $fbFqdn,
+            'filebrowser_warning' => $finalWarning,
+        ];
+    }
+
+    /**
+     * يحذر إن وُجد سجل قديم خاطئ مثل files.domain بدل files.{slug}.domain.
+     */
+    protected function detectWrongFilebrowserDnsHint(CoolifyWordpressSite $site, string $zoneId): ?string
+    {
+        $baseDomain = strtolower(rtrim($this->settings->getWordpressBaseDomain(), '.'));
+        $expectedRecord = $this->settings->buildWordpressFilebrowserDnsName($site->slug);
+        $expectedFqdn = strtolower($expectedRecord.'.'.$baseDomain);
+        $prefix = strtolower($this->settings->getWordpressFilebrowserSubdomainPrefix());
+
+        $wrongNames = array_unique(array_filter([
+            $prefix,
+            $prefix.'.'.$baseDomain,
+        ]));
+
+        foreach ($wrongNames as $name) {
+            if (strtolower($name) === strtolower($expectedRecord)) {
+                continue;
+            }
+            $record = $this->cloudflare->findDnsRecordByName($zoneId, $name);
+            if ($record === null) {
+                continue;
+            }
+            $foundFqdn = strtolower(rtrim((string) ($record['name'] ?? ''), '.'));
+            if ($foundFqdn === $expectedFqdn) {
+                continue;
+            }
+
+            return 'يوجد سجل DNS قديم خاطئ («'.$foundFqdn.'») — احذفه من Cloudflare واترك «'.$expectedFqdn.'» فقط (CNAME → '.$site->slug.'.'.$baseDomain.').';
+        }
+
+        return null;
+    }
+
+    /**
+     * تطبيق/تصحيح DNS للموقع وFileBrowser معاً (مثلاً بعد تغيير الإعدادات).
+     *
+     * @param  array<string, mixed>  $service
+     * @return array{ok: bool, message?: string, main_fqdn?: string, filebrowser_fqdn?: string}
+     */
+    public function applyAllDnsForSite(CoolifyWordpressSite $site, array $service, ?callable $log = null): array
+    {
+        $main = $this->applyForSite($site, $service, null, $log);
+        if (! ($main['ok'] ?? false)) {
+            return [
+                'ok' => false,
+                'message' => $main['message'] ?? 'فشل إعداد DNS للموقع',
+            ];
+        }
+
+        $site->refresh();
+        $fbFqdn = (string) (($site->metadata['cloudflare_filebrowser']['fqdn'] ?? '')
+            ?: $this->settings->buildWordpressFilebrowserPublicUrl($site->slug));
+        $fbFqdn = preg_replace('#^https?://#', '', $fbFqdn);
+        $warning = $site->metadata['filebrowser_dns_warning'] ?? null;
+
+        return [
+            'ok' => $warning === null,
+            'message' => $warning,
+            'main_fqdn' => (string) (($main['metadata']['fqdn'] ?? '') ?: $this->settings->buildWordpressPublicUrl($site->slug)),
+            'filebrowser_fqdn' => $fbFqdn,
         ];
     }
 
