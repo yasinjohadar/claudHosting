@@ -5,9 +5,11 @@ namespace App\Http\Controllers\Admin\Coolify;
 use App\Http\Controllers\Admin\Coolify\Concerns\HandlesCoolifyResponses;
 use App\Http\Controllers\Controller;
 use App\Services\Coolify\CoolifyCatalogService;
+use App\Services\Coolify\GenericResourceInstallerService;
 use App\Services\CoolifyApiService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\View\View;
 
 class CoolifyCatalogController extends Controller
@@ -16,7 +18,8 @@ class CoolifyCatalogController extends Controller
 
     public function __construct(
         protected CoolifyCatalogService $catalog,
-        protected CoolifyApiService $coolify
+        protected CoolifyApiService $coolify,
+        protected GenericResourceInstallerService $installer
     ) {
         $this->middleware('auth');
     }
@@ -29,10 +32,26 @@ class CoolifyCatalogController extends Controller
 
         $category = $request->get('category');
         $search = trim((string) $request->get('q', ''));
-        $items = $this->catalog->getCatalog(true, $category ?: null, $search !== '' ? $search : null);
+        $allItems = $this->catalog->getCatalog(true, $category ?: null, $search !== '' ? $search : null);
+        $perPage = max(12, min(96, (int) config('coolify_catalog.per_page', 48)));
+        $page = max(1, (int) $request->get('page', 1));
+        $total = count($allItems);
+        $slice = array_slice($allItems, ($page - 1) * $perPage, $perPage);
+
+        $items = new LengthAwarePaginator(
+            $slice,
+            $total,
+            $perPage,
+            $page,
+            [
+                'path' => $request->url(),
+                'query' => $request->query(),
+            ]
+        );
 
         return view('admin.coolify.catalog.index', [
             'items' => $items,
+            'totalCount' => $total,
             'categories' => $this->catalog->categories(),
             'category' => $category,
             'search' => $search,
@@ -50,7 +69,7 @@ class CoolifyCatalogController extends Controller
 
         $msg = $result['message'];
         if (($result['discovered'] ?? 0) > 0) {
-            $msg .= ' ('.$result['discovered'].' نوع جديد أُضيف معطّلاً — راجع إعدادات الكتالوج)';
+            $msg .= ' ('.$result['discovered'].' نوع جديد)';
         }
 
         return back()->with('success', $msg);
@@ -77,15 +96,6 @@ class CoolifyCatalogController extends Controller
         $item = $this->catalog->findBySlug($slug);
         if (! $item) {
             return $this->coolifyRedirectError('المورد غير موجود.', 'admin.coolify.catalog.index');
-        }
-
-        if (($item['category'] ?? '') === 'application') {
-            return redirect()->route('admin.coolify.applications.create', array_filter([
-                'type' => $item['coolify_key'] ?? 'public',
-                'project_uuid' => $request->get('project_uuid'),
-                'server_uuid' => $request->get('server_uuid'),
-                'environment_name' => $request->get('environment_name', 'production'),
-            ]));
         }
 
         if (($item['install_mode'] ?? '') === 'link' && ! empty($item['custom_install_url'])) {
@@ -126,27 +136,18 @@ class CoolifyCatalogController extends Controller
             'environment_name' => 'required|string',
             'name' => 'required|string|max:255',
             'description' => 'nullable|string',
+            'extra_payload' => 'nullable|string',
         ]);
 
-        $category = $item['category'] ?? '';
-        $coolifyKey = $item['coolify_key'] ?? '';
-
-        if ($category === 'database') {
-            $type = $coolifyKey;
-            $payload = $validated;
-            unset($payload['type']);
-            $response = $this->coolify->createDatabase($type, $payload);
-            $resourceType = 'database';
-            $successRoute = 'admin.coolify.databases.show';
-        } elseif ($category === 'service' || ($category === 'custom' && ($item['install_mode'] ?? '') === 'service')) {
-            $payload = array_merge($validated, ['type' => $coolifyKey]);
-            $response = $this->coolify->createService($payload);
-            $resourceType = 'service';
-            $successRoute = 'admin.coolify.services.show';
-        } else {
-            return redirect()->route('admin.coolify.catalog.show', $slug)
-                ->with('error', 'نوع المورد غير مدعوم للتثبيت المباشر.');
+        try {
+            $result = $this->installer->install($item, $validated);
+        } catch (\Throwable $e) {
+            return back()->withInput()->with('error', $e->getMessage());
         }
+
+        $response = $result['response'];
+        $resourceType = $result['resource_type'];
+        $successRoute = $result['success_route'];
 
         $this->coolify->clearDashboardCache();
 

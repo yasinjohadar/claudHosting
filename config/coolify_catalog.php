@@ -4,6 +4,15 @@
  * كتالوج موارد Coolify الافتراضي — يُدمج مع جدول coolify_catalog_items (DB يغلّب نفس slug).
  */
 return [
+    /** مصدر قوالب one-click الرسمية من مشروع Coolify (للمزامنة عند غياب GET /services/types). */
+    'service_templates_url' => env(
+        'COOLIFY_SERVICE_TEMPLATES_URL',
+        'https://raw.githubusercontent.com/coollabsio/coolify/main/templates/service-templates.json'
+    ),
+
+    /** عدد بطاقات الكتالوج في كل صفحة */
+    'per_page' => (int) env('COOLIFY_CATALOG_PER_PAGE', 48),
+
     'categories' => [
         'database' => 'قواعد البيانات',
         'service' => 'خدمات جاهزة',

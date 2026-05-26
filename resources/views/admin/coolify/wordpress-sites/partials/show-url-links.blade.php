@@ -7,6 +7,8 @@
     $customPending = $cfEnabled && (empty($cf) || empty($cf['proxied'] ?? null) || !empty($site->metadata['domain_warning']));
     $canOpenCustom = $customUrl && $site->status === 'running' && ! $customPending;
     $canOpenCoolify = $coolifyDefaultUrl && $site->status === 'running';
+    $filebrowserUrl = $site->metadata['filebrowser_url'] ?? null;
+    $canOpenFilebrowser = $filebrowserUrl && $site->status === 'running';
 @endphp
 <div class="d-flex flex-wrap gap-2 mt-2 align-items-center">
     @if($customUrl)
@@ -29,6 +31,17 @@
     @elseif($site->service_uuid)
     <span class="site-url-chip text-muted small" id="siteCoolifyUrlMissing">
         <i class="fe fe-server"></i> رابط Coolify: <span class="text-muted">جاري الجلب… حدّث الصفحة</span>
+    </span>
+    @endif
+    @if($filebrowserUrl)
+    <span class="site-url-chip site-url-chip--filebrowser" title="FileBrowser — إدارة ملفات الموقع">
+        <i class="fe fe-folder text-info"></i>
+        <span class="small text-muted">الملفات:</span>
+        @if($canOpenFilebrowser)
+        <a href="{{ $filebrowserUrl }}" target="_blank" rel="noopener" dir="ltr" class="text-decoration-none">{{ $filebrowserUrl }}</a>
+        @else
+        <span dir="ltr" class="text-muted">{{ $filebrowserUrl }}</span>
+        @endif
     </span>
     @endif
 </div>

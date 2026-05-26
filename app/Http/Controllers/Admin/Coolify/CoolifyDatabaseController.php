@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin\Coolify;
 use App\Http\Controllers\Admin\Coolify\Concerns\HandlesCoolifyResponses;
 use App\Http\Controllers\Controller;
 use App\Services\Coolify\CoolifyBackupService;
+use App\Services\Coolify\CoolifyDatabaseRedeployService;
 use App\Services\CoolifyApiService;
 use Illuminate\Http\Request;
 
@@ -14,9 +15,9 @@ class CoolifyDatabaseController extends Controller
 
     public function __construct(
         protected CoolifyApiService $coolify,
-        protected CoolifyBackupService $backupService
-    )
-    {
+        protected CoolifyBackupService $backupService,
+        protected CoolifyDatabaseRedeployService $redeployService
+    ) {
         $this->middleware('auth');
     }
 
@@ -88,8 +89,20 @@ class CoolifyDatabaseController extends Controller
         }
 
         $backupRows = $this->backupService->listConfigsForDatabase($uuid);
+        $catalogInstallUrl = $this->redeployService->catalogInstallUrl($database);
+        $accessLinks = $this->coolify->collectResourceAccessLinks($database, 'database');
+        $primaryUrl = $this->coolify->primaryResourceAccessLink($accessLinks, (string) ($database['name'] ?? null));
+        $coolifyPanelUrl = $this->coolify->coolifyPanelBaseUrl() ?: null;
 
-        return view('admin.coolify.databases.show', compact('database', 'uuid', 'backupRows'));
+        return view('admin.coolify.databases.show', compact(
+            'database',
+            'uuid',
+            'backupRows',
+            'catalogInstallUrl',
+            'accessLinks',
+            'primaryUrl',
+            'coolifyPanelUrl'
+        ));
     }
 
     public function edit(string $uuid)
@@ -151,6 +164,58 @@ class CoolifyDatabaseController extends Controller
     public function restart(string $uuid)
     {
         return $this->lifecycle($uuid, 'restart');
+    }
+
+    public function redeploy(string $uuid)
+    {
+        $result = $this->redeployService->redeploy($uuid);
+
+        if (! ($result['success'] ?? false)) {
+            return $this->coolifyRedirectError($result['message'] ?? 'فشل إعادة النشر', 'admin.coolify.databases.show', ['uuid' => $uuid]);
+        }
+
+        $this->coolify->clearDashboardCache();
+        $this->logCoolify('redeploy', 'database', $uuid);
+
+        return $this->coolifyRedirectSuccess($result['message'] ?? 'تمت إعادة النشر', 'admin.coolify.databases.show', ['uuid' => $uuid]);
+    }
+
+    public function reinstall(Request $request, string $uuid)
+    {
+        $response = $this->coolify->getDatabase($uuid);
+        $database = $this->coolifyItem($response);
+
+        if (! $database) {
+            return $this->coolifyRedirectError($response['message'] ?? 'غير موجود', 'admin.coolify.databases.index');
+        }
+
+        $validated = $request->validate([
+            'confirm_name' => 'required|string',
+        ]);
+
+        $expected = trim((string) ($database['name'] ?? ''));
+        if ($expected === '' || $validated['confirm_name'] !== $expected) {
+            return back()->with('error', 'اكتب اسم قاعدة البيانات بالضبط للتأكيد: '.$expected);
+        }
+
+        $result = $this->redeployService->reinstall($database);
+
+        if (! ($result['success'] ?? false)) {
+            return $this->coolifyRedirectError($result['message'] ?? 'فشل إعادة التثبيت', 'admin.coolify.databases.show', ['uuid' => $uuid]);
+        }
+
+        $this->logCoolify('reinstall', 'database', $uuid, $expected);
+
+        $newUuid = $result['uuid'] ?? null;
+        if ($newUuid) {
+            return $this->coolifyRedirectSuccess(
+                'تم حذف المورد القديم وإنشاء نسخة جديدة. قد تستغرق الدقائق الأولى حتى تصبح running.',
+                'admin.coolify.databases.show',
+                ['uuid' => $newUuid]
+            );
+        }
+
+        return $this->coolifyRedirectSuccess($result['message'] ?? 'تمت إعادة التثبيت', 'admin.coolify.databases.index');
     }
 
     protected function lifecycle(string $uuid, string $action)

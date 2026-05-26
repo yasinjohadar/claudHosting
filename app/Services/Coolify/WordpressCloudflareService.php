@@ -122,8 +122,15 @@ class WordpressCloudflareService
             ],
         ];
 
+        $mergedMeta = array_merge($site->metadata ?? [], $metadata);
+
+        $fbWarning = $this->applyFilebrowserDns($site, $origin, $proxied, $isIp, $zoneId, $log);
+        if ($fbWarning !== null) {
+            $mergedMeta['filebrowser_dns_warning'] = $fbWarning;
+        }
+
         $site->update([
-            'metadata' => array_merge($site->metadata ?? [], $metadata),
+            'metadata' => $mergedMeta,
         ]);
 
         $this->log($log, 'cloudflare_done', 'اكتمل ربط Cloudflare ('.$preset.')');
@@ -132,6 +139,80 @@ class WordpressCloudflareService
             'ok' => true,
             'metadata' => $metadata['cloudflare'],
         ];
+    }
+
+    /**
+     * @param  callable(string, string): void|null  $log
+     */
+    protected function applyFilebrowserDns(
+        CoolifyWordpressSite $site,
+        string $origin,
+        bool $proxied,
+        bool $isIp,
+        string $zoneId,
+        ?callable $log = null
+    ): ?string {
+        if (! $this->settings->getWordpressFilebrowserEnabled()) {
+            return null;
+        }
+
+        $meta = $site->metadata ?? [];
+        if (! ($meta['filebrowser_enabled'] ?? false)) {
+            return null;
+        }
+
+        $recordName = $this->settings->buildWordpressFilebrowserDnsName($site->slug);
+        $baseDomain = $this->settings->getWordpressBaseDomain();
+        $fqdn = $recordName.'.'.$baseDomain;
+
+        $this->log($log, 'cloudflare_filebrowser_dns', 'إعداد DNS لـ FileBrowser: '.$fqdn.' → '.$origin);
+
+        $existing = $this->cloudflare->findDnsRecordByName(
+            $zoneId,
+            $recordName,
+            $isIp ? 'A' : 'CNAME'
+        );
+        if ($existing === null) {
+            $existing = $this->cloudflare->findDnsRecordByName($zoneId, $fqdn, $isIp ? 'A' : 'CNAME');
+        }
+
+        $recordPayload = [
+            'type' => $isIp ? 'A' : 'CNAME',
+            'name' => $recordName,
+            'content' => $origin,
+            'proxied' => $proxied,
+            'ttl' => 1,
+        ];
+
+        if ($existing !== null) {
+            $recordId = (string) ($existing['id'] ?? '');
+            $response = $this->cloudflare->updateDnsRecord($zoneId, $recordId, $recordPayload);
+        } else {
+            $response = $this->cloudflare->createDnsRecord($zoneId, $recordPayload);
+        }
+
+        if (! ($response['success'] ?? false)) {
+            return $response['message'] ?? 'فشل إنشاء/تحديث سجل DNS لـ FileBrowser';
+        }
+
+        $recordData = $response['data']['result'] ?? $response['data'] ?? [];
+        $recordId = is_array($recordData) ? (string) ($recordData['id'] ?? $existing['id'] ?? '') : '';
+
+        $site->refresh();
+        $site->update([
+            'metadata' => array_merge($site->metadata ?? [], [
+                'cloudflare_filebrowser' => [
+                    'zone_id' => $zoneId,
+                    'dns_record_id' => $recordId,
+                    'record_name' => $recordName,
+                    'fqdn' => $fqdn,
+                    'proxied' => $proxied,
+                    'origin' => $origin,
+                ],
+            ]),
+        ]);
+
+        return null;
     }
 
     /**

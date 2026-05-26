@@ -4,16 +4,17 @@ namespace App\Http\Controllers\Admin\Coolify;
 
 use App\Http\Controllers\Admin\Coolify\Concerns\HandlesCoolifyResponses;
 use App\Http\Controllers\Controller;
+use App\Models\AppStorageConfig;
 use App\Models\ClientCoolifyProject;
 use App\Models\CoolifyActivityLog;
 use App\Models\CoolifyCatalogItem;
 use App\Models\CoolifySnapshotSchedule;
 use App\Models\CoolifyWordpressSite;
-use App\Models\AppStorageConfig;
+use App\Services\CloudflareApiService;
+use App\Services\Coolify\CoolifyCatalogService;
 use App\Services\Coolify\CoolifySettingsService;
 use App\Services\Coolify\CoolifySnapshotStorageService;
 use App\Services\Coolify\CoolifySshExecutor;
-use App\Services\CloudflareApiService;
 use App\Services\CoolifyApiService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -28,7 +29,8 @@ class CoolifySettingsController extends Controller
         protected CloudflareApiService $cloudflare,
         protected CoolifySettingsService $settings,
         protected CoolifySshExecutor $ssh,
-        protected CoolifySnapshotStorageService $snapshotStorage
+        protected CoolifySnapshotStorageService $snapshotStorage,
+        protected CoolifyCatalogService $catalog
     ) {
         $this->middleware('auth');
     }
@@ -112,6 +114,8 @@ class CoolifySettingsController extends Controller
             'wordpress_security_preset' => 'nullable|string|in:basic,performance,strict',
             'wordpress_cloudflare_enabled' => 'nullable|boolean',
             'wordpress_docker_tag' => 'nullable|string|max:128',
+            'wordpress_filebrowser_enabled' => 'nullable|boolean',
+            'wordpress_filebrowser_subdomain_prefix' => 'nullable|string|max:32|regex:/^[a-z0-9-]+$/',
             'wordpress_management_queue' => 'nullable|string|max:64|regex:/^[a-zA-Z0-9_\-]+$/',
             'wordpress_redis_enabled' => 'nullable|boolean',
             'wordpress_redis_host' => 'nullable|string|max:255',
@@ -170,6 +174,8 @@ class CoolifySettingsController extends Controller
             'wordpress_security_preset' => $validated['wordpress_security_preset'] ?? null,
             'wordpress_cloudflare_enabled' => $request->boolean('wordpress_cloudflare_enabled', true),
             'wordpress_docker_tag' => $validated['wordpress_docker_tag'] ?? null,
+            'wordpress_filebrowser_enabled' => $request->boolean('wordpress_filebrowser_enabled', true),
+            'wordpress_filebrowser_subdomain_prefix' => $validated['wordpress_filebrowser_subdomain_prefix'] ?? null,
             'wordpress_management_queue' => $validated['wordpress_management_queue'] ?? null,
             'wordpress_redis_enabled' => $request->boolean('wordpress_redis_enabled', false),
             'wordpress_redis_host' => $validated['wordpress_redis_host'] ?? null,
@@ -246,9 +252,12 @@ class CoolifySettingsController extends Controller
             // migration may not be run
         }
 
+        $catalogEnabledCount = count($this->catalog->getCatalog(true));
+
         $localStats = [
             'wordpress_sites' => $this->safeModelCount(CoolifyWordpressSite::class),
             'catalog_items' => $this->safeModelCount(CoolifyCatalogItem::class),
+            'catalog_enabled' => $catalogEnabledCount,
             'client_projects' => $this->safeModelCount(ClientCoolifyProject::class),
             'snapshot_schedules' => $this->safeModelCount(CoolifySnapshotSchedule::class),
             'snapshot_schedules_enabled' => $this->safeQuery(fn () => CoolifySnapshotSchedule::where('enabled', true)->count()),
@@ -265,11 +274,11 @@ class CoolifySettingsController extends Controller
         ];
 
         $panelWidgets = [
+            ['label' => 'كتالوج الموارد', 'count' => $catalogEnabledCount, 'route' => 'admin.coolify.catalog.index', 'icon' => 'fe-package', 'accent' => 'info', 'desc' => 'تثبيت ديناميكي من Coolify'],
             ['label' => 'مركز النسخ', 'count' => null, 'route' => 'admin.coolify.backups.index', 'icon' => 'fe-hard-drive', 'accent' => 'warning', 'desc' => 'قواعد + لقطات'],
             ['label' => 'جداول اللقطات', 'count' => $localStats['snapshot_schedules'], 'route' => 'admin.coolify.backups.schedules.index', 'icon' => 'fe-calendar', 'accent' => 'info', 'desc' => ($localStats['snapshot_schedules_enabled'] ?? 0).' جدول مفعّل'],
             ['label' => 'مركز العمليات', 'count' => null, 'route' => 'admin.coolify.operations.index', 'icon' => 'fe-activity', 'accent' => 'danger', 'desc' => 'تنبيهات وفحص'],
             ['label' => 'مواقع WordPress', 'count' => $localStats['wordpress_sites'], 'route' => 'admin.coolify.wordpress-sites.index', 'icon' => 'fab fa-wordpress', 'accent' => 'primary', 'desc' => 'توفير وإدارة'],
-            ['label' => 'كتالوج التطبيقات', 'count' => $localStats['catalog_items'], 'route' => 'admin.coolify.catalog.index', 'icon' => 'fe-package', 'accent' => 'info', 'desc' => 'قوالب جاهزة'],
             ['label' => 'مشاريع العملاء', 'count' => $localStats['client_projects'], 'route' => 'admin.coolify.teams.index', 'icon' => 'fe-users', 'accent' => 'success', 'desc' => 'ربط بالعملاء'],
             ['label' => 'كل الموارد', 'count' => null, 'route' => 'admin.coolify.resources.index', 'icon' => 'fe-list', 'accent' => 'secondary', 'desc' => 'عرض موحّد'],
             ['label' => 'جاهزية الاستضافة', 'count' => null, 'route' => 'admin.coolify.readiness.index', 'icon' => 'fe-check-circle', 'accent' => 'success', 'desc' => 'فحص المتطلبات'],
@@ -286,7 +295,7 @@ class CoolifySettingsController extends Controller
 
         $quickActions = [
             ['label' => 'معالج لقطة', 'route' => 'admin.coolify.backups.projects.wizard', 'icon' => 'fe-camera', 'class' => 'btn-outline-info'],
-            ['label' => 'إضافة مورد', 'route' => 'admin.coolify.catalog.index', 'icon' => 'fe-plus-circle', 'class' => 'btn-primary'],
+            ['label' => 'كتالوج الموارد', 'route' => 'admin.coolify.catalog.index', 'icon' => 'fe-package', 'class' => 'btn-primary'],
             ['label' => 'مركز العمليات', 'route' => 'admin.coolify.operations.index', 'icon' => 'fe-activity', 'class' => 'btn-outline-warning'],
             ['label' => 'جداول اللقطات', 'route' => 'admin.coolify.backups.schedules.index', 'icon' => 'fe-calendar', 'class' => 'btn-outline-secondary'],
             ['label' => 'Hetzner', 'route' => 'admin.coolify.hetzner.index', 'icon' => 'fe-cloud', 'class' => 'btn-outline-primary'],

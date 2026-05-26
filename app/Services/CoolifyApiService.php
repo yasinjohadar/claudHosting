@@ -726,9 +726,6 @@ class CoolifyApiService
         return null;
     }
 
-    /**
-     * @param  mixed  $payload
-     */
     protected function extractS3UuidFromPayload(mixed $payload): string
     {
         if (! is_array($payload)) {
@@ -829,6 +826,7 @@ class CoolifyApiService
             }
             if ($this->isUnusableSshHost($host)) {
                 $rejected[] = $host;
+
                 continue;
             }
             $seen[$host] = true;
@@ -954,19 +952,73 @@ class CoolifyApiService
      */
     public function describeServerConnection(string $serverUuid): array
     {
+        $endpoint = $this->resolveServerSshEndpoint($serverUuid);
         $response = $this->getServer($serverUuid);
-        if (! ($response['success'] ?? false)) {
-            return ['ip' => '', 'port' => 22, 'name' => '', 'raw_ip' => ''];
-        }
-
-        $server = is_array($response['data'] ?? null) ? $response['data'] : [];
+        $server = ($response['success'] ?? false) && is_array($response['data'] ?? null)
+            ? $response['data']
+            : [];
 
         return [
-            'ip' => trim((string) ($server['ip'] ?? '')),
-            'port' => (int) ($server['port'] ?? 22),
+            'ip' => $endpoint['host'] ?? '',
+            'port' => (int) ($endpoint['port'] ?? 22),
             'name' => trim((string) ($server['name'] ?? '')),
-            'raw_ip' => trim((string) ($server['ip'] ?? '')),
+            'raw_ip' => trim((string) ($server['ip'] ?? ($endpoint['host'] ?? ''))),
         ];
+    }
+
+    /**
+     * @return array{success: bool, host: string, port: int, message?: string, source?: string}
+     */
+    public function resolveServerSshEndpoint(string $serverUuid): array
+    {
+        $hostResult = $this->resolveServerSshHost($serverUuid);
+        if (! ($hostResult['success'] ?? false)) {
+            return [
+                'success' => false,
+                'host' => '',
+                'port' => $this->settings->getSshPort(),
+                'message' => $hostResult['message'] ?? 'لم يُعثر على عنوان SSH للسيرفر.',
+            ];
+        }
+
+        $port = $this->settings->getSshPort();
+        $response = $this->getServer($serverUuid);
+        if ($response['success'] ?? false) {
+            $server = is_array($response['data'] ?? null) ? $response['data'] : [];
+            foreach (['port', 'ssh_port'] as $key) {
+                $raw = (int) ($server[$key] ?? 0);
+                if ($raw > 0 && $raw <= 65535) {
+                    $port = $raw;
+                    break;
+                }
+            }
+        }
+
+        return [
+            'success' => true,
+            'host' => (string) ($hostResult['host'] ?? ''),
+            'port' => $port,
+            'source' => (string) ($hostResult['source'] ?? ''),
+        ];
+    }
+
+    /**
+     * @param  array<string, mixed>  $database
+     */
+    public static function displayDatabaseType(array $database): string
+    {
+        $types = self::databaseTypes();
+
+        foreach (['database_type', 'type', 'engine', 'resource_type', 'internal_db_type'] as $key) {
+            $value = strtolower(trim((string) ($database[$key] ?? '')));
+            if ($value === '' || $value === 'database') {
+                continue;
+            }
+
+            return $types[$value] ?? ucfirst(str_replace(['-', '_'], ' ', $value));
+        }
+
+        return '—';
     }
 
     public function requiresSshHostFallback(): bool
@@ -1199,6 +1251,28 @@ class CoolifyApiService
         return $this->request('GET', "databases/{$uuid}/restart");
     }
 
+    /**
+     * @return array<string, mixed>
+     */
+    public function redeployDatabase(string $uuid): array
+    {
+        $patch = $this->request('PATCH', "databases/{$uuid}", ['instant_deploy' => true]);
+        if ($patch['success'] ?? false) {
+            $restart = $this->restartDatabase($uuid);
+            $message = is_string($patch['data']['message'] ?? null)
+                ? $patch['data']['message']
+                : (is_string($patch['message'] ?? null) ? $patch['message'] : 'تم طلب إعادة النشر');
+
+            return [
+                'success' => true,
+                'message' => $message.($restart['success'] ?? false ? ' وإعادة التشغيل.' : ''),
+                'data' => $patch['data'] ?? null,
+            ];
+        }
+
+        return $patch;
+    }
+
     /** @return array<string, string> */
     public static function databaseTypes(): array
     {
@@ -1228,7 +1302,178 @@ class CoolifyApiService
 
     public function getServiceTypes(): array
     {
-        return $this->request('GET', 'services/types');
+        $legacy = $this->request('GET', 'services/types');
+        if (($legacy['success'] ?? false) && ($legacy['status'] ?? 0) !== 404) {
+            return $legacy;
+        }
+
+        $cached = Cache::get('coolify_service_types_remote');
+        if (is_array($cached) && $cached !== []) {
+            return [
+                'success' => true,
+                'data' => $cached,
+                'source' => 'cache',
+            ];
+        }
+
+        $keys = $this->fetchRemoteServiceTypeKeys();
+        if ($keys === []) {
+            $keys = $this->collectServiceTypesFromExistingServices();
+        }
+
+        if ($keys === []) {
+            return [
+                'success' => false,
+                'message' => 'تعذّر جلب أنواع الخدمات من Coolify. تحقق من الاتصال بالإنترنت أو أعد المحاولة لاحقاً.',
+                'status' => 404,
+            ];
+        }
+
+        Cache::put('coolify_service_types_remote', $keys, now()->addHours(24));
+
+        return [
+            'success' => true,
+            'data' => $keys,
+            'source' => 'templates',
+        ];
+    }
+
+    /**
+     * Lightweight metadata per service template (no compose payloads).
+     *
+     * @return array<string, array{slogan: string, documentation: string, tags: array<int, string>, category: string, logo: string}>
+     */
+    public function fetchRemoteServiceTemplatesMeta(): array
+    {
+        $decoded = $this->fetchRemoteServiceTemplatesRaw();
+        if ($decoded === []) {
+            return [];
+        }
+
+        $meta = [];
+        foreach ($decoded as $key => $row) {
+            if (! is_string($key) || $key === '' || ! is_array($row)) {
+                continue;
+            }
+            $normalized = strtolower(trim($key));
+            $meta[$normalized] = [
+                'slogan' => (string) ($row['slogan'] ?? ''),
+                'documentation' => (string) ($row['documentation'] ?? ''),
+                'tags' => array_values(array_filter(array_map(
+                    static fn ($tag) => is_string($tag) ? $tag : '',
+                    $row['tags'] ?? []
+                ))),
+                'category' => (string) ($row['category'] ?? ''),
+                'logo' => (string) ($row['logo'] ?? ''),
+            ];
+        }
+
+        return $meta;
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    public function fetchRemoteServiceTemplatesRaw(): array
+    {
+        return $this->loadRemoteServiceTemplatesRaw();
+    }
+
+    public function getServiceTemplateComposeYaml(string $key): ?string
+    {
+        $key = strtolower(trim($key));
+        if ($key === '') {
+            return null;
+        }
+
+        $templates = $this->loadRemoteServiceTemplatesRaw();
+        $entry = $templates[$key] ?? null;
+        if (! is_array($entry)) {
+            return null;
+        }
+
+        $encoded = (string) ($entry['compose'] ?? '');
+        if ($encoded === '') {
+            return null;
+        }
+
+        $decoded = base64_decode($encoded, true);
+
+        return is_string($decoded) && $decoded !== '' ? $decoded : null;
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    protected function loadRemoteServiceTemplatesRaw(): array
+    {
+        $url = (string) config(
+            'coolify_catalog.service_templates_url',
+            'https://raw.githubusercontent.com/coollabsio/coolify/main/templates/service-templates.json'
+        );
+
+        if ($url === '') {
+            return [];
+        }
+
+        try {
+            $response = Http::timeout(min($this->timeout, 45))->get($url);
+            if (! $response->successful()) {
+                return [];
+            }
+
+            $decoded = $response->json();
+
+            return is_array($decoded) ? $decoded : [];
+        } catch (\Throwable $e) {
+            Log::warning('Coolify service templates fetch failed', ['message' => $e->getMessage()]);
+
+            return [];
+        }
+    }
+
+    /**
+     * @return array<int, string>
+     */
+    protected function fetchRemoteServiceTypeKeys(): array
+    {
+        $decoded = $this->loadRemoteServiceTemplatesRaw();
+        if ($decoded === []) {
+            return [];
+        }
+
+        return array_values(array_unique(array_filter(array_map(
+            static fn (string $key): string => strtolower(trim($key)),
+            array_keys($decoded)
+        ), static fn (string $key): bool => $key !== '')));
+    }
+
+    /**
+     * @return array<int, string>
+     */
+    protected function collectServiceTypesFromExistingServices(): array
+    {
+        if (! $this->isConfigured()) {
+            return [];
+        }
+
+        $response = $this->listServices();
+        if (! ($response['success'] ?? false)) {
+            return [];
+        }
+
+        $keys = [];
+        foreach ($this->normalizeList($response['data'] ?? []) as $service) {
+            if (! is_array($service)) {
+                continue;
+            }
+            $type = strtolower(trim((string) ($service['service_type'] ?? $service['type'] ?? '')));
+            if ($type !== '') {
+                $keys[] = $type;
+            }
+        }
+
+        return array_values(array_unique($keys));
     }
 
     public function createService(array $data): array
@@ -1341,31 +1586,91 @@ class CoolifyApiService
      */
     public function buildServiceUrlsForService(array $service, string $publicUrl): array
     {
-        $url = $this->normalizeServiceUrl($publicUrl);
-        if ($url === '') {
-            return [];
-        }
+        return $this->buildServiceUrlsForServiceWithFilebrowser($service, $publicUrl, null);
+    }
 
-        $names = [];
+    /**
+     * @return array<int, array{name: string, url: string}>
+     */
+    public function buildServiceUrlsForServiceWithFilebrowser(
+        array $service,
+        string $wordpressPublicUrl,
+        ?string $filebrowserPublicUrl = null
+    ): array {
+        $wpUrl = $this->normalizeServiceUrl($wordpressPublicUrl);
+        $fbUrl = $filebrowserPublicUrl !== null && $filebrowserPublicUrl !== ''
+            ? $this->normalizeServiceUrl($filebrowserPublicUrl)
+            : '';
+
+        $urls = [];
+        $seen = [];
+
         foreach ($this->normalizeList($service['applications'] ?? []) as $app) {
             if (! is_array($app)) {
                 continue;
             }
             $name = trim((string) ($app['name'] ?? ''));
+            if ($name === '' || isset($seen[$name])) {
+                continue;
+            }
+            $seen[$name] = true;
+
+            $isFilebrowser = str_contains(strtolower($name), 'filebrowser');
+            $url = $isFilebrowser ? $fbUrl : $wpUrl;
+            if ($url === '') {
+                continue;
+            }
+
+            $urls[] = ['name' => $name, 'url' => $url];
+        }
+
+        if ($urls !== []) {
+            return $urls;
+        }
+
+        if ($wpUrl !== '') {
+            $urls[] = ['name' => 'wordpress', 'url' => $wpUrl];
+        }
+        if ($fbUrl !== '') {
+            $urls[] = ['name' => 'filebrowser', 'url' => $fbUrl];
+        }
+
+        return $urls;
+    }
+
+    /**
+     * @param  array<string, mixed>  $service
+     */
+    public function extractFilebrowserPublicUrl(array $service): ?string
+    {
+        foreach ($this->normalizeList($service['applications'] ?? []) as $app) {
+            if (! is_array($app)) {
+                continue;
+            }
+            $name = strtolower((string) ($app['name'] ?? ''));
+            if (! str_contains($name, 'filebrowser')) {
+                continue;
+            }
+
             $fqdn = trim((string) ($app['fqdn'] ?? ''));
-            if ($name !== '' && $fqdn !== '') {
-                $names[] = $name;
+            if ($fqdn !== '') {
+                return $this->normalizePublicUrl($fqdn);
+            }
+
+            foreach ($this->normalizeList($app['urls'] ?? []) as $entry) {
+                if (is_string($entry) && trim($entry) !== '') {
+                    return $this->normalizePublicUrl($entry);
+                }
+                if (is_array($entry)) {
+                    $raw = $entry['url'] ?? $entry['fqdn'] ?? null;
+                    if (is_string($raw) && trim($raw) !== '') {
+                        return $this->normalizePublicUrl($raw);
+                    }
+                }
             }
         }
 
-        if ($names === []) {
-            $names = ['wordpress'];
-        }
-
-        return array_map(
-            static fn (string $name): array => ['name' => $name, 'url' => $url],
-            array_values(array_unique($names))
-        );
+        return null;
     }
 
     protected function normalizeServiceUrl(string $publicUrl): string
@@ -1464,6 +1769,166 @@ class CoolifyApiService
         }
 
         return $ordered;
+    }
+
+    /**
+     * @param  array<string, mixed>  $resource
+     * @return array<int, array{label: string, url: string, kind: string}>
+     */
+    public function collectResourceAccessLinks(array $resource, string $type = 'service'): array
+    {
+        $links = [];
+        $seen = [];
+
+        $add = function (string $label, ?string $raw, string $kind) use (&$links, &$seen): void {
+            if ($raw === null || trim($raw) === '') {
+                return;
+            }
+            $url = $this->normalizePublicUrl($raw);
+            if ($url === '' || isset($seen[$url])) {
+                return;
+            }
+            $seen[$url] = true;
+            $links[] = [
+                'label' => $label !== '' ? $label : 'رابط',
+                'url' => $url,
+                'kind' => $kind,
+            ];
+        };
+
+        if ($type === 'service') {
+            foreach ($this->normalizeList($resource['applications'] ?? []) as $app) {
+                if (! is_array($app)) {
+                    continue;
+                }
+                $appLabel = trim((string) ($app['name'] ?? 'تطبيق'));
+                $add($appLabel, is_string($app['fqdn'] ?? null) ? $app['fqdn'] : null, 'app');
+                foreach ($this->normalizeList($app['urls'] ?? []) as $entry) {
+                    if (is_string($entry)) {
+                        $add($appLabel, $entry, 'app');
+                    } elseif (is_array($entry)) {
+                        $entryLabel = trim((string) ($entry['name'] ?? $appLabel));
+                        $add($entryLabel, $entry['url'] ?? $entry['fqdn'] ?? $entry['name'] ?? null, 'app');
+                    }
+                }
+            }
+
+            $serviceName = trim((string) ($resource['name'] ?? 'الخدمة'));
+            foreach ($this->collectServicePublicUrls($resource) as $url) {
+                $add($serviceName, $url, 'service');
+            }
+        } elseif ($type === 'application') {
+            $appName = trim((string) ($resource['name'] ?? 'تطبيق'));
+            $fqdn = $resource['fqdn'] ?? null;
+            if (is_array($fqdn)) {
+                foreach ($fqdn as $entry) {
+                    if (is_string($entry)) {
+                        $add($appName, $entry, 'app');
+                    }
+                }
+            } elseif (is_string($fqdn)) {
+                $add($appName, $fqdn, 'app');
+            }
+
+            foreach (['domain', 'public_url'] as $key) {
+                $value = $resource[$key] ?? null;
+                if (is_string($value)) {
+                    $add($appName, $value, 'app');
+                }
+            }
+
+            foreach ($this->normalizeList($resource['domains'] ?? []) as $domain) {
+                if (is_string($domain)) {
+                    $add($appName, $domain, 'app');
+                } elseif (is_array($domain)) {
+                    $add(
+                        trim((string) ($domain['name'] ?? $appName)),
+                        $domain['url'] ?? $domain['fqdn'] ?? $domain['name'] ?? null,
+                        'app'
+                    );
+                }
+            }
+
+            foreach ($this->normalizeList($resource['urls'] ?? []) as $entry) {
+                if (is_string($entry)) {
+                    $add($appName, $entry, 'app');
+                } elseif (is_array($entry)) {
+                    $add(
+                        trim((string) ($entry['name'] ?? $appName)),
+                        $entry['url'] ?? $entry['name'] ?? null,
+                        'app'
+                    );
+                }
+            }
+        } elseif ($type === 'database') {
+            $dbName = trim((string) ($resource['name'] ?? 'قاعدة بيانات'));
+            foreach (['fqdn', 'public_url', 'domain'] as $key) {
+                $value = $resource[$key] ?? null;
+                if (is_string($value) && $value !== '') {
+                    $add($dbName, $value, 'database');
+                }
+            }
+
+            foreach ($this->normalizeList($resource['domains'] ?? []) as $domain) {
+                if (is_string($domain)) {
+                    $add($dbName, $domain, 'database');
+                } elseif (is_array($domain)) {
+                    $add(
+                        trim((string) ($domain['name'] ?? $dbName)),
+                        $domain['url'] ?? $domain['fqdn'] ?? null,
+                        'database'
+                    );
+                }
+            }
+
+            if (filter_var($resource['is_public'] ?? false, FILTER_VALIDATE_BOOLEAN)) {
+                $port = (int) ($resource['public_port'] ?? 0);
+                if ($port > 0) {
+                    $serverUuid = $this->extractResourceServerUuid($resource);
+                    if ($serverUuid !== '') {
+                        $endpoint = $this->resolveServerSshEndpoint($serverUuid);
+                        $host = ($endpoint['success'] ?? false) ? trim((string) ($endpoint['host'] ?? '')) : '';
+                        if ($host !== '' && filter_var($host, FILTER_VALIDATE_IP)) {
+                            $add($dbName.' (منفذ '.$port.')', 'http://'.$host.':'.$port, 'port');
+                        }
+                    }
+                }
+            }
+        }
+
+        return $links;
+    }
+
+    /**
+     * @param  array<int, array{label: string, url: string, kind: string}>  $links
+     */
+    public function primaryResourceAccessLink(array $links, ?string $preferredName = null): ?string
+    {
+        if ($links === []) {
+            return null;
+        }
+
+        if ($preferredName !== null && trim($preferredName) !== '') {
+            $needle = strtolower(trim($preferredName));
+            foreach ($links as $link) {
+                $label = strtolower((string) ($link['label'] ?? ''));
+                if ($label === $needle || str_contains($label, $needle)) {
+                    return $link['url'];
+                }
+            }
+        }
+
+        return $links[0]['url'];
+    }
+
+    public function coolifyPanelBaseUrl(): string
+    {
+        $url = rtrim((string) ($this->settings->getConnectionConfig()['api_url'] ?? ''), '/');
+        if ($url === '') {
+            return '';
+        }
+
+        return (string) preg_replace('#/api/v1/?$#i', '', preg_replace('#/api/?$#i', '', $url));
     }
 
     public function extractCoolifyDefaultPublicUrl(array $service): ?string

@@ -31,6 +31,14 @@
 
         @include('admin.coolify.partials.alerts')
 
+        @include('admin.coolify.partials.resource-access-links', [
+            'accessLinks' => $accessLinks ?? [],
+            'primaryUrl' => $primaryUrl ?? null,
+            'resourceName' => $service['name'] ?? 'الخدمة',
+            'resourceStatus' => $service['status'] ?? '',
+            'coolifyPanelUrl' => $coolifyPanelUrl ?? null,
+        ])
+
         <div class="card custom-card mb-3">
             <div class="card-body row g-3">
                 <div class="col-md-3">

@@ -36,8 +36,8 @@
     <div class="container-fluid">
         <div class="d-md-flex justify-content-between align-items-center flex-wrap gap-2 my-4">
             <div>
-                <h4 class="mb-0">إضافة مورد جديد</h4>
-                <p class="text-muted mb-0 small">اختر قاعدة بيانات، خدمة one-click، أو نوع تطبيق — مع تفاصيل وخطوات التثبيت</p>
+                <h4 class="mb-0">كتالوج الموارد</h4>
+                <p class="text-muted mb-0 small">اختر قاعدة بيانات، خدمة one-click، أو تطبيق — ثم ثبّت عبر معالج موحّد. نفّذ «مزامنة من Coolify» لتحديث الأنواع المتاحة.</p>
             </div>
             <div class="d-flex flex-wrap gap-2">
                 <form method="POST" action="{{ route('admin.coolify.catalog.sync') }}" class="d-inline">@csrf
@@ -72,9 +72,13 @@
             </div>
         </div>
 
-        @if(count($items) === 0)
-        <div class="alert alert-info">لا توجد موارد مفعّلة. <a href="{{ route('admin.coolify.catalog-settings.index') }}">فعّل موارد من الإعدادات</a> أو نفّذ مزامنة Coolify.</div>
+        @if($totalCount === 0)
+        <div class="alert alert-info">لا توجد موارد مطابقة. نفّذ <strong>مزامنة من Coolify</strong> أو غيّر البحث/التصنيف.</div>
         @else
+        <p class="text-muted small mb-3">
+            عرض {{ $items->firstItem() }}–{{ $items->lastItem() }} من {{ $totalCount }} مورد
+            @if($search !== '')<span class="text-primary">(بحث: {{ $search }})</span>@endif
+        </p>
         <div class="catalog-grid">
             @foreach($items as $item)
             <a href="{{ route('admin.coolify.catalog.show', $item['slug']) }}" class="catalog-card">
@@ -99,6 +103,11 @@
             </a>
             @endforeach
         </div>
+        @if($items->hasPages())
+        <div class="d-flex justify-content-center mt-4">
+            {{ $items->withQueryString()->links() }}
+        </div>
+        @endif
         @endif
     </div>
 </div>

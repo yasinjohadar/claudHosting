@@ -63,7 +63,7 @@
                     ['url' => route('admin.coolify.github-apps.index'), 'accent' => 'secondary', 'icon' => 'fab fa-github', 'title' => 'GitHub Apps', 'meta' => 'Git', 'desc' => 'ربط المستودعات'],
                     ['url' => route('admin.coolify.cloud-tokens.index'), 'accent' => 'info', 'icon' => 'fe fe-key', 'title' => 'Cloud Tokens', 'meta' => 'API keys', 'desc' => 'Hetzner وغيرها'],
                     ['url' => route('admin.coolify.wordpress-sites.index'), 'accent' => 'purple', 'icon' => 'fab fa-wordpress', 'title' => 'WordPress', 'meta' => ($coolifyLocal['wordpress_sites'] ?? 0).' موقع', 'desc' => 'توفير وإدارة'],
-                    ['url' => route('admin.coolify.catalog.index'), 'accent' => 'success', 'icon' => 'fe fe-package', 'title' => 'كتالوج التطبيقات', 'meta' => 'one-click', 'desc' => 'تثبيت قوالب جاهزة'],
+                    ['url' => route('admin.coolify.catalog.index'), 'accent' => 'success', 'icon' => 'fe fe-package', 'title' => 'كتالوج الموارد', 'meta' => 'one-click', 'desc' => 'تثبيت من Coolify'],
                     ['url' => route('admin.coolify.teams.index'), 'accent' => 'teal', 'icon' => 'fe fe-users', 'title' => 'فرق العمل', 'meta' => 'عملاء', 'desc' => 'ربط فريق Coolify'],
                     ['url' => route('admin.coolify.settings.index'), 'accent' => 'warning', 'icon' => 'fe fe-settings', 'title' => 'إعدادات Coolify', 'meta' => 'API · SSH', 'desc' => 'اتصال وتخزين S3'],
                 ],

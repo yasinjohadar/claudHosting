@@ -114,8 +114,20 @@ class CoolifyApplicationController extends Controller
         $envs = $this->coolifyList($this->coolify->listApplicationEnvs($uuid));
         $deployments = $this->coolifyList($this->coolify->listDeploymentsByApplication($uuid));
         $storages = $this->coolifyList($this->coolify->listApplicationStorages($uuid));
+        $accessLinks = $this->coolify->collectResourceAccessLinks($application, 'application');
+        $primaryUrl = $this->coolify->primaryResourceAccessLink($accessLinks, (string) ($application['name'] ?? null));
+        $coolifyPanelUrl = $this->coolify->coolifyPanelBaseUrl() ?: null;
 
-        return view('admin.coolify.applications.show', compact('application', 'uuid', 'envs', 'deployments', 'storages'));
+        return view('admin.coolify.applications.show', compact(
+            'application',
+            'uuid',
+            'envs',
+            'deployments',
+            'storages',
+            'accessLinks',
+            'primaryUrl',
+            'coolifyPanelUrl'
+        ));
     }
 
     public function edit(string $uuid)

@@ -206,14 +206,14 @@
                             <ul class="slide-menu child1">
                                 <li class="slide__category">Coolify</li>
                                 <li class="slide"><a href="{{ route('admin.coolify.overview') }}" class="side-menu__item {{ request()->routeIs('admin.coolify.overview') ? 'active' : '' }}">لوحة Coolify</a></li>
+                                <li class="slide"><a href="{{ route('admin.coolify.catalog.index') }}" class="side-menu__item {{ request()->routeIs('admin.coolify.catalog.*') && !request()->routeIs('admin.coolify.catalog-settings.*') ? 'active' : '' }}">كتالوج الموارد</a></li>
                                 <li class="slide"><a href="{{ route('admin.coolify.operations.index') }}" class="side-menu__item {{ request()->routeIs('admin.coolify.operations.*') ? 'active' : '' }}">مركز العمليات</a></li>
                                 <li class="slide"><a href="{{ route('admin.coolify.readiness.index') }}" class="side-menu__item {{ request()->routeIs('admin.coolify.readiness.*') ? 'active' : '' }}">جاهزية الاستضافة</a></li>
                                 <li class="slide"><a href="{{ route('admin.coolify.resources.index') }}" class="side-menu__item {{ request()->routeIs('admin.coolify.resources.*') ? 'active' : '' }}">كل الموارد</a></li>
                                 <li class="slide"><a href="{{ route('admin.coolify.system.index') }}" class="side-menu__item {{ request()->routeIs('admin.coolify.system.*') ? 'active' : '' }}">نظام Coolify</a></li>
-                                <li class="slide__category">WordPress والكتالوج</li>
+                                <li class="slide__category">WordPress</li>
                                 <li class="slide"><a href="{{ route('admin.coolify.wordpress-sites.index') }}" class="side-menu__item {{ request()->routeIs('admin.coolify.wordpress-sites.*') ? 'active' : '' }}">مواقع WordPress</a></li>
-                                <li class="slide"><a href="{{ route('admin.coolify.catalog.index') }}" class="side-menu__item {{ request()->routeIs('admin.coolify.catalog.*') && !request()->routeIs('admin.coolify.catalog-settings.*') ? 'active' : '' }}">إضافة مورد</a></li>
-                                <li class="slide"><a href="{{ route('admin.coolify.catalog-settings.index') }}" class="side-menu__item {{ request()->routeIs('admin.coolify.catalog-settings.*') ? 'active' : '' }}">إعدادات الكتالوج</a></li>
+                                <li class="slide"><a href="{{ route('admin.coolify.catalog-settings.index') }}" class="side-menu__item {{ request()->routeIs('admin.coolify.catalog-settings.*') ? 'active' : '' }}">إعدادات كتالوج الموارد</a></li>
                                 <li class="slide__category">السيرفرات والمشاريع</li>
                                 <li class="slide"><a href="{{ route('admin.coolify.servers.index') }}" class="side-menu__item {{ request()->routeIs('admin.coolify.servers.index') ? 'active' : '' }}">السيرفرات</a></li>
                                 <li class="slide"><a href="{{ route('admin.coolify.servers.create') }}" class="side-menu__item {{ request()->routeIs('admin.coolify.servers.create') ? 'active' : '' }}">إضافة سيرفر</a></li>

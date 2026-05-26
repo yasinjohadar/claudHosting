@@ -67,17 +67,21 @@ class CoolifyMetricsService
         }
 
         return Cache::remember($cacheKey, $this->cacheTtl(), function () use ($serverUuid) {
-            $host = $this->resolveServerHost($serverUuid);
-            if ($host === '') {
-                return $this->failure('لا يوجد عنوان IP للسيرفر');
+            $endpoint = $this->coolify->resolveServerSshEndpoint($serverUuid);
+            if (! ($endpoint['success'] ?? false)) {
+                return $this->failure(
+                    $endpoint['message'] ?? 'لا يوجد عنوان SSH للسيرفر. اضبط IP السيرفر في إعدادات Coolify → SSH.'
+                );
             }
 
-            $hostMetrics = $this->collectHostMetrics($host);
+            $host = (string) ($endpoint['host'] ?? '');
+            $port = (int) ($endpoint['port'] ?? 22);
+            $hostMetrics = $this->collectHostMetrics($host, $port);
             if (! ($hostMetrics['success'] ?? false)) {
                 return $hostMetrics;
             }
 
-            $containers = $this->collectContainerMetrics($host);
+            $containers = $this->collectContainerMetrics($host, $port);
 
             return [
                 'success' => true,
@@ -213,26 +217,10 @@ class CoolifyMetricsService
         return is_array($data) ? $data : null;
     }
 
-    protected function resolveServerHost(string $serverUuid): string
-    {
-        if ($serverUuid !== '') {
-            $res = $this->coolify->getServer($serverUuid);
-            if ($res['success'] ?? false) {
-                $server = is_array($res['data'] ?? null) ? $res['data'] : [];
-                $ip = trim((string) ($server['ip'] ?? $server['host'] ?? ''));
-                if ($ip !== '') {
-                    return $ip;
-                }
-            }
-        }
-
-        return trim($this->settings->getSshHostFallback());
-    }
-
     /**
      * @return array<string, mixed>
      */
-    protected function collectHostMetrics(string $host): array
+    protected function collectHostMetrics(string $host, int $port = 22): array
     {
         $script = <<<'SH'
 free -b 2>/dev/null | awk '/^Mem:/ {t=$2; u=$3; print "MEM_TOTAL=" t; print "MEM_USED=" u}'
@@ -324,10 +312,10 @@ SH;
     /**
      * @return array{containers: array<int, array<string, mixed>>}
      */
-    protected function collectContainerMetrics(string $host): array
+    protected function collectContainerMetrics(string $host, int $port = 22): array
     {
         $cmd = 'docker stats --no-stream --format "{{json .}}" 2>/dev/null';
-        $result = $this->ssh->run($host, $cmd, 60);
+        $result = $this->ssh->run($host, $cmd, 60, $port);
         if (! ($result['success'] ?? false)) {
             return ['containers' => []];
         }

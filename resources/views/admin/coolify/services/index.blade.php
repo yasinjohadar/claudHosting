@@ -11,7 +11,7 @@
         @if(!empty($error))<div class="alert alert-danger">{{ $error }}</div>@endif
         <div class="card custom-card">
             <table class="table table-hover mb-0">
-                <thead><tr><th>الاسم</th><th>النوع</th><th>UUID</th><th>إجراءات</th></tr></thead>
+                <thead><tr><th>الاسم</th><th>النوع</th><th>رابط</th><th>UUID</th><th>إجراءات</th></tr></thead>
                 <tbody>
                 @forelse($services as $s)
                     @php $uuid = $s['uuid'] ?? ''; @endphp
@@ -29,7 +29,7 @@
                         </td>
                     </tr>
                 @empty
-                    <tr><td colspan="4" class="text-center text-muted py-4">لا توجد خدمات</td></tr>
+                    <tr><td colspan="5" class="text-center text-muted py-4">لا توجد خدمات</td></tr>
                 @endforelse
                 </tbody>
             </table>

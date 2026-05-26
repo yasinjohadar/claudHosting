@@ -36,9 +36,6 @@
                 </div>
                 <div class="d-flex flex-wrap gap-2">
                     @foreach($quickActions ?? [] as $action)
-                        @if(($action['route'] ?? '') === 'admin.coolify.catalog.index' && !($configured ?? false))
-                            @continue
-                        @endif
                         <a href="{{ route($action['route']) }}" class="btn btn-sm {{ $action['class'] ?? 'btn-outline-primary' }}">
                             <i class="{{ $action['icon'] ?? 'fe fe-link' }}"></i> {{ $action['label'] }}
                         </a>
@@ -53,6 +50,41 @@
         </div>
 
         @include('admin.coolify.partials.alerts')
+
+        <div class="card custom-card border-0 shadow-sm mb-4 overflow-hidden">
+            <div class="card-body p-4">
+                <div class="d-md-flex align-items-center justify-content-between gap-3">
+                    <div class="d-flex align-items-start gap-3">
+                        <div class="avatar avatar-lg bg-info-transparent text-info rounded flex-shrink-0">
+                            <i class="fe fe-package fs-24"></i>
+                        </div>
+                        <div>
+                            <h5 class="mb-1 fw-bold">كتالوج الموارد</h5>
+                            <p class="text-muted small mb-2 mb-md-0">
+                                تثبيت أي مورد متاح في Coolify (خدمات one-click، قواعد بيانات، تطبيقات) من معالج موحّد.
+                            </p>
+                            <div class="d-flex flex-wrap gap-2">
+                                <span class="badge bg-primary-transparent text-primary">{{ $localStats['catalog_enabled'] ?? 0 }} مورد مفعّل</span>
+                                <span class="badge bg-secondary-transparent text-secondary">{{ $localStats['catalog_items'] ?? 0 }} إجمالي في النظام</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="d-flex flex-wrap gap-2 flex-shrink-0">
+                        <a href="{{ route('admin.coolify.catalog.index') }}" class="btn btn-primary">
+                            <i class="fe fe-package me-1"></i> فتح الكتالوج
+                        </a>
+                        <a href="{{ route('admin.coolify.catalog-settings.index') }}" class="btn btn-outline-secondary btn-sm">
+                            <i class="fe fe-settings"></i> الإعدادات
+                        </a>
+                        @if($configured ?? false)
+                        <form method="POST" action="{{ route('admin.coolify.catalog.sync') }}" class="d-inline">@csrf
+                            <button type="submit" class="btn btn-outline-info btn-sm"><i class="fe fe-refresh-cw"></i> مزامنة</button>
+                        </form>
+                        @endif
+                    </div>
+                </div>
+            </div>
+        </div>
 
         @if($apiListEmpty ?? false)
             <div class="alert alert-info border-0 shadow-sm mb-4">

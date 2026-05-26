@@ -85,6 +85,8 @@ class CoolifySettingsService
             'wordpress_security_preset' => $this->getWordpressSecurityPreset(),
             'wordpress_cloudflare_enabled' => $this->getWordpressCloudflareEnabled(),
             'wordpress_docker_tag' => $this->getWordpressDockerTag(),
+            'wordpress_filebrowser_enabled' => $this->getWordpressFilebrowserEnabled(),
+            'wordpress_filebrowser_subdomain_prefix' => $this->getWordpressFilebrowserSubdomainPrefix(),
             'wordpress_management_queue' => $this->getWordpressManagementQueue(),
             'wordpress_redis_enabled' => $this->getWordpressRedisEnabled(),
             'wordpress_redis_host' => $this->getWordpressRedisHost(),
@@ -341,6 +343,44 @@ class CoolifySettingsService
         ));
 
         return $tag !== '' ? $tag : 'latest';
+    }
+
+    public function getWordpressFilebrowserEnabled(): bool
+    {
+        return filter_var(
+            $this->getSettingValue(
+                'wordpress_filebrowser_enabled',
+                config('coolify.defaults.wordpress_filebrowser_enabled', '1')
+            ),
+            FILTER_VALIDATE_BOOLEAN
+        );
+    }
+
+    public function getWordpressFilebrowserSubdomainPrefix(): string
+    {
+        $prefix = strtolower(trim((string) $this->getSettingValue(
+            'wordpress_filebrowser_subdomain_prefix',
+            config('coolify.defaults.wordpress_filebrowser_subdomain_prefix', 'files')
+        )));
+        $prefix = preg_replace('/[^a-z0-9-]/', '', $prefix ?? '') ?? '';
+
+        return $prefix !== '' ? $prefix : 'files';
+    }
+
+    public function buildWordpressFilebrowserPublicUrl(string $slug): string
+    {
+        $base = $this->getWordpressBaseDomain();
+        $slug = strtolower(trim($slug));
+        $prefix = $this->getWordpressFilebrowserSubdomainPrefix();
+
+        return 'https://'.$prefix.'.'.$slug.'.'.$base;
+    }
+
+    public function buildWordpressFilebrowserDnsName(string $slug): string
+    {
+        $slug = strtolower(trim($slug));
+
+        return $this->getWordpressFilebrowserSubdomainPrefix().'.'.$slug;
     }
 
     public function getWordpressRedisEnabled(): bool
@@ -733,6 +773,26 @@ class CoolifySettingsService
 
         if (array_key_exists('wordpress_docker_tag', $data)) {
             SystemSetting::set($keys['wordpress_docker_tag'], trim((string) $data['wordpress_docker_tag']), 'string', self::GROUP);
+        }
+
+        if (array_key_exists('wordpress_filebrowser_enabled', $data)) {
+            SystemSetting::set(
+                $keys['wordpress_filebrowser_enabled'],
+                filter_var($data['wordpress_filebrowser_enabled'] ?? true, FILTER_VALIDATE_BOOLEAN) ? '1' : '0',
+                'string',
+                self::GROUP
+            );
+        }
+
+        if (array_key_exists('wordpress_filebrowser_subdomain_prefix', $data)) {
+            $prefix = strtolower(trim((string) $data['wordpress_filebrowser_subdomain_prefix']));
+            $prefix = preg_replace('/[^a-z0-9-]/', '', $prefix ?? '') ?? '';
+            SystemSetting::set(
+                $keys['wordpress_filebrowser_subdomain_prefix'],
+                $prefix !== '' ? $prefix : 'files',
+                'string',
+                self::GROUP
+            );
         }
 
         if (array_key_exists('wordpress_management_queue', $data)) {

@@ -23,6 +23,15 @@
             </div>
         </div>
         @include('admin.coolify.partials.alerts')
+
+        @include('admin.coolify.partials.resource-access-links', [
+            'accessLinks' => $accessLinks ?? [],
+            'primaryUrl' => $primaryUrl ?? null,
+            'resourceName' => $application['name'] ?? 'التطبيق',
+            'resourceStatus' => $application['status'] ?? '',
+            'coolifyPanelUrl' => $coolifyPanelUrl ?? null,
+        ])
+
         @include('admin.coolify.partials.metrics-widget', [
             'metricsScope' => 'resource',
             'metricsType' => 'application',

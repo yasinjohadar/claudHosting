@@ -13,17 +13,17 @@ class CoolifySshExecutor
     /**
      * @return array{success: bool, output: string, exit_code: int}
      */
-    public function run(string $host, string $command, ?int $timeout = 600): array
+    public function run(string $host, string $command, ?int $timeout = 600, ?int $port = null): array
     {
-        return $this->runWithKeyFile($host, $command, $timeout, null);
+        return $this->runWithKeyFile($host, $command, $timeout, null, $port);
     }
 
     /**
      * @return array{success: bool, output: string, exit_code: int, command?: string}
      */
-    protected function runWithKeyFile(string $host, string $command, int $timeout, ?string $keyPath): array
+    protected function runWithKeyFile(string $host, string $command, int $timeout, ?string $keyPath, ?int $port = null): array
     {
-        $process = $this->buildSshProcess($host, $command, $keyPath);
+        $process = $this->buildSshProcess($host, $command, $keyPath, $port);
 
         if ($process === null) {
             return [
@@ -354,6 +354,24 @@ class CoolifySshExecutor
             .'(3) المنفذ '.$port.' مفتوح، (4) PHP يرى OpenSSH (راجع التفاصيل بعد الحفظ).';
     }
 
+    protected function normalizeSshPort(int $port): int
+    {
+        if ($port <= 0 || $port > 65535) {
+            return 22;
+        }
+
+        return $port;
+    }
+
+    protected function isInvalidSshHost(string $host): bool
+    {
+        $host = strtolower(trim($host));
+
+        return $host === ''
+            || $host === 'unknown'
+            || str_contains($host, ' ');
+    }
+
     protected function sshBinary(): string
     {
         if (PHP_OS_FAMILY === 'Windows') {
@@ -372,16 +390,13 @@ class CoolifySshExecutor
         return 'ssh';
     }
 
-    /**
-     * @return Process|null
-     */
-    protected function buildSshProcess(string $host, string $remoteCommand, ?string $overrideKeyPath = null): ?Process
+    protected function buildSshProcess(string $host, string $remoteCommand, ?string $overrideKeyPath = null, ?int $portOverride = null): ?Process
     {
         $config = $this->settings->getSshConfig();
         $user = $config['ssh_user'] ?: 'root';
         $host = trim($host);
 
-        if ($host === '') {
+        if ($host === '' || $this->isInvalidSshHost($host)) {
             return null;
         }
 
@@ -391,7 +406,7 @@ class CoolifySshExecutor
         }
 
         $runKey = $this->materializeKeyForSsh($keyPath) ?? $keyPath;
-        $port = $this->settings->getSshPort();
+        $port = $this->normalizeSshPort($portOverride ?? $this->settings->getSshPort());
 
         return new Process([
             $this->sshBinary(),
@@ -579,7 +594,7 @@ class CoolifySshExecutor
             return '';
         }
 
-        $lines = ["-----BEGIN OPENSSH PRIVATE KEY-----"];
+        $lines = ['-----BEGIN OPENSSH PRIVATE KEY-----'];
         for ($i = 0; $i < strlen($b64); $i += 70) {
             $lines[] = substr($b64, $i, 70);
         }

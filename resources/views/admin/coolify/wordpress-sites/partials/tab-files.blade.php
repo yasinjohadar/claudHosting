@@ -1,5 +1,7 @@
 @php
     $filesReady = $wpManagementState['execute_ready'] ?? false;
+    $filebrowserUrl = $site->metadata['filebrowser_url'] ?? null;
+    $canOpenFilebrowser = $filebrowserUrl && ($site->status ?? '') === 'running';
 @endphp
 <div class="tab-pane fade" id="siteTabFiles" role="tabpanel">
     <div class="site-files-panel">
@@ -8,9 +10,26 @@
             <strong>غير متاح:</strong> {{ $wpManagementState['message'] ?? 'اضبط SSH أولاً' }}
         </div>
         @else
-        <div class="alert alert-light border small mb-3 py-2">
-            الملفات تُدار عبر <strong>SSH → docker exec / docker cp</strong> داخل حاوية WordPress. المسموح داخل جذر الموقع فقط.
+        <div class="alert alert-light border small mb-3 py-2 d-flex flex-wrap align-items-center justify-content-between gap-2">
+            <span>
+                الملفات تُدار عبر <strong>SSH → docker exec / docker cp</strong> داخل حاوية WordPress. المسموح داخل جذر الموقع فقط.
+                @if($filebrowserUrl)
+                يمكنك أيضاً استخدام <strong>FileBrowser</strong> على نفس ملفات الموقع.
+                @endif
+            </span>
+            @if($filebrowserUrl)
+            <a href="{{ $canOpenFilebrowser ? $filebrowserUrl : '#' }}"
+                class="btn btn-outline-info btn-sm {{ $canOpenFilebrowser ? '' : 'disabled' }}"
+                @if($canOpenFilebrowser) target="_blank" rel="noopener" @endif>
+                <i class="fe fe-external-link"></i> فتح FileBrowser
+            </a>
+            @endif
         </div>
+        @if($filebrowserUrl && $canOpenFilebrowser)
+        <div class="alert alert-info py-2 small mb-3">
+            عند أول فتح لـ FileBrowser عيّن كلمة مرور قوية من واجهة التطبيق.
+        </div>
+        @endif
         <div id="siteFilesAlert" class="alert py-2 small d-none mb-2"></div>
         <div class="d-flex flex-wrap gap-2 mb-3 align-items-center">
             <nav id="siteFilesBreadcrumb" class="small flex-grow-1" aria-label="breadcrumb"></nav>

@@ -26,7 +26,12 @@ class CoolifyServiceController extends Controller
         }
 
         $response = $this->coolify->listServices();
-        $services = $this->coolifyList($response);
+        $services = array_map(function (array $row): array {
+            $links = $this->coolify->collectResourceAccessLinks($row, 'service');
+            $row['_primary_url'] = $this->coolify->primaryResourceAccessLink($links, (string) ($row['name'] ?? null));
+
+            return $row;
+        }, $this->coolifyList($response));
         $error = $response['success'] ? null : ($response['message'] ?? 'فشل جلب الخدمات');
 
         return view('admin.coolify.services.index', compact('services', 'error'));
@@ -89,8 +94,20 @@ class CoolifyServiceController extends Controller
         $envs = $this->coolifyList($this->coolify->listServiceEnvs($uuid));
         $serverUuid = $this->coolify->extractResourceServerUuid($service);
         $serverResolved = $serverUuid !== '' ? $this->coolify->resolveResourceServer($service) : null;
+        $accessLinks = $this->coolify->collectResourceAccessLinks($service, 'service');
+        $primaryUrl = $this->coolify->primaryResourceAccessLink($accessLinks, (string) ($service['name'] ?? null));
+        $coolifyPanelUrl = $this->coolify->coolifyPanelBaseUrl() ?: null;
 
-        return view('admin.coolify.services.show', compact('service', 'uuid', 'envs', 'serverUuid', 'serverResolved'));
+        return view('admin.coolify.services.show', compact(
+            'service',
+            'uuid',
+            'envs',
+            'serverUuid',
+            'serverResolved',
+            'accessLinks',
+            'primaryUrl',
+            'coolifyPanelUrl'
+        ));
     }
 
     public function edit(string $uuid)

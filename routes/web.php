@@ -1,71 +1,69 @@
 <?php
 
-use Illuminate\Support\Facades\Route;
-use App\Http\Controllers\Admin\DashboardController;
-use App\Http\Controllers\Admin\CustomerController;
-use App\Http\Controllers\Admin\ProductController;
-use App\Http\Controllers\Admin\PackageOrderRequestController;
-use App\Http\Controllers\Admin\InvoiceController;
-use App\Http\Controllers\Admin\TicketController;
-use App\Http\Controllers\ReportController;
-use App\Http\Controllers\Admin\Whm\WhmSettingsController;
-use App\Http\Controllers\Admin\Whm\WhmAccountController;
-use App\Http\Controllers\Admin\Whm\WhmServerStatusController;
-use App\Http\Controllers\Admin\UserController;
-use App\Http\Controllers\Admin\RoleController;
-use App\Http\Controllers\Auth\LoginController;
-use App\Http\Controllers\Auth\RegisterController;
-use App\Http\Controllers\Admin\BlogPostController;
-use App\Http\Controllers\Admin\BlogCategoryController;
-use App\Http\Controllers\Admin\BlogTagController;
-use App\Http\Controllers\Admin\AppStorageController;
+use App\Http\Controllers\Admin\AIBlogPostController;
+use App\Http\Controllers\Admin\AIContentController;
+use App\Http\Controllers\Admin\AIModelController;
+use App\Http\Controllers\Admin\AISettingsController;
 use App\Http\Controllers\Admin\AppStorageAnalyticsController;
+use App\Http\Controllers\Admin\AppStorageController;
 use App\Http\Controllers\Admin\BackupController;
 use App\Http\Controllers\Admin\BackupScheduleController;
-use App\Http\Controllers\Admin\BackupStorageController;
 use App\Http\Controllers\Admin\BackupStorageAnalyticsController;
-use App\Http\Controllers\Admin\StorageDiskMappingController;
-use App\Http\Controllers\Admin\WhatsAppSettingsController;
-use App\Http\Controllers\Admin\WhatsAppMessageController;
-use App\Http\Controllers\Admin\WhatsAppWebController;
-use App\Http\Controllers\Admin\WhatsAppWebSettingsController;
-use App\Http\Controllers\Admin\Coolify\CoolifyMetricsController;
-use App\Http\Controllers\Admin\Coolify\CoolifyOperationsController;
-use App\Http\Controllers\Admin\Coolify\CoolifySettingsController;
-use App\Http\Controllers\Admin\Coolify\CoolifyServerController;
-use App\Http\Controllers\Admin\Coolify\CoolifyProjectController;
-use App\Http\Controllers\Admin\Coolify\CoolifyApplicationController;
-use App\Http\Controllers\Admin\Coolify\CoolifyDatabaseController;
-use App\Http\Controllers\Admin\Coolify\CoolifyServiceController;
-use App\Http\Controllers\Admin\Coolify\CoolifyDeploymentController;
-use App\Http\Controllers\Admin\Coolify\CoolifyPrivateKeyController;
-use App\Http\Controllers\Admin\Coolify\CoolifySystemController;
-use App\Http\Controllers\Admin\Coolify\CoolifyResourceController;
-use App\Http\Controllers\Admin\Coolify\CoolifyTeamController;
-use App\Http\Controllers\Admin\Coolify\CoolifyGithubAppController;
-use App\Http\Controllers\Admin\Coolify\CoolifyCloudTokenController;
-use App\Http\Controllers\Admin\Coolify\CoolifyCatalogController;
-use App\Http\Controllers\Admin\Coolify\CoolifyCatalogSettingsController;
-use App\Http\Controllers\Admin\Coolify\CoolifyBackupController;
-use App\Http\Controllers\Admin\Coolify\CoolifyProjectSnapshotController;
-use App\Http\Controllers\Admin\Coolify\CoolifySnapshotScheduleController;
-use App\Http\Controllers\Admin\Coolify\CoolifyWordpressSiteController;
-use App\Http\Controllers\Admin\Coolify\CoolifyWordpressSiteFilesController;
+use App\Http\Controllers\Admin\BackupStorageController;
+use App\Http\Controllers\Admin\BlogCategoryController;
+use App\Http\Controllers\Admin\BlogPostController;
+use App\Http\Controllers\Admin\BlogTagController;
+use App\Http\Controllers\Admin\Cloudflare\CloudflareRegistrarController;
 use App\Http\Controllers\Admin\Cloudflare\CloudflareSettingsController;
 use App\Http\Controllers\Admin\Cloudflare\CloudflareZoneController;
-use App\Http\Controllers\Admin\Cloudflare\CloudflareRegistrarController;
-use App\Http\Controllers\Admin\Namecom\NamecomSettingsController;
-use App\Http\Controllers\Admin\Namecom\NamecomDomainController;
-use App\Http\Controllers\Admin\Domain\DomainHubController;
-use App\Http\Controllers\Admin\Domain\DomainSettingsController;
-use App\Http\Controllers\Admin\Domain\DomainSearchController;
+use App\Http\Controllers\Admin\Coolify\CoolifyApplicationController;
+use App\Http\Controllers\Admin\Coolify\CoolifyBackupController;
+use App\Http\Controllers\Admin\Coolify\CoolifyCatalogController;
+use App\Http\Controllers\Admin\Coolify\CoolifyCatalogSettingsController;
+use App\Http\Controllers\Admin\Coolify\CoolifyCloudTokenController;
+use App\Http\Controllers\Admin\Coolify\CoolifyDatabaseController;
+use App\Http\Controllers\Admin\Coolify\CoolifyDeploymentController;
+use App\Http\Controllers\Admin\Coolify\CoolifyGithubAppController;
 use App\Http\Controllers\Admin\Coolify\CoolifyHetznerController;
-use App\Http\Controllers\Admin\AIBlogPostController;
-use App\Http\Controllers\Admin\AIModelController;
-use App\Http\Controllers\Admin\AIContentController;
-use App\Http\Controllers\Admin\AISettingsController;
+use App\Http\Controllers\Admin\Coolify\CoolifyMetricsController;
+use App\Http\Controllers\Admin\Coolify\CoolifyOperationsController;
+use App\Http\Controllers\Admin\Coolify\CoolifyPrivateKeyController;
+use App\Http\Controllers\Admin\Coolify\CoolifyProjectController;
+use App\Http\Controllers\Admin\Coolify\CoolifyProjectSnapshotController;
+use App\Http\Controllers\Admin\Coolify\CoolifyResourceController;
+use App\Http\Controllers\Admin\Coolify\CoolifyServerController;
+use App\Http\Controllers\Admin\Coolify\CoolifyServiceController;
+use App\Http\Controllers\Admin\Coolify\CoolifySettingsController;
+use App\Http\Controllers\Admin\Coolify\CoolifySnapshotScheduleController;
+use App\Http\Controllers\Admin\Coolify\CoolifySystemController;
+use App\Http\Controllers\Admin\Coolify\CoolifyTeamController;
+use App\Http\Controllers\Admin\Coolify\CoolifyWordpressSiteController;
+use App\Http\Controllers\Admin\Coolify\CoolifyWordpressSiteFilesController;
+use App\Http\Controllers\Admin\CustomerController;
+use App\Http\Controllers\Admin\DashboardController;
+use App\Http\Controllers\Admin\Domain\DomainHubController;
+use App\Http\Controllers\Admin\Domain\DomainSearchController;
+use App\Http\Controllers\Admin\Domain\DomainSettingsController;
+use App\Http\Controllers\Admin\InvoiceController;
+use App\Http\Controllers\Admin\Namecom\NamecomDomainController;
+use App\Http\Controllers\Admin\Namecom\NamecomSettingsController;
+use App\Http\Controllers\Admin\PackageOrderRequestController;
+use App\Http\Controllers\Admin\ProductController;
+use App\Http\Controllers\Admin\RoleController;
 use App\Http\Controllers\Admin\SettingController;
+use App\Http\Controllers\Admin\StorageDiskMappingController;
 use App\Http\Controllers\Admin\SystemDatabaseController;
+use App\Http\Controllers\Admin\TicketController;
+use App\Http\Controllers\Admin\UserController;
+use App\Http\Controllers\Admin\WhatsAppMessageController;
+use App\Http\Controllers\Admin\WhatsAppSettingsController;
+use App\Http\Controllers\Admin\WhatsAppWebController;
+use App\Http\Controllers\Admin\WhatsAppWebSettingsController;
+use App\Http\Controllers\Admin\Whm\WhmAccountController;
+use App\Http\Controllers\Admin\Whm\WhmServerStatusController;
+use App\Http\Controllers\Admin\Whm\WhmSettingsController;
+use App\Http\Controllers\ReportController;
+use Illuminate\Support\Facades\Route;
 
 /*
 |--------------------------------------------------------------------------
@@ -91,6 +89,7 @@ Route::get('/', function () {
         ->orderBy('name')
         ->take(6)
         ->get();
+
     return view('frontend.pages.index', compact('latestBlogPosts', 'featuredPackages'));
 })->name('home');
 
@@ -479,6 +478,8 @@ Route::middleware(['auth', 'admin.panel'])->group(function () {
                 Route::post('/{uuid}/start', [CoolifyDatabaseController::class, 'start'])->name('start');
                 Route::post('/{uuid}/stop', [CoolifyDatabaseController::class, 'stop'])->name('stop');
                 Route::post('/{uuid}/restart', [CoolifyDatabaseController::class, 'restart'])->name('restart');
+                Route::post('/{uuid}/redeploy', [CoolifyDatabaseController::class, 'redeploy'])->name('redeploy');
+                Route::post('/{uuid}/reinstall', [CoolifyDatabaseController::class, 'reinstall'])->name('reinstall');
                 Route::post('/{uuid}/backups', [CoolifyDatabaseController::class, 'storeBackup'])->name('backups.store');
             });
 
@@ -651,7 +652,7 @@ Route::middleware(['auth', 'admin.panel'])->group(function () {
 
         // ========== AI ==========
         Route::prefix('ai')->name('ai.')->group(function () {
-            Route::resource('models', AIModelController::class)->names(['index'=>'models.index','create'=>'models.create','store'=>'models.store','show'=>'models.show','edit'=>'models.edit','update'=>'models.update','destroy'=>'models.destroy']);
+            Route::resource('models', AIModelController::class)->names(['index' => 'models.index', 'create' => 'models.create', 'store' => 'models.store', 'show' => 'models.show', 'edit' => 'models.edit', 'update' => 'models.update', 'destroy' => 'models.destroy']);
             Route::post('models/{model}/test', [AIModelController::class, 'test'])->name('models.test');
             Route::post('models/test-temp', [AIModelController::class, 'testTemp'])->name('models.test-temp');
             Route::post('models/{model}/set-default', [AIModelController::class, 'setDefault'])->name('models.set-default');

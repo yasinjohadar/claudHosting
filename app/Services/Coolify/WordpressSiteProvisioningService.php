@@ -21,7 +21,8 @@ class WordpressSiteProvisioningService
     public function __construct(
         protected CoolifyApiService $coolify,
         protected CoolifySettingsService $settings,
-        protected WordpressCloudflareService $wordpressCloudflare
+        protected WordpressCloudflareService $wordpressCloudflare,
+        protected WordpressComposeFilebrowserMerger $filebrowserMerger
     ) {}
 
     public function provision(CoolifyWordpressSite $site): void
@@ -62,8 +63,12 @@ class WordpressSiteProvisioningService
 
             $this->waitUntilRunning($site, $serviceUuid);
 
+            $filebrowserUrl = $this->settings->getWordpressFilebrowserEnabled()
+                ? $this->settings->buildWordpressFilebrowserPublicUrl($site->slug)
+                : null;
+
             $this->appendProvisionLog($site, 'apply_domain', 'تعيين النطاق: '.$publicUrl);
-            $domainWarning = $this->applyUrlsToService($serviceUuid, $publicUrl);
+            $domainWarning = $this->applyUrlsToService($serviceUuid, $publicUrl, $filebrowserUrl);
 
             $service = $this->fetchService($serviceUuid);
 
@@ -85,6 +90,12 @@ class WordpressSiteProvisioningService
                 'database_env' => $dbEnv,
                 'provisioned_at' => now()->toIso8601String(),
             ], $coolifyUrls);
+
+            if ($this->settings->getWordpressFilebrowserEnabled()) {
+                $metadata['filebrowser_enabled'] = true;
+                $metadata['filebrowser_url'] = $this->coolify->extractFilebrowserPublicUrl($service)
+                    ?: $filebrowserUrl;
+            }
 
             if ($domainWarning !== null) {
                 $metadata['domain_warning'] = $domainWarning;
@@ -313,6 +324,15 @@ class WordpressSiteProvisioningService
             $payload['instant_deploy'] = true;
         }
 
+        if ($this->settings->getWordpressFilebrowserEnabled()) {
+            try {
+                $payload['docker_compose_raw'] = $this->filebrowserMerger->merge($serviceType);
+                $this->appendProvisionLog($site, 'filebrowser', 'دمج FileBrowser في compose الخدمة');
+            } catch (\Throwable $e) {
+                throw new \RuntimeException('فشل دمج FileBrowser: '.$e->getMessage(), 0, $e);
+            }
+        }
+
         $response = $this->coolify->createService($payload);
 
         if (! ($response['success'] ?? false)) {
@@ -327,6 +347,9 @@ class WordpressSiteProvisioningService
 
         $metadata = $site->metadata ?? [];
         $metadata['service_type'] = $serviceType;
+        if ($this->settings->getWordpressFilebrowserEnabled()) {
+            $metadata['filebrowser_enabled'] = true;
+        }
         $site->update(['metadata' => $metadata]);
 
         $this->applyWordpressDockerEnv($site, $uuid);
@@ -356,11 +379,15 @@ class WordpressSiteProvisioningService
     /**
      * @return string|null تحذير إن فشل تعيين النطاق (لا يُوقف الإنشاء)
      */
-    protected function applyUrlsToService(string $serviceUuid, string $publicUrl): ?string
+    protected function applyUrlsToService(string $serviceUuid, string $publicUrl, ?string $filebrowserPublicUrl = null): ?string
     {
         $service = $this->fetchService($serviceUuid);
+        $urls = $filebrowserPublicUrl !== null && $filebrowserPublicUrl !== ''
+            ? $this->coolify->buildServiceUrlsForServiceWithFilebrowser($service, $publicUrl, $filebrowserPublicUrl)
+            : $this->coolify->buildServiceUrlsForService($service, $publicUrl);
+
         $patch = $this->coolify->updateService($serviceUuid, [
-            'urls' => $this->coolify->buildServiceUrlsForService($service, $publicUrl),
+            'urls' => $urls,
             'force_domain_override' => true,
         ]);
 
@@ -568,6 +595,11 @@ class WordpressSiteProvisioningService
             $metadata['provisioning_step'] = 'done';
         }
 
+        if ($this->settings->getWordpressFilebrowserEnabled() && ($metadata['filebrowser_enabled'] ?? false)) {
+            $metadata['filebrowser_url'] = $this->coolify->extractFilebrowserPublicUrl($service)
+                ?: $this->settings->buildWordpressFilebrowserPublicUrl($site->slug);
+        }
+
         $updates = [
             'status' => $siteStatus,
             'public_url' => $public,
@@ -590,8 +622,17 @@ class WordpressSiteProvisioningService
 
         $service = $this->fetchService($site->service_uuid);
 
+        $filebrowserUrl = $this->settings->getWordpressFilebrowserEnabled()
+            && (($site->metadata ?? [])['filebrowser_enabled'] ?? false)
+            ? $this->settings->buildWordpressFilebrowserPublicUrl($site->slug)
+            : null;
+
+        $urls = $filebrowserUrl !== null && $filebrowserUrl !== ''
+            ? $this->coolify->buildServiceUrlsForServiceWithFilebrowser($service, $publicUrl, $filebrowserUrl)
+            : $this->coolify->buildServiceUrlsForService($service, $publicUrl);
+
         $response = $this->coolify->updateService($site->service_uuid, [
-            'urls' => $this->coolify->buildServiceUrlsForService($service, $publicUrl),
+            'urls' => $urls,
             'force_domain_override' => true,
         ]);
 
@@ -601,6 +642,10 @@ class WordpressSiteProvisioningService
 
         $metadata = $site->metadata ?? [];
         unset($metadata['domain_warning']);
+
+        if ($filebrowserUrl !== null && $filebrowserUrl !== '') {
+            $metadata['filebrowser_url'] = $this->coolify->extractFilebrowserPublicUrl($service) ?: $filebrowserUrl;
+        }
 
         $site->update([
             'public_url' => $publicUrl,
