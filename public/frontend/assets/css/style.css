@@ -3331,43 +3331,146 @@ ul {
 }
 
 /* بطاقات تفاصيل الخدمة (ما الذي يشمل عليه العمل) */
-.service-offer-card {
-    padding: 28px 24px;
+.glass-panel.service-offer-card {
+    position: relative;
+    padding: 2rem 1.5rem 1.65rem;
     height: 100%;
     text-align: center;
-    transition: transform var(--transition), box-shadow var(--transition);
+    border-radius: 1rem;
+    overflow: hidden;
+    isolation: isolate;
+    transition:
+        transform var(--transition),
+        box-shadow var(--transition),
+        border-color var(--transition);
 }
 
-.service-offer-card:hover {
-    transform: translateY(-6px);
-    box-shadow: 0 14px 40px var(--clr-shadow);
+.glass-panel.service-offer-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    right: 0;
+    left: 0;
+    height: 3px;
+    background: linear-gradient(90deg, var(--clr-primary-light), var(--clr-primary), var(--clr-primary-dark));
+    opacity: 0;
+    transform: scaleX(0.35);
+    transition: opacity var(--transition), transform var(--transition);
+    z-index: 2;
+}
+
+.glass-panel.service-offer-card::after {
+    content: '';
+    position: absolute;
+    inset: auto -30% -40% -30%;
+    height: 55%;
+    background: radial-gradient(ellipse at center, var(--clr-primary-glow) 0%, transparent 70%);
+    opacity: 0;
+    transition: opacity var(--transition);
+    pointer-events: none;
+    z-index: 0;
+}
+
+.glass-panel.service-offer-card:hover,
+.glass-panel.service-offer-card:focus-within {
+    transform: translateY(-8px);
+    border-color: rgba(0, 87, 184, 0.22);
+    box-shadow:
+        0 4px 8px rgba(0, 87, 184, 0.06),
+        0 20px 44px rgba(0, 87, 184, 0.14);
+}
+
+.glass-panel.service-offer-card:hover::before,
+.glass-panel.service-offer-card:focus-within::before {
+    opacity: 1;
+    transform: scaleX(1);
+}
+
+.glass-panel.service-offer-card:hover::after,
+.glass-panel.service-offer-card:focus-within::after {
+    opacity: 0.55;
+}
+
+[data-theme="dark"] .glass-panel.service-offer-card:hover,
+[data-theme="dark"] .glass-panel.service-offer-card:focus-within {
+    border-color: rgba(46, 154, 208, 0.32);
+    box-shadow:
+        0 4px 12px rgba(0, 0, 0, 0.25),
+        0 22px 48px rgba(0, 87, 184, 0.22);
 }
 
 .service-offer-icon {
-    width: 60px;
-    height: 60px;
-    margin: 0 auto 16px;
-    border-radius: var(--radius-md);
-    background: linear-gradient(135deg, var(--clr-primary), var(--clr-primary-dark));
+    position: relative;
+    z-index: 1;
+    width: 4.25rem;
+    height: 4.25rem;
+    margin: 0 auto 1.15rem;
+    border-radius: 1rem;
+    background: linear-gradient(145deg, var(--clr-primary-light) 0%, var(--clr-primary) 45%, var(--clr-primary-dark) 100%);
     display: flex;
     align-items: center;
     justify-content: center;
     color: #fff;
-    font-size: 1.5rem;
+    font-size: 1.55rem;
+    box-shadow:
+        0 8px 24px var(--clr-primary-glow),
+        inset 0 1px 0 rgba(255, 255, 255, 0.25);
+    transition: transform var(--transition), box-shadow var(--transition);
 }
 
-.service-offer-card h5 {
+.glass-panel.service-offer-card:hover .service-offer-icon,
+.glass-panel.service-offer-card:focus-within .service-offer-icon {
+    transform: translateY(-4px) scale(1.06);
+    box-shadow:
+        0 12px 32px var(--clr-primary-glow),
+        inset 0 1px 0 rgba(255, 255, 255, 0.3);
+}
+
+.glass-panel.service-offer-card h5 {
+    position: relative;
+    z-index: 1;
+    font-family: var(--font-heading);
     font-weight: 700;
     font-size: 1.05rem;
-    margin-bottom: 10px;
+    line-height: 1.45;
+    margin-bottom: 0.65rem;
     color: var(--clr-text);
+    transition: color var(--transition-fast);
 }
 
-.service-offer-card p {
+.glass-panel.service-offer-card:hover h5,
+.glass-panel.service-offer-card:focus-within h5 {
+    color: var(--clr-primary);
+}
+
+.glass-panel.service-offer-card p {
+    position: relative;
+    z-index: 1;
     font-size: 0.9rem;
     color: var(--clr-text-secondary);
     line-height: 1.7;
     margin: 0;
+    max-width: 18rem;
+    margin-inline: auto;
+}
+
+.row.g-4 > [class*='col-']:nth-child(1) .service-offer-card { transition-delay: 0ms; }
+.row.g-4 > [class*='col-']:nth-child(2) .service-offer-card { transition-delay: 40ms; }
+.row.g-4 > [class*='col-']:nth-child(3) .service-offer-card { transition-delay: 80ms; }
+.row.g-4 > [class*='col-']:nth-child(4) .service-offer-card { transition-delay: 120ms; }
+.row.g-4 > [class*='col-']:nth-child(5) .service-offer-card { transition-delay: 160ms; }
+.row.g-4 > [class*='col-']:nth-child(6) .service-offer-card { transition-delay: 200ms; }
+
+@media (max-width: 767.98px) {
+    .glass-panel.service-offer-card {
+        padding: 1.5rem 1.25rem 1.35rem;
+    }
+
+    .service-offer-icon {
+        width: 3.75rem;
+        height: 3.75rem;
+        font-size: 1.35rem;
+    }
 }
 
 /* تقنيات نعتمد عليها */
