@@ -67,11 +67,20 @@ document.addEventListener('DOMContentLoaded', () => {
   // ===========================
   // 3. Active nav link highlight
   // ===========================
-  const currentPage = window.location.pathname.split('/').pop() || 'index.html';
+  function normalizePath(path) {
+    if (!path || path === '/') return '/';
+    return path.replace(/\/$/, '') || '/';
+  }
+
+  const currentPath = normalizePath(window.location.pathname);
   document.querySelectorAll('.main-navbar .nav-link').forEach(link => {
     const href = link.getAttribute('href');
-    if (href === currentPage || (currentPage === '' && href === 'index.html')) {
-      link.classList.add('active');
+    if (!href || href.startsWith('#')) return;
+    try {
+      const linkPath = normalizePath(new URL(href, window.location.origin).pathname);
+      link.classList.toggle('active', linkPath === currentPath);
+    } catch (_) {
+      /* ignore malformed href */
     }
   });
 

@@ -53,66 +53,100 @@
     </section>
 
     <!-- ============ FOOTER ============ -->
-    <footer class="main-footer">
-        <div class="container">
-            <div class="row g-4">
+    @php
+        $siteName = $settings['site_name'] ?? 'ClaudSoft Hosting';
+        $footerDesc = $settings['footer_description'] ?? 'استضافة كلاودسوفت — بنية سحابية موثوقة، باقات مرنة، ودعم فني مستمر لموقعك أو متجرك الإلكتروني.';
+        $footerEmail = $settings['contact_email'] ?? 'info@cloudsofthosting.com';
+        $footerPhone = $settings['contact_phone'] ?? '+963 XXX XXX XXX';
+        $footerAddress = $settings['contact_address'] ?? 'سوريا';
+        $copyrightText = $settings['copyright_text'] ?? 'جميع الحقوق محفوظة';
+    @endphp
+    <footer class="main-footer" id="site-footer">
+        <div class="footer-bg" aria-hidden="true">
+            <div class="footer-bg-grid"></div>
+            <div class="footer-bg-glow footer-bg-glow--1"></div>
+            <div class="footer-bg-glow footer-bg-glow--2"></div>
+        </div>
+
+        <div class="container position-relative">
+            <div class="footer-top-bar">
+                <div class="footer-top-bar-inner">
+                    <span class="footer-top-pill"><i class="fas fa-server"></i> استضافة سحابية</span>
+                    <span class="footer-top-pill"><i class="fas fa-shield-halved"></i> أمان وSSL</span>
+                    <span class="footer-top-pill"><i class="fas fa-headset"></i> دعم 24/7</span>
+                </div>
+            </div>
+
+            <div class="row g-4 g-lg-5 footer-main">
                 <div class="col-lg-4 col-md-6">
-                    @php
-                        $siteName = $settings['site_name'] ?? 'ClaudSoft';
-                        $footerDesc = $settings['footer_description'] ?? 'مدرب ومطور برمجيات شغوف بالتعليم ونقل المعرفة. أقدم دورات تدريبية عملية في مختلف مجالات البرمجة وتطوير الويب والموبايل.';
-                    @endphp
-                    <h5><img src="{{ asset('frontend/assets/images/logo.png') }}" alt="شعار {{ $siteName }}" class="footer-logo-img"
-                            style="width:35px; height:35px; border-radius:50%; margin-left:8px; border:2px solid var(--clr-primary);" width="35" height="35">
-                        {{ $siteName }}</h5>
-                    <p>{{ $footerDesc }}</p>
-                    <div class="footer-social">
-                        @if(!empty($settings['social_facebook'] ?? null))<a href="{{ $settings['social_facebook'] }}" target="_blank" rel="noopener noreferrer" title="فيسبوك" aria-label="فيسبوك"><i class="fab fa-facebook-f"></i></a>@endif
-                        @if(!empty($settings['social_youtube'] ?? null))<a href="{{ $settings['social_youtube'] }}" target="_blank" rel="noopener noreferrer" title="يوتيوب" aria-label="يوتيوب"><i class="fab fa-youtube"></i></a>@endif
-                        @if(!empty($settings['social_instagram'] ?? null))<a href="{{ $settings['social_instagram'] }}" target="_blank" rel="noopener noreferrer" title="انستغرام" aria-label="انستغرام"><i class="fab fa-instagram"></i></a>@endif
-                        @if(!empty($settings['social_linkedin'] ?? null))<a href="{{ $settings['social_linkedin'] }}" target="_blank" rel="noopener noreferrer" title="لينكد إن" aria-label="لينكد إن"><i class="fab fa-linkedin-in"></i></a>@endif
-                        @if(!empty($settings['social_github'] ?? null))<a href="{{ $settings['social_github'] }}" target="_blank" rel="noopener noreferrer" title="جيت هاب" aria-label="جيت هاب"><i class="fab fa-github"></i></a>@endif
-                        @if(!empty($settings['social_telegram'] ?? null))<a href="{{ $settings['social_telegram'] }}" target="_blank" rel="noopener noreferrer" title="تليجرام" aria-label="تليجرام"><i class="fab fa-telegram-plane"></i></a>@endif
+                    <div class="footer-brand">
+                        <a href="{{ url('/') }}" class="footer-brand-link">
+                            <span class="footer-logo-wrap">
+                                <img src="{{ asset('frontend/assets/images/logo.png') }}" alt="شعار {{ $siteName }}" class="footer-logo-img" width="48" height="48" loading="lazy">
+                            </span>
+                            <span class="footer-brand-name">{{ $siteName }}</span>
+                        </a>
+                        <p class="footer-brand-desc">{{ $footerDesc }}</p>
+                        @include('frontend.partials.social-links', ['wrapperClass' => 'footer-social'])
                     </div>
                 </div>
+
                 <div class="col-lg-2 col-md-6">
-                    <h5>روابط سريعة</h5>
+                    <h5 class="footer-heading"><i class="fas fa-link"></i> روابط سريعة</h5>
                     <ul class="footer-links">
-                        <li><a href="{{ url('/') }}"><i class="fas fa-chevron-left"></i> الرئيسية</a></li>
-                        <li><a href="{{ route('frontend.about') }}"><i class="fas fa-chevron-left"></i> حول الشركة</a></li>
-                        <li><a href="{{ route('frontend.packages') }}"><i class="fas fa-chevron-left"></i> الباقات</a></li>
-                        <li><a href="{{ route('frontend.projects') }}"><i class="fas fa-chevron-left"></i> المشاريع</a></li>
-                        <li><a href="{{ route('frontend.videos') }}"><i class="fas fa-chevron-left"></i> الفيديوهات</a></li>
-                        <li><a href="{{ route('frontend.testimonials') }}"><i class="fas fa-chevron-left"></i> آراء الطلاب</a></li>
-                        <li><a href="{{ route('frontend.contact') }}"><i class="fas fa-chevron-left"></i> تواصل معنا</a></li>
+                        <li><a href="{{ url('/') }}">الرئيسية</a></li>
+                        <li><a href="{{ route('frontend.about') }}">حول الشركة</a></li>
+                        <li><a href="{{ route('frontend.packages') }}">الباقات</a></li>
+                        <li><a href="{{ route('frontend.domain-search') }}">بحث الدومينات</a></li>
+                        <li><a href="{{ route('frontend.blog') }}">المدونة</a></li>
+                        <li><a href="{{ route('frontend.contact') }}">تواصل معنا</a></li>
                     </ul>
                 </div>
+
                 <div class="col-lg-3 col-md-6">
-                    <h5>أحدث الباقات</h5>
+                    <h5 class="footer-heading"><i class="fas fa-box-open"></i> خدماتنا</h5>
                     <ul class="footer-links">
-                        <li><a href="#"><i class="fas fa-chevron-left"></i> تطوير الويب الشامل</a></li>
-                        <li><a href="#"><i class="fas fa-chevron-left"></i> بايثون للمبتدئين</a></li>
-                        <li><a href="#"><i class="fas fa-chevron-left"></i> Flutter للموبايل</a></li>
-                        <li><a href="#"><i class="fas fa-chevron-left"></i> WordPress المتقدم</a></li>
+                        <li><a href="{{ route('frontend.packages') }}">استضافة المواقع</a></li>
+                        <li><a href="{{ route('frontend.service-detail') }}">تطوير الويب</a></li>
+                        <li><a href="{{ route('frontend.service-detail-servers') }}">إدارة السيرفرات</a></li>
+                        <li><a href="{{ route('frontend.service-detail-security') }}">الأمن السيبراني</a></li>
+                        <li><a href="{{ route('frontend.clients') }}">عملاؤنا</a></li>
                     </ul>
                 </div>
+
                 <div class="col-lg-3 col-md-6">
-                    <h5>تواصل معنا</h5>
-                    <ul class="footer-links">
-                        @php
-                            $footerEmail = $settings['contact_email'] ?? 'info@cloudsofthosting.com';
-                            $footerPhone = $settings['contact_phone'] ?? '+963 XXX XXX XXX';
-                            $footerAddress = $settings['contact_address'] ?? 'سوريا';
-                        @endphp
-                        <li><i class="fas fa-envelope" style="color: var(--clr-primary); margin-left:8px;"></i>
-                            {{ $footerEmail }}</li>
-                        <li><i class="fas fa-phone" style="color: var(--clr-primary); margin-left:8px;"></i> {{ $footerPhone }}</li>
-                        <li><i class="fas fa-map-marker-alt" style="color: var(--clr-primary); margin-left:8px;"></i>
-                            {{ $footerAddress }}</li>
+                    <h5 class="footer-heading"><i class="fas fa-envelope-open-text"></i> تواصل معنا</h5>
+                    <ul class="footer-contact">
+                        <li>
+                            <a href="mailto:{{ $footerEmail }}" class="footer-contact-item">
+                                <span class="footer-contact-icon"><i class="fas fa-envelope"></i></span>
+                                <span class="footer-contact-text">{{ $footerEmail }}</span>
+                            </a>
+                        </li>
+                        <li>
+                            <a href="tel:{{ preg_replace('/\s+/', '', $footerPhone) }}" class="footer-contact-item">
+                                <span class="footer-contact-icon"><i class="fas fa-phone"></i></span>
+                                <span class="footer-contact-text">{{ $footerPhone }}</span>
+                            </a>
+                        </li>
+                        <li>
+                            <span class="footer-contact-item footer-contact-item--static">
+                                <span class="footer-contact-icon"><i class="fas fa-map-marker-alt"></i></span>
+                                <span class="footer-contact-text">{{ $footerAddress }}</span>
+                            </span>
+                        </li>
                     </ul>
                 </div>
             </div>
+
             <div class="footer-bottom">
-                {{ $settings['copyright_text'] ?? 'جميع الحقوق محفوظة' }} &copy; {{ date('Y') }} <span>{{ $settings['site_name'] ?? 'استضافة كلاودسوفت' }}</span> | صُنع بـ ❤️
+                <p class="footer-copyright mb-0">
+                    {{ $copyrightText }} &copy; {{ date('Y') }}
+                    <span class="footer-copyright-brand">{{ $siteName }}</span>
+                </p>
+                <a href="#top" class="footer-back-top" aria-label="العودة للأعلى">
+                    <i class="fas fa-arrow-up"></i>
+                </a>
             </div>
         </div>
     </footer>

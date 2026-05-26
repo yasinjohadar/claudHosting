@@ -31,66 +31,7 @@
         <div class="page-banner-shape"></div>
     </section>
 
-    <!-- ============ ABOUT INTRO (ClaudSoft) ============ -->
-    <section class="section-padding">
-        <div class="container">
-            <div class="row align-items-center g-5">
-                <div class="col-lg-5">
-                    <div class="about-img-wrapper animate-on-scroll">
-                        <img src="{{ asset('frontend/assets/images/hero-servers.svg') }}" alt="استضافة كلاودسوفت" class="w-100" width="400" height="400" loading="lazy">
-                    </div>
-                </div>
-                <div class="col-lg-7">
-                    <div class="animate-on-scroll">
-                        <span class="section-badge" style="display:inline-block; margin-bottom:15px;">من نحن؟</span>
-                        <h2 style="font-weight:800; font-size:2rem; margin-bottom:20px;">استضافة كلاودسوفت CloudSoft Hosting</h2>
-                        <p style="font-size:1.05rem; line-height:2; color:var(--clr-text-secondary);">
-                            استضافة كلاودسوفت هي منصة استضافة مواقع سحابية تم إطلاقها لتوفير بيئة آمنة وسريعة للمشاريع
-                            العربية، مع تركيز خاص على الاستقرار وسهولة الإدارة. نعتمد بنية تحتية سحابية حديثة مع تقنيات
-                            التكرار والنسخ الاحتياطي المستمر.
-                        </p>
-                        <p style="font-size:1.05rem; line-height:2; color:var(--clr-text-secondary);">
-                            هدفنا أن نمنح أصحاب المواقع والمتاجر تجربة استضافة خالية من التعقيد؛ نعتني نحن بالخوادم،
-                            الأمان، والنسخ الاحتياطي، لتتفرغ أنت لبناء مشروعك ونموّ عملك. نقدّم باقات مرنة تناسب
-                            المشاريع الصغيرة والمتوسطة والشركات، مع إمكانية تخصيص الحلول عند الحاجة.
-                        </p>
-
-                        <!-- Quick Facts -->
-                        <div class="row g-3 mt-3">
-                            <div class="col-sm-6">
-                                <div class="glass-panel" style="padding:18px; text-align:center;">
-                                    <i class="fas fa-server"
-                                        style="font-size:1.5rem; color:var(--clr-primary); margin-bottom:8px; display:block;"></i>
-                                    <strong>+200 موقع مستضاف</strong>
-                                </div>
-                            </div>
-                            <div class="col-sm-6">
-                                <div class="glass-panel" style="padding:18px; text-align:center;">
-                                    <i class="fas fa-users"
-                                        style="font-size:1.5rem; color:var(--clr-primary); margin-bottom:8px; display:block;"></i>
-                                    <strong>+500 عميل نشط</strong>
-                                </div>
-                            </div>
-                            <div class="col-sm-6">
-                                <div class="glass-panel" style="padding:18px; text-align:center;">
-                                    <i class="fas fa-cloud"
-                                        style="font-size:1.5rem; color:var(--clr-primary); margin-bottom:8px; display:block;"></i>
-                                    <strong>بنية سحابية موزعة</strong>
-                                </div>
-                            </div>
-                            <div class="col-sm-6">
-                                <div class="glass-panel" style="padding:18px; text-align:center;">
-                                    <i class="fas fa-shield-alt"
-                                        style="font-size:1.5rem; color:var(--clr-primary); margin-bottom:8px; display:block;"></i>
-                                    <strong>حماية متقدمة ونسخ احتياطي</strong>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </section>
+    @include('frontend.partials.about-intro-section')
 
     @include('frontend.partials.about-infrastructure-section')
 

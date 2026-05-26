@@ -307,7 +307,7 @@
             </div>
             <div class="row g-4">
                 <div class="col-lg-4 col-md-6">
-                    <div class="glass-panel client-card animate-on-scroll">
+                    <div class="glass-panel client-card animate-on-scroll animate-delay-1" tabindex="0" role="article">
                         <div class="client-card-logo">
                             <img src="{{ asset('frontend/assets/images/logo.png') }}" alt="شعار عميل استضافة 1" width="80" height="80" loading="lazy">
                         </div>
@@ -318,7 +318,7 @@
                     </div>
                 </div>
                 <div class="col-lg-4 col-md-6">
-                    <div class="glass-panel client-card animate-on-scroll">
+                    <div class="glass-panel client-card animate-on-scroll animate-delay-2" tabindex="0" role="article">
                         <div class="client-card-logo">
                             <img src="{{ asset('frontend/assets/images/logo.png') }}" alt="شعار عميل استضافة 2" width="80" height="80" loading="lazy">
                         </div>
@@ -329,7 +329,7 @@
                     </div>
                 </div>
                 <div class="col-lg-4 col-md-6">
-                    <div class="glass-panel client-card animate-on-scroll">
+                    <div class="glass-panel client-card animate-on-scroll animate-delay-3" tabindex="0" role="article">
                         <div class="client-card-logo">
                             <img src="{{ asset('frontend/assets/images/logo.png') }}" alt="شعار عميل استضافة 3" width="80" height="80" loading="lazy">
                         </div>

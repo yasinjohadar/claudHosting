@@ -1,7 +1,7 @@
 @php
     $technologies = [
-        ['icon' => 'fab fa-cpanel', 'type' => 'fa', 'name' => 'cPanel', 'tag' => 'لوحة تحكم'],
-        ['icon' => 'devicon-docker-plain', 'type' => 'devicon', 'name' => 'Docker', 'tag' => 'حاويات'],
+        ['icon' => 'https://cdn.simpleicons.org/cpanel/FF6C2C', 'type' => 'img', 'name' => 'cPanel', 'tag' => 'لوحة تحكم'],
+        ['icon' => 'devicon-docker-original', 'type' => 'devicon', 'name' => 'Docker', 'tag' => 'حاويات'],
         ['icon' => 'devicon-kubernetes-plain', 'type' => 'devicon', 'name' => 'Kubernetes', 'tag' => 'تنسيق'],
         ['icon' => 'devicon-nodejs-plain-wordmark', 'type' => 'devicon', 'name' => 'Node.js', 'tag' => 'Backend'],
         ['icon' => 'devicon-python-plain', 'type' => 'devicon', 'name' => 'Python', 'tag' => 'تطبيقات'],
@@ -11,26 +11,26 @@
         ['icon' => 'devicon-wordpress-plain', 'type' => 'devicon', 'name' => 'WordPress', 'tag' => 'CMS'],
         ['icon' => 'devicon-react-original', 'type' => 'devicon', 'name' => 'React', 'tag' => 'Frontend'],
         ['icon' => 'devicon-vuejs-plain', 'type' => 'devicon', 'name' => 'Vue.js', 'tag' => 'Frontend'],
-        ['icon' => 'devicon-angularjs-plain', 'type' => 'devicon', 'name' => 'Angular', 'tag' => 'Frontend'],
-        ['icon' => 'devicon-nextjs-plain', 'type' => 'devicon', 'name' => 'Next.js', 'tag' => 'Full-stack'],
+        ['icon' => 'devicon-angular-plain', 'type' => 'devicon', 'name' => 'Angular', 'tag' => 'Frontend'],
+        ['icon' => 'devicon-nextjs-original', 'type' => 'devicon', 'name' => 'Next.js', 'tag' => 'Full-stack'],
         ['icon' => 'devicon-typescript-plain', 'type' => 'devicon', 'name' => 'TypeScript', 'tag' => 'لغة'],
-        ['icon' => 'devicon-mysql-plain', 'type' => 'devicon', 'name' => 'MySQL', 'tag' => 'قواعد بيانات'],
-        ['icon' => 'devicon-postgresql-plain', 'type' => 'devicon', 'name' => 'PostgreSQL', 'tag' => 'قواعد بيانات'],
+        ['icon' => 'devicon-mysql-original', 'type' => 'devicon', 'name' => 'MySQL', 'tag' => 'قواعد بيانات'],
+        ['icon' => 'devicon-postgresql-original', 'type' => 'devicon', 'name' => 'PostgreSQL', 'tag' => 'قواعد بيانات'],
         ['icon' => 'devicon-mongodb-plain', 'type' => 'devicon', 'name' => 'MongoDB', 'tag' => 'NoSQL'],
         ['icon' => 'devicon-redis-plain', 'type' => 'devicon', 'name' => 'Redis', 'tag' => 'كاش'],
         ['icon' => 'devicon-nginx-original', 'type' => 'devicon', 'name' => 'Nginx', 'tag' => 'خادم ويب'],
-        ['icon' => 'devicon-n8n-plain', 'type' => 'devicon', 'name' => 'n8n', 'tag' => 'أتمتة'],
+        ['icon' => 'https://cdn.simpleicons.org/n8n/EA4B71', 'type' => 'img', 'name' => 'n8n', 'tag' => 'أتمتة'],
         ['icon' => 'devicon-go-plain-wordmark', 'type' => 'devicon', 'name' => 'Go', 'tag' => 'أداء عالٍ'],
-        ['icon' => 'fas fa-plug', 'type' => 'fa', 'name' => 'REST / API', 'tag' => 'تكامل'],
-        ['icon' => 'fab fa-git-alt', 'type' => 'fa', 'name' => 'Git', 'tag' => 'نشر'],
-        ['icon' => 'fas fa-shield-halved', 'type' => 'fa', 'name' => 'SSL / HTTPS', 'tag' => 'أمان'],
+        ['icon' => 'https://cdn.simpleicons.org/openapi/6BA539', 'type' => 'img', 'name' => 'REST / API', 'tag' => 'تكامل'],
+        ['icon' => 'https://cdn.simpleicons.org/git/F05032', 'type' => 'img', 'name' => 'Git', 'tag' => 'نشر'],
+        ['icon' => 'https://cdn.simpleicons.org/letsencrypt/003A70', 'type' => 'img', 'name' => 'SSL / HTTPS', 'tag' => 'أمان'],
     ];
 
     $highlights = [
         [
             'title' => 'حاويات وسحابة',
             'desc' => 'Docker وبيئات معزولة للنشر السريع والآمن مع إمكانية التوسع.',
-            'icons' => ['devicon-docker-plain', 'devicon-kubernetes-plain', 'devicon-nginx-original'],
+            'icons' => ['devicon-docker-original', 'devicon-kubernetes-plain', 'devicon-nginx-original'],
             'accent' => '#2496ed',
         ],
         [
@@ -42,13 +42,16 @@
         [
             'title' => 'واجهات وتجارب',
             'desc' => 'React وVue وAngular وNext.js لمواقع سريعة وتفاعلية.',
-            'icons' => ['devicon-react-original', 'devicon-vuejs-plain', 'devicon-nextjs-plain'],
+            'icons' => ['devicon-react-original', 'devicon-vuejs-plain', 'devicon-nextjs-original'],
             'accent' => '#61dafb',
         ],
         [
             'title' => 'أتمتة وذكاء تشغيلي',
             'desc' => 'n8n وتدفقات العمل والربط مع APIs وخدمات الطرف الثالث.',
-            'icons' => ['devicon-n8n-plain', 'devicon-typescript-plain'],
+            'icons' => [
+                ['icon' => 'https://cdn.simpleicons.org/n8n/EA4B71', 'type' => 'img'],
+                ['icon' => 'devicon-typescript-plain', 'type' => 'devicon'],
+            ],
             'accent' => '#ea4b71',
         ],
     ];
@@ -90,11 +93,10 @@
                     @foreach(array_merge($technologies, $technologies) as $tech)
                     <div class="tech-chip">
                         <span class="tech-chip-icon" aria-hidden="true">
-                            @if(($tech['type'] ?? '') === 'devicon')
-                            <i class="{{ $tech['icon'] }} colored"></i>
-                            @else
-                            <i class="{{ $tech['icon'] }}"></i>
-                            @endif
+                            @include('frontend.partials.tech-chip-icon', [
+                                'icon' => $tech['icon'],
+                                'type' => $tech['type'] ?? 'devicon',
+                            ])
                         </span>
                         <span class="tech-chip-text">
                             <strong>{{ $tech['name'] }}</strong>
@@ -109,11 +111,10 @@
                     @foreach(array_merge(array_reverse($technologies), array_reverse($technologies)) as $tech)
                     <div class="tech-chip tech-chip--alt">
                         <span class="tech-chip-icon" aria-hidden="true">
-                            @if(($tech['type'] ?? '') === 'devicon')
-                            <i class="{{ $tech['icon'] }} colored"></i>
-                            @else
-                            <i class="{{ $tech['icon'] }}"></i>
-                            @endif
+                            @include('frontend.partials.tech-chip-icon', [
+                                'icon' => $tech['icon'],
+                                'type' => $tech['type'] ?? 'devicon',
+                            ])
                         </span>
                         <span class="tech-chip-text">
                             <strong>{{ $tech['name'] }}</strong>
@@ -129,10 +130,22 @@
             @foreach($highlights as $i => $card)
             <div class="col-lg-3 col-md-6">
                 <article class="tech-highlight-card animate-on-scroll animate-delay-{{ ($i % 4) + 1 }}"
-                    style="--tech-accent: {{ $card['accent'] }}">
+                    style="--tech-accent: {{ $card['accent'] }}"
+                    tabindex="0"
+                    role="group"
+                    aria-label="{{ $card['title'] }}">
                     <div class="tech-highlight-icons">
-                        @foreach($card['icons'] as $iconClass)
-                        <span class="tech-highlight-icon"><i class="{{ $iconClass }} colored"></i></span>
+                        @foreach ($card['icons'] as $iconEntry)
+                            @php
+                                $icon = is_array($iconEntry) ? $iconEntry['icon'] : $iconEntry;
+                                $iconType = is_array($iconEntry) ? ($iconEntry['type'] ?? 'devicon') : 'devicon';
+                            @endphp
+                            <span class="tech-highlight-icon" aria-hidden="true">
+                                @include('frontend.partials.tech-chip-icon', [
+                                    'icon' => $icon,
+                                    'type' => $iconType,
+                                ])
+                            </span>
                         @endforeach
                     </div>
                     <h3>{{ $card['title'] }}</h3>

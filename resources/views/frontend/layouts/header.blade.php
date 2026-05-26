@@ -34,14 +34,15 @@
                 <span>{{ $settings['site_name'] ?? 'ClaudSoft' }}</span>
             </a>
 
-            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav"
+                aria-controls="navbarNav" aria-expanded="false" aria-label="فتح وإغلاق القائمة">
                 <span class="bar"></span>
                 <span class="bar"></span>
                 <span class="bar"></span>
             </button>
 
             <div class="collapse navbar-collapse" id="navbarNav">
-                <ul class="navbar-nav mx-auto">
+                <ul class="navbar-nav navbar-nav-main mx-auto">
                     <li class="nav-item"><a class="nav-link" href="{{ url('/') }}">الرئيسية</a></li>
                     <li class="nav-item"><a class="nav-link" href="{{ route('frontend.about') }}">حول الشركة</a></li>
                     <li class="nav-item"><a class="nav-link" href="{{ route('frontend.packages') }}">الباقات</a></li>
@@ -52,19 +53,10 @@
                     <li class="nav-item"><a class="nav-link" href="{{ route('frontend.contact') }}">تواصل معنا</a></li>
                 </ul>
 
-                <div class="d-flex align-items-center gap-3">
-                    <!-- Social Icons -->
-                    <div class="nav-social">
-                        @if(!empty($settings['social_facebook'] ?? null))<a href="{{ $settings['social_facebook'] }}" target="_blank" rel="noopener noreferrer" title="فيسبوك" aria-label="فيسبوك"><i class="fab fa-facebook-f"></i></a>@endif
-                        @if(!empty($settings['social_youtube'] ?? null))<a href="{{ $settings['social_youtube'] }}" target="_blank" rel="noopener noreferrer" title="يوتيوب" aria-label="يوتيوب"><i class="fab fa-youtube"></i></a>@endif
-                        @if(!empty($settings['social_instagram'] ?? null))<a href="{{ $settings['social_instagram'] }}" target="_blank" rel="noopener noreferrer" title="انستغرام" aria-label="انستغرام"><i class="fab fa-instagram"></i></a>@endif
-                        @if(!empty($settings['social_linkedin'] ?? null))<a href="{{ $settings['social_linkedin'] }}" target="_blank" rel="noopener noreferrer" title="لينكد إن" aria-label="لينكد إن"><i class="fab fa-linkedin-in"></i></a>@endif
-                        @if(!empty($settings['social_github'] ?? null))<a href="{{ $settings['social_github'] }}" target="_blank" rel="noopener noreferrer" title="جيت هاب" aria-label="جيت هاب"><i class="fab fa-github"></i></a>@endif
-                        @if(!empty($settings['social_telegram'] ?? null))<a href="{{ $settings['social_telegram'] }}" target="_blank" rel="noopener noreferrer" title="تليجرام" aria-label="تليجرام"><i class="fab fa-telegram-plane"></i></a>@endif
-                    </div>
-                    <!-- Theme Toggle -->
-                    <button class="theme-toggle" id="themeToggle" title="تبديل الوضع" aria-label="تبديل الوضع الليلي/النهاري">
-                        <i class="fas fa-moon"></i>
+                <div class="navbar-actions">
+                    @include('frontend.partials.social-links', ['wrapperClass' => 'nav-social'])
+                    <button class="theme-toggle" id="themeToggle" type="button" title="تبديل الوضع" aria-label="تبديل الوضع الليلي/النهاري">
+                        <i class="fas fa-moon" aria-hidden="true"></i>
                     </button>
                 </div>
             </div>
