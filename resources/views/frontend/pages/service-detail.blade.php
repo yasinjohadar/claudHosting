@@ -5,8 +5,12 @@
 @endsection
 
 @section('meta-description')
-تطوير تطبيقات الويب — تصميم وتطوير مواقع وتطبيقات ويب حديثة ومتجاوبة بأحدث التقنيات: React، Node.js، TypeScript. واجهات احترافية، أداء عالٍ، ودعم SEO وأمان.
+تطوير تطبيقات الويب — تصميم وتطوير مواقع وتطبيقات ويب حديثة ومتجاوبة بأحدث التقنيات: React، Laravel، Node.js و TypeScript. واجهات احترافية، أداء عالٍ، ودعم SEO وأمان.
 @endsection
+
+@push('styles')
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/devicon@2.15.1/devicon.min.css" crossorigin="anonymous">
+@endpush
 
 @section('content')
     <!-- ============ SERVICE BANNER ============ -->
@@ -30,18 +34,18 @@
     </section>
 
     <!-- ============ SERVICE INTRO ============ -->
-    <section class="section-padding">
+    <section class="section-padding security-intro-section">
         <div class="container">
             <div class="row align-items-center g-5">
                 <div class="col-lg-6">
                     <div class="service-detail-intro animate-on-scroll">
                         <span class="section-badge">نظرة عامة</span>
-                        <h2 class="service-detail-heading">ماذا نقدم في هذه الخدمة؟</h2>
+                        <h2 class="service-detail-heading">تطوير ويب متكامل من الفكرة إلى الإطلاق</h2>
                         <p class="service-detail-lead">
-                            أقدم لك حلولاً متكاملة لتطوير تطبيقات الويب من الصفر حتى النشر، مع التركيز على تجربة المستخدم والأداء والأمان. سواء كنت تحتاج موقعاً تعريفياً، متجراً إلكترونياً، أو منصة ويب معقدة — نعمل معاً لتحويل فكرتك إلى واقع رقمي احترافي.
+                            نقدّم في كلاودسوفت حلولاً متكاملة لتطوير تطبيقات الويب — من التصميم والواجهات الأمامية إلى الـ API وقواعد البيانات والنشر على خوادم موثوقة. سواء موقعاً تعريفياً، متجراً إلكترونياً، أو منصة ويب معقدة، نبني مشروعك بأحدث التقنيات مع تركيز على الأداء والأمان وتجربة المستخدم.
                         </p>
                         <p class="service-detail-text">
-                            نستخدم أحدث تقنيات الويب مثل React.js و Node.js و TypeScript لضمان كود قابل للصيانة وقابل للتوسع. جميع المشاريع تكون متجاوبة بالكامل مع مختلف الأجهزة وتتبع أفضل ممارسات SEO والأداء.
+                            نستخدم React و Vue و Laravel و Node.js و TypeScript لضمان كود قابل للصيانة والتوسع. جميع المشاريع متجاوبة بالكامل، محسّنة لمحركات البحث (SEO)، ومجهّزة بشهادات SSL وبيئة استضافة آمنة.
                         </p>
                     </div>
                 </div>
@@ -117,50 +121,10 @@
         </div>
     </section>
 
-    <!-- ============ TECHNOLOGIES ============ -->
-    <section class="section-padding">
-        <div class="container">
-            <div class="section-header animate-on-scroll">
-                <span class="section-badge">التقنيات</span>
-                <h2>تقنيات نعتمد عليها</h2>
-                <p>أدوات وإطارات عمل حديثة لضمان جودة واحترافية المشروع</p>
-            </div>
-            <div class="glass-panel service-tech-wrap animate-on-scroll">
-                <div class="row g-3">
-                    <div class="col-6 col-md-4 col-lg-2">
-                        <div class="service-tech-item">HTML5 / CSS3</div>
-                    </div>
-                    <div class="col-6 col-md-4 col-lg-2">
-                        <div class="service-tech-item">JavaScript / TypeScript</div>
-                    </div>
-                    <div class="col-6 col-md-4 col-lg-2">
-                        <div class="service-tech-item">React.js</div>
-                    </div>
-                    <div class="col-6 col-md-4 col-lg-2">
-                        <div class="service-tech-item">Vue.js / Next.js</div>
-                    </div>
-                    <div class="col-6 col-md-4 col-lg-2">
-                        <div class="service-tech-item">Node.js / Express</div>
-                    </div>
-                    <div class="col-6 col-md-4 col-lg-2">
-                        <div class="service-tech-item">MongoDB / MySQL</div>
-                    </div>
-                    <div class="col-6 col-md-4 col-lg-2">
-                        <div class="service-tech-item">Bootstrap / Tailwind</div>
-                    </div>
-                    <div class="col-6 col-md-4 col-lg-2">
-                        <div class="service-tech-item">REST API</div>
-                    </div>
-                    <div class="col-6 col-md-4 col-lg-2">
-                        <div class="service-tech-item">Git / GitHub</div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </section>
+    @include('frontend.partials.webapp-tools-catalog')
 
     <!-- ============ RELATED SERVICES ============ -->
-    <section class="section-padding" style="background: var(--clr-bg-secondary);">
+    <section class="section-padding service-related-section" style="background: var(--clr-bg-secondary);">
         <div class="container">
             <div class="section-header animate-on-scroll">
                 <span class="section-badge">تخصصات أخرى</span>
@@ -168,41 +132,54 @@
                 <p>اطّلع على مجالات أخرى نقدم فيها الاستشارة والتنفيذ</p>
             </div>
             <div class="row g-4">
-                <div class="col-sm-6 col-lg-3">
-                    <a href="{{ route('frontend.service-detail') }}" class="service-related-card glass-panel animate-on-scroll">
-                        <i class="fas fa-globe"></i>
-                        <h6>تطوير تطبيقات الويب</h6>
-                        <p>مواقع وتطبيقات ويب بـ React و Node.js</p>
-                    </a>
-                </div>
-                <div class="col-sm-6 col-lg-3">
-                    <a href="{{ route('frontend.service-detail-mobile') }}" class="service-related-card glass-panel animate-on-scroll">
-                        <i class="fas fa-mobile-alt"></i>
-                        <h6>تطبيقات الجوال</h6>
-                        <p>تطوير تطبيقات أندرويد و iOS</p>
-                    </a>
-                </div>
-                <div class="col-sm-6 col-lg-3">
-                    <a href="{{ route('frontend.service-detail-security') }}" class="service-related-card glass-panel animate-on-scroll">
-                        <i class="fas fa-shield-alt"></i>
-                        <h6>أمن المعلومات</h6>
-                        <p>حماية الأنظمة والبيانات وتقييم الثغرات</p>
-                    </a>
-                </div>
-                <div class="col-sm-6 col-lg-3">
-                    <a href="{{ route('frontend.service-detail-servers') }}" class="service-related-card glass-panel animate-on-scroll">
-                        <i class="fas fa-server"></i>
-                        <h6>إدارة السيرفرات</h6>
-                        <p>إعداد وإدارة الخوادم والاستضافة</p>
-                    </a>
-                </div>
-                <div class="col-sm-6 col-lg-3">
-                    <a href="{{ route('frontend.service-detail-devops') }}" class="service-related-card glass-panel animate-on-scroll">
-                        <i class="fas fa-infinity"></i>
-                        <h6>DevOps</h6>
-                        <p>CI/CD، حاويات، سحابة ومراقبة</p>
-                    </a>
-                </div>
+                @php
+                    $relatedServices = [
+                        [
+                            'url' => route('frontend.service-detail-mobile'),
+                            'icon' => 'fas fa-mobile-alt',
+                            'title' => 'تطبيقات الجوال',
+                            'desc' => 'تطوير تطبيقات أندرويد و iOS',
+                            'accent' => '#2E9AD0',
+                        ],
+                        [
+                            'url' => route('frontend.service-detail-security'),
+                            'icon' => 'fas fa-shield-alt',
+                            'title' => 'أمن المعلومات',
+                            'desc' => 'حماية الأنظمة والبيانات',
+                            'accent' => '#6366f1',
+                        ],
+                        [
+                            'url' => route('frontend.service-detail-servers'),
+                            'icon' => 'fas fa-server',
+                            'title' => 'إدارة السيرفرات',
+                            'desc' => 'إعداد وإدارة الخوادم',
+                            'accent' => '#10b981',
+                        ],
+                        [
+                            'url' => route('frontend.service-detail-devops'),
+                            'icon' => 'fas fa-infinity',
+                            'title' => 'DevOps',
+                            'desc' => 'CI/CD، حاويات، سحابة',
+                            'accent' => '#2496ed',
+                        ],
+                    ];
+                @endphp
+                @foreach ($relatedServices as $i => $service)
+                    <div class="col-sm-6 col-lg-3">
+                        <a href="{{ $service['url'] }}"
+                            class="service-related-card animate-on-scroll animate-delay-{{ ($i % 4) + 1 }}"
+                            style="--related-accent: {{ $service['accent'] }}">
+                            <span class="service-related-card__icon" aria-hidden="true">
+                                <i class="{{ $service['icon'] }}"></i>
+                            </span>
+                            <h6>{{ $service['title'] }}</h6>
+                            <p>{{ $service['desc'] }}</p>
+                            <span class="service-related-card__link">
+                                اعرف المزيد <i class="fas fa-arrow-left"></i>
+                            </span>
+                        </a>
+                    </div>
+                @endforeach
             </div>
         </div>
     </section>
@@ -210,8 +187,8 @@
     <!-- ============ CTA ============ -->
     <section class="cta-section">
         <div class="container animate-on-scroll">
-            <h2>هل تحتاج هذه الخدمة لمشروعك؟</h2>
-            <p>تواصل معنا الآن ونناقش متطلباتك ونقدم لك عرضاً tailored لاحتياجاتك</p>
+            <h2>هل تحتاج تطوير موقع أو تطبيق ويب لمشروعك؟</h2>
+            <p>تواصل معنا الآن ونناقش متطلباتك ونقدّم لك عرضاً مناسباً لاحتياجاتك</p>
             <a href="{{ route('frontend.contact') }}" class="btn-light-custom">
                 <i class="fas fa-paper-plane"></i> تواصل معنا
             </a>

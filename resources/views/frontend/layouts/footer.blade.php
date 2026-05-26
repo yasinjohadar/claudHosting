@@ -107,7 +107,8 @@
                     <h5 class="footer-heading"><i class="fas fa-box-open"></i> خدماتنا</h5>
                     <ul class="footer-links">
                         <li><a href="{{ route('frontend.packages') }}">استضافة المواقع</a></li>
-                        <li><a href="{{ route('frontend.service-detail') }}">تطوير الويب</a></li>
+                        <li><a href="{{ route('frontend.service-detail-web') }}">تطوير تطبيقات الويب</a></li>
+                        <li><a href="{{ route('frontend.service-detail-mobile') }}">تطبيقات الجوال</a></li>
                         <li><a href="{{ route('frontend.service-detail-servers') }}">إدارة السيرفرات</a></li>
                         <li><a href="{{ route('frontend.service-detail-security') }}">الأمن السيبراني</a></li>
                         <li><a href="{{ route('frontend.clients') }}">عملاؤنا</a></li>

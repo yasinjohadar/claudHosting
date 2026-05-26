@@ -61,9 +61,11 @@ Route::prefix('')->name('frontend.')->group(function () {
         return view('frontend.pages.clients');
     })->name('clients');
 
-    Route::get('/service-detail', function () {
+    Route::redirect('/service-detail', '/service-detail-web', 301);
+
+    Route::get('/service-detail-web', function () {
         return view('frontend.pages.service-detail');
-    })->name('service-detail');
+    })->name('service-detail-web');
 
     Route::get('/service-detail-mobile', function () {
         return view('frontend.pages.service-detail-mobile');

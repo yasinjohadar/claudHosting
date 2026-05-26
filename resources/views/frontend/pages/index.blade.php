@@ -25,56 +25,56 @@
             </div>
             <div class="row g-4">
                 <div class="col-lg-3 col-md-4 col-sm-6">
-                    <a href="/service-detail" class="glass-panel skill-card skill-card-link animate-on-scroll animate-delay-1">
+                    <a href="{{ route('frontend.service-detail-web') }}" class="glass-panel skill-card skill-card-link animate-on-scroll animate-delay-1">
                         <div class="skill-icon"><i class="fas fa-globe"></i></div>
                         <h5>تطوير تطبيقات الويب</h5>
                         <p>تصميم وتطوير مواقع وتطبيقات ويب حديثة ومتجاوبة واحترافية</p>
                     </a>
                 </div>
                 <div class="col-lg-3 col-md-4 col-sm-6">
-                    <a href="/service-detail-mobile" class="glass-panel skill-card skill-card-link animate-on-scroll animate-delay-2">
+                    <a href="{{ route('frontend.service-detail-mobile') }}" class="glass-panel skill-card skill-card-link animate-on-scroll animate-delay-2">
                         <div class="skill-icon"><i class="fas fa-mobile-alt"></i></div>
                         <h5>تطبيقات الجوال</h5>
                         <p>تطوير تطبيقات الهواتف الذكية متعددة المنصات للأندرويد والـ iOS</p>
                     </a>
                 </div>
                 <div class="col-lg-3 col-md-4 col-sm-6">
-                    <a href="/service-detail-security" class="glass-panel skill-card skill-card-link animate-on-scroll animate-delay-3">
+                    <a href="{{ route('frontend.service-detail-security') }}" class="glass-panel skill-card skill-card-link animate-on-scroll animate-delay-3">
                         <div class="skill-icon"><i class="fas fa-shield-alt"></i></div>
                         <h5>أمن المعلومات</h5>
                         <p>حماية الأنظمة والبيانات وتقييم الثغرات وتطبيق أفضل الممارسات الأمنية</p>
                     </a>
                 </div>
                 <div class="col-lg-3 col-md-4 col-sm-6">
-                    <a href="/service-detail-servers" class="glass-panel skill-card skill-card-link animate-on-scroll animate-delay-4">
+                    <a href="{{ route('frontend.service-detail-servers') }}" class="glass-panel skill-card skill-card-link animate-on-scroll animate-delay-4">
                         <div class="skill-icon"><i class="fas fa-server"></i></div>
                         <h5>إدارة السيرفرات</h5>
                         <p>إعداد وإدارة الخوادم، الاستضافة، والنشر مع Linux والخدمات السحابية</p>
                     </a>
                 </div>
                 <div class="col-lg-3 col-md-4 col-sm-6">
-                    <a href="/service-detail" class="glass-panel skill-card skill-card-link animate-on-scroll animate-delay-1">
+                    <a href="{{ route('frontend.service-detail-servers') }}" class="glass-panel skill-card skill-card-link animate-on-scroll animate-delay-1">
                         <div class="skill-icon"><i class="fas fa-database"></i></div>
                         <h5>قواعد البيانات</h5>
                         <p>تصميم وإدارة قواعد البيانات SQL و NoSQL وتحسين الأداء</p>
                     </a>
                 </div>
                 <div class="col-lg-3 col-md-4 col-sm-6">
-                    <a href="/service-detail-devops" class="glass-panel skill-card skill-card-link animate-on-scroll animate-delay-2">
+                    <a href="{{ route('frontend.service-detail-devops') }}" class="glass-panel skill-card skill-card-link animate-on-scroll animate-delay-2">
                         <div class="skill-icon"><i class="fas fa-cloud"></i></div>
                         <h5>DevOps والسحابة</h5>
                         <p>أتمتة النشر، الحاويات، CI/CD والعمل على منصات سحابية</p>
                     </a>
                 </div>
                 <div class="col-lg-3 col-md-4 col-sm-6">
-                    <a href="/service-detail" class="glass-panel skill-card skill-card-link animate-on-scroll animate-delay-3">
+                    <a href="{{ route('frontend.contact') }}" class="glass-panel skill-card skill-card-link animate-on-scroll animate-delay-3">
                         <div class="skill-icon"><i class="fas fa-project-diagram"></i></div>
                         <h5>إدارة المشاريع التقنية</h5>
                         <p>تخطيط ومتابعة المشاريع البرمجية وتنسيق الفرق التقنية</p>
                     </a>
                 </div>
                 <div class="col-lg-3 col-md-4 col-sm-6">
-                    <a href="/service-detail" class="glass-panel skill-card skill-card-link animate-on-scroll animate-delay-4">
+                    <a href="{{ route('frontend.consultation') }}" class="glass-panel skill-card skill-card-link animate-on-scroll animate-delay-4">
                         <div class="skill-icon"><i class="fas fa-chalkboard-teacher"></i></div>
                         <h5>استشارات وتدريب تقني</h5>
                         <p>تقديم الاستشارات التقنية ودورات تدريبية في البرمجة والتكنولوجيا</p>
