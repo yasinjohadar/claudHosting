@@ -4,8 +4,6 @@ namespace App\Services\Coolify;
 
 use App\Services\CoolifyApiService;
 use RuntimeException;
-use Symfony\Component\Yaml\Exception\ParseException;
-use Symfony\Component\Yaml\Yaml;
 
 class WordpressComposeFilebrowserMerger
 {
@@ -29,23 +27,44 @@ class WordpressComposeFilebrowserMerger
             throw new RuntimeException('تعذّر تحميل قالب WordPress: '.$wordpressServiceType);
         }
 
-        $fbYaml = $this->coolify->getServiceTemplateComposeYaml('filebrowser');
-        if ($fbYaml === null) {
-            $fbYaml = $this->fallbackFilebrowserComposeYaml();
+        if (preg_match('/^\s*filebrowser\s*:/m', $wpYaml)) {
+            return $wpYaml;
         }
+
+        if (class_exists(\Symfony\Component\Yaml\Yaml::class)) {
+            return $this->mergeWithSymfonyYaml($wpYaml);
+        }
+
+        return $this->mergeWithStringAppend($wpYaml);
+    }
+
+    /**
+     * Coolify API يتطلب docker_compose_raw بصيغة base64 ولا يقبل type معه في نفس الطلب.
+     */
+    public function mergeForCoolifyApi(string $wordpressServiceType): string
+    {
+        return base64_encode($this->merge($wordpressServiceType));
+    }
+
+    protected function mergeWithSymfonyYaml(string $wpYaml): string
+    {
+        $yamlClass = \Symfony\Component\Yaml\Yaml::class;
+
+        $fbYaml = $this->coolify->getServiceTemplateComposeYaml('filebrowser')
+            ?? $this->fallbackFilebrowserComposeYaml();
 
         try {
             /** @var array<string, mixed> $wp */
-            $wp = Yaml::parse($wpYaml);
+            $wp = $yamlClass::parse($wpYaml);
             /** @var array<string, mixed> $fb */
-            $fb = Yaml::parse($fbYaml);
-        } catch (ParseException $e) {
-            throw new RuntimeException('فشل تحليل قالب compose: '.$e->getMessage(), 0, $e);
+            $fb = $yamlClass::parse($fbYaml);
+        } catch (\Throwable $e) {
+            return $this->mergeWithStringAppend($wpYaml);
         }
 
         $fbServices = $fb['services'] ?? null;
         if (! is_array($fbServices) || ! isset($fbServices['filebrowser']) || ! is_array($fbServices['filebrowser'])) {
-            throw new RuntimeException('قالب filebrowser لا يحتوي على خدمة filebrowser.');
+            return $this->mergeWithStringAppend($wpYaml);
         }
 
         if (! isset($wp['services']) || ! is_array($wp['services'])) {
@@ -57,14 +76,12 @@ class WordpressComposeFilebrowserMerger
             self::FILEBROWSER_VOLUME.':/srv',
             self::FILEBROWSER_META_VOLUME.':/database.db',
         ];
-
         $filebrowser['command'] = [
             '--root=/srv',
             '--database=/database.db',
             '--address=0.0.0.0',
             '--port=80',
         ];
-
         $filebrowser['environment'] = $this->normalizeEnvironmentList(
             $filebrowser['environment'] ?? [],
             ['SERVICE_FQDN_FILEBROWSER_80']
@@ -77,15 +94,42 @@ class WordpressComposeFilebrowserMerger
         }
         $wp['volumes'][self::FILEBROWSER_META_VOLUME] = null;
 
-        return Yaml::dump($wp, 6, 2, Yaml::DUMP_MULTI_LINE_LITERAL_BLOCK);
+        return $yamlClass::dump($wp, 6, 2, $yamlClass::DUMP_MULTI_LINE_LITERAL_BLOCK);
     }
 
-    /**
-     * Coolify API يتطلب docker_compose_raw بصيغة base64 ولا يقبل type معه في نفس الطلب.
-     */
-    public function mergeForCoolifyApi(string $wordpressServiceType): string
+    protected function mergeWithStringAppend(string $wpYaml): string
     {
-        return base64_encode($this->merge($wordpressServiceType));
+        $block = "\n".$this->filebrowserServiceYamlBlock()."\n\nvolumes:\n  ".self::FILEBROWSER_META_VOLUME.": null\n";
+
+        return rtrim($wpYaml).$block;
+    }
+
+    protected function filebrowserServiceYamlBlock(): string
+    {
+        return <<<'YAML'
+  filebrowser:
+    image: 'filebrowser/filebrowser:latest'
+    environment:
+      - SERVICE_FQDN_FILEBROWSER_80
+    command:
+      - --root=/srv
+      - --database=/database.db
+      - --address=0.0.0.0
+      - --port=80
+    volumes:
+      - 'wordpress-files:/srv'
+      - 'filebrowser-meta:/database.db'
+    healthcheck:
+      test:
+        - CMD
+        - wget
+        - '-q'
+        - '--spider'
+        - 'http://127.0.0.1:80/health'
+      interval: 2s
+      timeout: 10s
+      retries: 15
+YAML;
     }
 
     /**
@@ -122,22 +166,6 @@ class WordpressComposeFilebrowserMerger
 
     protected function fallbackFilebrowserComposeYaml(): string
     {
-        return <<<'YAML'
-services:
-  filebrowser:
-    image: 'filebrowser/filebrowser:latest'
-    environment:
-      - SERVICE_FQDN_FILEBROWSER_80
-    healthcheck:
-      test:
-        - CMD
-        - wget
-        - '-q'
-        - '--spider'
-        - 'http://127.0.0.1:80/health'
-      interval: 2s
-      timeout: 10s
-      retries: 15
-YAML;
+        return "services:\n".$this->filebrowserServiceYamlBlock();
     }
 }
