@@ -74,14 +74,15 @@ class WordpressComposeFilebrowserMerger
         $filebrowser = $fbServices['filebrowser'];
         $filebrowser['volumes'] = [
             self::FILEBROWSER_VOLUME.':/srv',
-            self::FILEBROWSER_META_VOLUME.':/database.db',
+            self::FILEBROWSER_META_VOLUME.':/data',
         ];
         $filebrowser['command'] = [
             '--root=/srv',
-            '--database=/database.db',
+            '--database=/data/filebrowser.db',
             '--address=0.0.0.0',
             '--port=80',
         ];
+        unset($filebrowser['healthcheck']);
         $filebrowser['environment'] = $this->normalizeEnvironmentList(
             $filebrowser['environment'] ?? [],
             ['SERVICE_FQDN_FILEBROWSER_80']
@@ -118,17 +119,7 @@ class WordpressComposeFilebrowserMerger
       - --port=80
     volumes:
       - 'wordpress-files:/srv'
-      - 'filebrowser-meta:/database.db'
-    healthcheck:
-      test:
-        - CMD
-        - wget
-        - '-q'
-        - '--spider'
-        - 'http://127.0.0.1:80/health'
-      interval: 2s
-      timeout: 10s
-      retries: 15
+      - 'filebrowser-meta:/data'
 YAML;
     }
 
