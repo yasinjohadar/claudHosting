@@ -48,6 +48,7 @@
                     <li class="nav-item"><a class="nav-link" href="{{ route('frontend.domain-search') }}">بحث النطاقات</a></li>
                     <li class="nav-item"><a class="nav-link" href="{{ route('frontend.projects') }}">المشاريع</a></li>
                     <li class="nav-item"><a class="nav-link" href="#skills">التخصصات</a></li>
+                    <li class="nav-item"><a class="nav-link" href="{{ url('/#tech-stack') }}">التقنيات</a></li>
                     <li class="nav-item"><a class="nav-link" href="{{ route('frontend.blog') }}">المدونة</a></li>
                     <li class="nav-item"><a class="nav-link" href="{{ route('frontend.contact') }}">تواصل معنا</a></li>
                 </ul>

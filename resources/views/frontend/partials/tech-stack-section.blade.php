@@ -1,7 +1,3 @@
-@push('styles')
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/devicon@2.15.1/devicon.min.css" crossorigin="anonymous">
-@endpush
-
 @php
     $technologies = [
         ['icon' => 'fab fa-cpanel', 'type' => 'fa', 'name' => 'cPanel', 'tag' => 'لوحة تحكم'],

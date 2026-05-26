@@ -1978,6 +1978,14 @@ ul {
     overflow: hidden;
     background: linear-gradient(165deg, #0a1628 0%, #0d2240 38%, #0f2848 62%, #0a1628 100%);
     color: #e8eef8;
+    min-height: 28rem;
+    scroll-margin-top: 6rem;
+}
+
+/* المحتوى ظاهر دائماً — لا يعتمد على animate-on-scroll */
+.tech-stack-section .animate-on-scroll {
+    opacity: 1;
+    transform: none;
 }
 
 .tech-stack-bg {

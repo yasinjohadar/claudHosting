@@ -1,5 +1,9 @@
 @extends('frontend.layouts.master')
 
+@push('styles')
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/devicon@2.15.1/devicon.min.css" crossorigin="anonymous">
+@endpush
+
 @section('page-title')
 استضافة كلاودسوفت | CloudSoft Hosting
 @endsection
