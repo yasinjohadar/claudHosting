@@ -25,6 +25,19 @@ class FilebrowserCredentialService
 
         $metadata = $site->metadata ?? [];
         if (! $force && $this->hasStoredCredentials($metadata)) {
+            $resolved = $this->containerResolver->resolve($site);
+            if ($resolved['success'] ?? false) {
+                $creds = $this->getCredentials($site);
+                if ($creds !== null) {
+                    $this->applyCredentialsOnContainer(
+                        (string) $resolved['host'],
+                        (string) $resolved['container_id'],
+                        $creds['username'],
+                        $creds['password']
+                    );
+                }
+            }
+
             return ['ok' => true];
         }
 
@@ -116,11 +129,14 @@ class FilebrowserCredentialService
         $dbQ = escapeshellarg($dbPath);
 
         $inner = sprintf(
-            'filebrowser users update %s %s --perm.admin -d %s 2>/dev/null || filebrowser users add %s %s --perm.admin -d %s',
+            'filebrowser users update %s %s --perm.admin -d %s 2>/dev/null || filebrowser users add %s %s --perm.admin -d %s; '
+            .'filebrowser users update root %s --perm.admin -d %s 2>/dev/null || true',
             $userQ,
             $passQ,
             $dbQ,
             $userQ,
+            $passQ,
+            $dbQ,
             $passQ,
             $dbQ
         );

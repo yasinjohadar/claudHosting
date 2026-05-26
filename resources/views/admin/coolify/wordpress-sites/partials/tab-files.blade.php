@@ -44,10 +44,8 @@
         </div>
         @if($filebrowserCustomUrl && $filebrowserCustomUrl !== $filebrowserOpenUrl)
         @php
-            $fbCustomHref = ($filebrowserOpenMode ?? 'embed') === 'new_tab' && $canOpenFilebrowser
-                ? $filebrowserCustomUrl
-                : ($wpSiteRoutes['filebrowser'] ?? $filebrowserCustomUrl);
-            $fbCustomNewTab = ($filebrowserOpenMode ?? 'embed') === 'new_tab';
+            $fbCustomHref = $wpSiteRoutes['filebrowser'] ?? $filebrowserCustomUrl;
+            $fbCustomNewTab = ($filebrowserOpenMode ?? 'embed') === 'new_tab' && ! empty($wpSiteRoutes['filebrowser']);
         @endphp
         <div class="alert alert-light border py-2 small mb-3">
             <strong>نطاق مخصص:</strong>

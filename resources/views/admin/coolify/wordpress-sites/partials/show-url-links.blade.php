@@ -30,9 +30,9 @@
         && $filebrowserHealthy !== false;
     $fbOpenMode = $filebrowserOpenMode ?? app(\App\Services\Coolify\CoolifySettingsService::class)->getWordpressFilebrowserOpenMode();
     $fbEmbedRoute = ($wpSiteRoutes ?? [])['filebrowser'] ?? null;
-    $fbLinkCoolify = ($fbOpenMode === 'new_tab' ? $filebrowserCoolifyUrl : ($fbEmbedRoute ?: $filebrowserCoolifyUrl));
-    $fbLinkCustom = ($fbOpenMode === 'new_tab' ? $filebrowserCustomUrl : ($fbEmbedRoute ?: $filebrowserCustomUrl));
-    $fbOpenNewTab = $fbOpenMode === 'new_tab';
+    $fbLinkCoolify = $fbEmbedRoute ?: $filebrowserCoolifyUrl;
+    $fbLinkCustom = $fbEmbedRoute ?: $filebrowserCustomUrl;
+    $fbOpenNewTab = $fbOpenMode === 'new_tab' && $fbEmbedRoute;
     $filebrowserCustomPending = $filebrowserCustomUrl && (
         ! $canOpenFilebrowserCoolify
         || $filebrowserDnsWarning

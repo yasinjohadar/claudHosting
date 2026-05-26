@@ -1,10 +1,9 @@
 @php
-    $fbMode = $filebrowserOpenMode ?? app(\App\Services\Coolify\CoolifySettingsService::class)->getWordpressFilebrowserOpenMode();
     $fbRoutes = $wpSiteRoutes ?? [];
     $fbEmbedHref = $fbRoutes['filebrowser'] ?? null;
-    $fbExternal = $filebrowserOpenUrl ?? null;
-    $fbHref = ($fbMode === 'new_tab' && $fbExternal) ? $fbExternal : ($fbEmbedHref ?: $fbExternal);
-    $fbNewTab = $fbMode === 'new_tab' && $fbExternal;
+    $fbMode = $filebrowserOpenMode ?? app(\App\Services\Coolify\CoolifySettingsService::class)->getWordpressFilebrowserOpenMode();
+    $fbHref = $fbEmbedHref ?: ($filebrowserOpenUrl ?? null);
+    $fbNewTab = $fbMode === 'new_tab';
     $fbDisabled = empty($canOpenFilebrowser) || ! $fbHref;
 @endphp
 <a href="{{ $fbDisabled ? '#' : $fbHref }}"

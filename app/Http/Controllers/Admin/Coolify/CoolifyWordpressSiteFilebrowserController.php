@@ -34,20 +34,16 @@ class CoolifyWordpressSiteFilebrowserController extends Controller
                 ->with('error', 'FileBrowser غير جاهز على هذا الموقع.');
         }
 
-        if (! $this->credentials->hasStoredCredentials($site->metadata ?? [])) {
-            $this->credentials->ensureCredentials($site);
-            $site = $site->fresh();
-        }
+        $this->credentials->ensureCredentials($site);
+        $site = $site->fresh();
+
+        $this->proxy->warmSession($site, (int) Auth::id());
 
         $openMode = $this->settings->getWordpressFilebrowserOpenMode();
         $externalUrl = $this->proxy->upstreamBaseUrl($site);
 
-        if ($openMode === 'new_tab' && $externalUrl) {
-            return redirect()->away($externalUrl);
-        }
-
         $panel = str_starts_with($request->route()?->getName() ?? '', 'client.') ? 'client' : 'admin';
-        $proxyUrl = route("{$this->routePrefix($request)}.filebrowser.proxy", ['uuid' => $uuid, 'path' => '']);
+        $proxyUrl = route("{$this->routePrefix($request)}.filebrowser.proxy", ['uuid' => $uuid, 'path' => 'files/']);
 
         return view('admin.coolify.wordpress-sites.filebrowser', [
             'site' => $site,
