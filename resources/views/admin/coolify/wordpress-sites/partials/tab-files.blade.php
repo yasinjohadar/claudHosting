@@ -1,7 +1,13 @@
 @php
     $filesReady = $wpManagementState['execute_ready'] ?? false;
-    $filebrowserUrl = $site->metadata['filebrowser_url'] ?? null;
-    $canOpenFilebrowser = $filebrowserUrl && ($site->status ?? '') === 'running';
+    $filebrowserCoolifyUrl = $site->metadata['filebrowser_coolify_url'] ?? null;
+    $filebrowserCustomUrl = $site->metadata['filebrowser_custom_url'] ?? null;
+    $filebrowserOpenUrl = $filebrowserCoolifyUrl ?: ($site->metadata['filebrowser_url'] ?? null);
+    $filebrowserHealthy = $site->metadata['filebrowser_healthy'] ?? null;
+    $filebrowserDnsWarning = $site->metadata['filebrowser_dns_warning'] ?? null;
+    $canOpenFilebrowser = $filebrowserOpenUrl
+        && ($site->status ?? '') === 'running'
+        && $filebrowserHealthy !== false;
 @endphp
 <div class="tab-pane fade" id="siteTabFiles" role="tabpanel">
     <div class="site-files-panel">
@@ -25,19 +31,33 @@
         <div class="alert alert-light border small mb-3 py-2 d-flex flex-wrap align-items-center justify-content-between gap-2">
             <span>
                 الملفات تُدار عبر <strong>SSH → docker exec / docker cp</strong> داخل حاوية WordPress. المسموح داخل جذر الموقع فقط.
-                @if($filebrowserUrl)
+                @if($filebrowserOpenUrl)
                 يمكنك أيضاً استخدام <strong>FileBrowser</strong> على نفس ملفات الموقع.
                 @endif
             </span>
-            @if($filebrowserUrl)
-            <a href="{{ $canOpenFilebrowser ? $filebrowserUrl : '#' }}"
+            @if($filebrowserOpenUrl)
+            <a href="{{ $canOpenFilebrowser ? $filebrowserOpenUrl : '#' }}"
                 class="btn btn-outline-info btn-sm {{ $canOpenFilebrowser ? '' : 'disabled' }}"
                 @if($canOpenFilebrowser) target="_blank" rel="noopener" @endif>
                 <i class="fe fe-external-link"></i> فتح FileBrowser
             </a>
             @endif
         </div>
-        @if($filebrowserUrl && $canOpenFilebrowser)
+        @if($filebrowserCustomUrl && $filebrowserCustomUrl !== $filebrowserOpenUrl)
+        <div class="alert alert-light border py-2 small mb-3">
+            <strong>نطاق مخصص:</strong>
+            <a href="{{ $canOpenFilebrowser ? $filebrowserCustomUrl : '#' }}" dir="ltr"
+                class="{{ $canOpenFilebrowser ? '' : 'text-muted' }}"
+                @if($canOpenFilebrowser) target="_blank" rel="noopener" @endif>{{ $filebrowserCustomUrl }}</a>
+            @if(! $canOpenFilebrowser)
+            <span class="text-warning ms-1">— يتطلب تشغيل حاوية filebrowser (Running/healthy)</span>
+            @endif
+        </div>
+        @endif
+        @if($filebrowserDnsWarning)
+        <div class="alert alert-warning py-2 small mb-3">{{ $filebrowserDnsWarning }}</div>
+        @endif
+        @if($filebrowserOpenUrl && $canOpenFilebrowser)
         <div class="alert alert-info py-2 small mb-3">
             عند أول فتح لـ FileBrowser عيّن كلمة مرور قوية من واجهة التطبيق.
         </div>

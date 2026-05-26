@@ -8,13 +8,27 @@ use Illuminate\Console\Command;
 
 class AttachFilebrowserToWordpressSiteCommand extends Command
 {
-    protected $signature = 'wordpress-sites:attach-filebrowser {uuid : Site UUID}';
+    protected $signature = 'wordpress-sites:attach-filebrowser
+                            {uuid? : Site UUID}
+                            {--slug= : Site slug (مثل site5) بدل UUID}';
 
     protected $description = 'إرفاق FileBrowser بموقع WordPress موجود على Coolify';
 
     public function handle(WordpressSiteProvisioningService $provisioning): int
     {
-        $site = CoolifyWordpressSite::query()->where('uuid', $this->argument('uuid'))->first();
+        $uuid = $this->argument('uuid');
+        $slug = $this->option('slug');
+
+        if (! $uuid && ! $slug) {
+            $this->error('حدّد uuid أو --slug=site5');
+
+            return self::FAILURE;
+        }
+
+        $site = CoolifyWordpressSite::query()
+            ->when($uuid, fn ($q) => $q->where('uuid', $uuid))
+            ->when(! $uuid && $slug, fn ($q) => $q->where('slug', $slug))
+            ->first();
 
         if (! $site) {
             $this->error('الموقع غير موجود.');

@@ -6,9 +6,31 @@
     $cfEnabled = filter_var($site->metadata['cloudflare_enabled'] ?? true, FILTER_VALIDATE_BOOLEAN);
     $customPending = $cfEnabled && (empty($cf) || empty($cf['proxied'] ?? null) || !empty($site->metadata['domain_warning']));
     $canOpenCustom = $customUrl && $site->status === 'running' && ! $customPending;
-    $canOpenCoolify = $coolifyDefaultUrl && $site->status === 'running';
-    $filebrowserUrl = $site->metadata['filebrowser_url'] ?? null;
-    $canOpenFilebrowser = $filebrowserUrl && $site->status === 'running';
+
+    $filebrowserCoolifyUrl = $site->metadata['filebrowser_coolify_url'] ?? null;
+    $filebrowserCustomUrl = $site->metadata['filebrowser_custom_url'] ?? null;
+    $filebrowserDnsWarning = $site->metadata['filebrowser_dns_warning'] ?? null;
+    $filebrowserHealthy = $site->metadata['filebrowser_healthy'] ?? null;
+    $legacyFilebrowserUrl = $site->metadata['filebrowser_url'] ?? null;
+
+    if (! $filebrowserCoolifyUrl && ! $filebrowserCustomUrl && $legacyFilebrowserUrl) {
+        $filesHost = $site->slug ? 'files.'.$site->slug : '';
+        if ($filesHost !== '' && str_contains($legacyFilebrowserUrl, $filesHost)) {
+            $filebrowserCustomUrl = $legacyFilebrowserUrl;
+        } else {
+            $filebrowserCoolifyUrl = $legacyFilebrowserUrl;
+        }
+    }
+
+    $filebrowserEnabled = ! empty($site->metadata['filebrowser_enabled']);
+    $canOpenFilebrowserCoolify = $filebrowserCoolifyUrl
+        && $site->status === 'running'
+        && $filebrowserHealthy !== false;
+    $filebrowserCustomPending = $filebrowserCustomUrl && (
+        ! $canOpenFilebrowserCoolify
+        || $filebrowserDnsWarning
+        || $customPending
+    );
 @endphp
 <div class="d-flex flex-wrap gap-2 mt-2 align-items-center">
     @if($customUrl)
@@ -33,15 +55,41 @@
         <i class="fe fe-server"></i> رابط Coolify: <span class="text-muted">جاري الجلب… حدّث الصفحة</span>
     </span>
     @endif
-    @if($filebrowserUrl)
-    <span class="site-url-chip site-url-chip--filebrowser" title="FileBrowser — إدارة ملفات الموقع">
-        <i class="fe fe-folder text-info"></i>
-        <span class="small text-muted">الملفات:</span>
-        @if($canOpenFilebrowser)
-        <a href="{{ $filebrowserUrl }}" target="_blank" rel="noopener" dir="ltr" class="text-decoration-none">{{ $filebrowserUrl }}</a>
-        @else
-        <span dir="ltr" class="text-muted">{{ $filebrowserUrl }}</span>
+
+    @if($filebrowserEnabled && ($filebrowserCoolifyUrl || $filebrowserCustomUrl))
+        @if($filebrowserCoolifyUrl)
+        <span class="site-url-chip site-url-chip--filebrowser" title="FileBrowser — رابط Coolify (يعمل فور تشغيل الحاوية)">
+            <i class="fe fe-folder text-info"></i>
+            <span class="small text-muted">ملفات (Coolify):</span>
+            @if($canOpenFilebrowserCoolify)
+            <a href="{{ $filebrowserCoolifyUrl }}" target="_blank" rel="noopener" dir="ltr" class="text-decoration-none">{{ $filebrowserCoolifyUrl }}</a>
+            <span class="badge bg-success-transparent text-success ms-1">جاهز</span>
+            @else
+            <span dir="ltr" class="text-muted">{{ $filebrowserCoolifyUrl }}</span>
+            <span class="badge bg-warning-transparent text-warning ms-1">انتظر التشغيل</span>
+            @endif
+        </span>
         @endif
-    </span>
+
+        @if($filebrowserCustomUrl)
+        <span class="site-url-chip {{ $filebrowserCustomPending ? 'site-url-chip--pending' : '' }}" title="FileBrowser — النطاق المخصص (files.{slug})">
+            <i class="fe fe-globe {{ $filebrowserCustomPending ? 'text-warning' : 'text-info' }}"></i>
+            <span class="small text-muted">ملفات (مخصص):</span>
+            @if($canOpenFilebrowserCoolify && ! $filebrowserCustomPending)
+            <a href="{{ $filebrowserCustomUrl }}" target="_blank" rel="noopener" dir="ltr" class="text-decoration-none">{{ $filebrowserCustomUrl }}</a>
+            @else
+            <span dir="ltr" class="text-muted">{{ $filebrowserCustomUrl }}</span>
+            @endif
+            @if($filebrowserCustomPending)
+            <span class="badge bg-warning-transparent text-warning ms-1">قيد التفعيل</span>
+            @endif
+        </span>
+        @endif
+
+        @if($filebrowserDnsWarning)
+        <span class="small text-warning" title="{{ $filebrowserDnsWarning }}">
+            <i class="fe fe-alert-triangle"></i> DNS FileBrowser: {{ \Illuminate\Support\Str::limit($filebrowserDnsWarning, 80) }}
+        </span>
+        @endif
     @endif
 </div>

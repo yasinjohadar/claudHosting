@@ -9,8 +9,6 @@ class WordpressComposeFilebrowserMerger
 {
     public const FILEBROWSER_VOLUME = 'wordpress-files';
 
-    public const FILEBROWSER_META_VOLUME = 'filebrowser-meta';
-
     public function __construct(
         protected CoolifyApiService $coolify
     ) {}
@@ -50,57 +48,120 @@ class WordpressComposeFilebrowserMerger
     {
         $yamlClass = \Symfony\Component\Yaml\Yaml::class;
 
-        $fbYaml = $this->coolify->getServiceTemplateComposeYaml('filebrowser')
-            ?? $this->fallbackFilebrowserComposeYaml();
+        $filebrowser = $this->loadFilebrowserServiceFromTemplate();
+        $filebrowser = $this->patchFilebrowserService($filebrowser);
 
         try {
             /** @var array<string, mixed> $wp */
             $wp = $yamlClass::parse($wpYaml);
-            /** @var array<string, mixed> $fb */
-            $fb = $yamlClass::parse($fbYaml);
         } catch (\Throwable $e) {
-            return $this->mergeWithStringAppend($wpYaml);
-        }
-
-        $fbServices = $fb['services'] ?? null;
-        if (! is_array($fbServices) || ! isset($fbServices['filebrowser']) || ! is_array($fbServices['filebrowser'])) {
-            return $this->mergeWithStringAppend($wpYaml);
+            throw new RuntimeException('فشل تحليل قالب WordPress: '.$e->getMessage(), 0, $e);
         }
 
         if (! isset($wp['services']) || ! is_array($wp['services'])) {
             $wp['services'] = [];
         }
 
-        $filebrowser = $fbServices['filebrowser'];
-        $filebrowser['volumes'] = [
-            self::FILEBROWSER_VOLUME.':/srv',
-            self::FILEBROWSER_META_VOLUME.':/data',
-        ];
-        $filebrowser['command'] = [
-            '--root=/srv',
-            '--database=/data/filebrowser.db',
-            '--address=0.0.0.0',
-            '--port=80',
-        ];
-        unset($filebrowser['healthcheck']);
+        $wp['services']['filebrowser'] = $filebrowser;
+
+        if (isset($wp['volumes']) && is_array($wp['volumes'])) {
+            unset($wp['volumes']['filebrowser-meta']);
+            if ($wp['volumes'] === []) {
+                unset($wp['volumes']);
+            }
+        }
+
+        return $yamlClass::dump($wp, 6, 2, $yamlClass::DUMP_MULTI_LINE_LITERAL_BLOCK);
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    protected function loadFilebrowserServiceFromTemplate(): array
+    {
+        $fbYaml = $this->coolify->getServiceTemplateComposeYaml('filebrowser');
+        if ($fbYaml === null) {
+            return $this->parseFilebrowserServiceFromYaml($this->fallbackFilebrowserComposeYaml());
+        }
+
+        return $this->parseFilebrowserServiceFromYaml($fbYaml);
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    protected function parseFilebrowserServiceFromYaml(string $yaml): array
+    {
+        if (class_exists(\Symfony\Component\Yaml\Yaml::class)) {
+            /** @var array<string, mixed> $parsed */
+            $parsed = \Symfony\Component\Yaml\Yaml::parse($yaml);
+            $services = $parsed['services'] ?? null;
+            if (is_array($services) && isset($services['filebrowser']) && is_array($services['filebrowser'])) {
+                return $services['filebrowser'];
+            }
+        }
+
+        throw new RuntimeException('قالب filebrowser لا يحتوي على خدمة filebrowser.');
+    }
+
+    /**
+     * يبقي إعداد Coolify الأصلي (filebrowser.json + database.db) ويستبدل mount الملفات فقط.
+     *
+     * @param  array<string, mixed>  $filebrowser
+     * @return array<string, mixed>
+     */
+    protected function patchFilebrowserService(array $filebrowser): array
+    {
+        unset($filebrowser['command']);
+
+        $volumes = [];
+        $srvReplaced = false;
+
+        foreach ($filebrowser['volumes'] ?? [] as $volume) {
+            if (is_string($volume)) {
+                if (str_contains($volume, ':/srv') || str_ends_with($volume, ':/srv')) {
+                    $volumes[] = self::FILEBROWSER_VOLUME.':/srv';
+                    $srvReplaced = true;
+
+                    continue;
+                }
+                $volumes[] = $volume;
+
+                continue;
+            }
+
+            if (! is_array($volume)) {
+                continue;
+            }
+
+            $target = (string) ($volume['target'] ?? '');
+            if ($target === '/srv') {
+                $volumes[] = self::FILEBROWSER_VOLUME.':/srv';
+                $srvReplaced = true;
+
+                continue;
+            }
+
+            $volumes[] = $volume;
+        }
+
+        if (! $srvReplaced) {
+            array_unshift($volumes, self::FILEBROWSER_VOLUME.':/srv');
+        }
+
+        $filebrowser['volumes'] = $volumes;
+
         $filebrowser['environment'] = $this->normalizeEnvironmentList(
             $filebrowser['environment'] ?? [],
             ['SERVICE_FQDN_FILEBROWSER_80']
         );
 
-        $wp['services']['filebrowser'] = $filebrowser;
-
-        if (! isset($wp['volumes']) || ! is_array($wp['volumes'])) {
-            $wp['volumes'] = [];
-        }
-        $wp['volumes'][self::FILEBROWSER_META_VOLUME] = null;
-
-        return $yamlClass::dump($wp, 6, 2, $yamlClass::DUMP_MULTI_LINE_LITERAL_BLOCK);
+        return $filebrowser;
     }
 
     protected function mergeWithStringAppend(string $wpYaml): string
     {
-        $block = "\n".$this->filebrowserServiceYamlBlock()."\n\nvolumes:\n  ".self::FILEBROWSER_META_VOLUME.": null\n";
+        $block = "\n".$this->filebrowserServiceYamlBlock();
 
         return rtrim($wpYaml).$block;
     }
@@ -112,14 +173,20 @@ class WordpressComposeFilebrowserMerger
     image: 'filebrowser/filebrowser:latest'
     environment:
       - SERVICE_FQDN_FILEBROWSER_80
-    command:
-      - --root=/srv
-      - --database=/database.db
-      - --address=0.0.0.0
-      - --port=80
     volumes:
       - 'wordpress-files:/srv'
-      - 'filebrowser-meta:/data'
+      -
+        type: bind
+        source: ./database.db
+        target: /database.db
+        isDirectory: false
+        content: ''
+      -
+        type: bind
+        source: ./filebrowser.json
+        target: /.filebrowser.json
+        read_only: true
+        content: "{\n  \"address\": \"0.0.0.0\",\n  \"port\": 80\n}\n"
 YAML;
     }
 

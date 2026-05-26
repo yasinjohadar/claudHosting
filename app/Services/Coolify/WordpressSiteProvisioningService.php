@@ -93,9 +93,7 @@ class WordpressSiteProvisioningService
             ], $coolifyUrls);
 
             if ($this->settings->getWordpressFilebrowserEnabled()) {
-                $metadata['filebrowser_enabled'] = true;
-                $metadata['filebrowser_url'] = $this->coolify->extractFilebrowserPublicUrl($service)
-                    ?: $filebrowserUrl;
+                $metadata = array_merge($metadata, $this->buildFilebrowserMetadata($site, $service));
             }
 
             if ($domainWarning !== null) {
@@ -608,8 +606,7 @@ class WordpressSiteProvisioningService
         }
 
         if ($this->settings->getWordpressFilebrowserEnabled() && ($metadata['filebrowser_enabled'] ?? false)) {
-            $metadata['filebrowser_url'] = $this->coolify->extractFilebrowserPublicUrl($service)
-                ?: $this->settings->buildWordpressFilebrowserPublicUrl($site->slug);
+            $metadata = array_merge($metadata, $this->buildFilebrowserMetadata($site, $service));
         }
 
         $updates = [
@@ -656,7 +653,7 @@ class WordpressSiteProvisioningService
         unset($metadata['domain_warning']);
 
         if ($filebrowserUrl !== null && $filebrowserUrl !== '') {
-            $metadata['filebrowser_url'] = $this->coolify->extractFilebrowserPublicUrl($service) ?: $filebrowserUrl;
+            $metadata = array_merge($metadata, $this->buildFilebrowserMetadata($site, $service));
         }
 
         $site->update([
@@ -718,7 +715,7 @@ class WordpressSiteProvisioningService
             )));
 
             $site->update(['status' => 'provisioning', 'error_message' => null]);
-            $this->appendProvisionLog($site, 'filebrowser_attach', 'تحديث compose لإضافة FileBrowser...');
+            $this->appendProvisionLog($site, 'filebrowser_attach', 'تحديث compose لإضافة FileBrowser (قالب Coolify الأصلي). إن بقيت الحاوية Restarting: على السيرفر `docker volume ls | grep filebrowser-meta` واحذف الـ volume التالف إن وُجد، ثم أعد «إرفاق FileBrowser».');
 
             $patch = $this->coolify->updateService($site->service_uuid, [
                 'docker_compose_raw' => $this->filebrowserMerger->mergeForCoolifyApi($serviceType),
@@ -786,15 +783,27 @@ class WordpressSiteProvisioningService
      */
     protected function finalizeFilebrowserForSite(CoolifyWordpressSite $site, array $service): void
     {
-        $filebrowserUrl = $this->coolify->extractFilebrowserPublicUrl($service)
-            ?: $this->settings->buildWordpressFilebrowserPublicUrl($site->slug);
-
-        $metadata = array_merge($site->metadata ?? [], [
-            'filebrowser_enabled' => true,
-            'filebrowser_url' => $filebrowserUrl,
-        ]);
+        $metadata = array_merge($site->metadata ?? [], $this->buildFilebrowserMetadata($site, $service));
 
         $site->update(['metadata' => $metadata]);
+    }
+
+    /**
+     * @param  array<string, mixed>  $service
+     * @return array<string, mixed>
+     */
+    protected function buildFilebrowserMetadata(CoolifyWordpressSite $site, array $service): array
+    {
+        $coolifyUrl = $this->coolify->extractFilebrowserPublicUrl($service);
+        $customUrl = $this->settings->buildWordpressFilebrowserPublicUrl($site->slug);
+
+        return [
+            'filebrowser_enabled' => true,
+            'filebrowser_coolify_url' => $coolifyUrl,
+            'filebrowser_custom_url' => $customUrl,
+            'filebrowser_url' => $coolifyUrl ?: $customUrl,
+            'filebrowser_healthy' => $this->coolify->serviceHasRunningFilebrowser($service),
+        ];
     }
 
     /**
