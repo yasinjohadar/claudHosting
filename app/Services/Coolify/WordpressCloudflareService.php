@@ -165,6 +165,18 @@ class WordpressCloudflareService
         $baseDomain = $this->settings->getWordpressBaseDomain();
         $fqdn = $recordName.'.'.$baseDomain;
 
+        $mainCf = ($site->metadata ?? [])['cloudflare'] ?? [];
+        if (isset($mainCf['origin']) && filter_var($mainCf['origin'], FILTER_VALIDATE_IP)) {
+            $origin = (string) $mainCf['origin'];
+            $isIp = true;
+        } elseif (! $isIp) {
+            $originHost = strtolower($origin);
+            $fbFqdn = strtolower($fqdn);
+            if ($originHost === $fbFqdn) {
+                $origin = strtolower($site->slug.'.'.$baseDomain);
+            }
+        }
+
         $this->log($log, 'cloudflare_filebrowser_dns', 'إعداد DNS لـ FileBrowser: '.$fqdn.' → '.$origin);
 
         $existing = $this->cloudflare->findDnsRecordByName(

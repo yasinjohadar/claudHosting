@@ -1685,6 +1685,9 @@ class CoolifyApiService
      */
     public function extractFilebrowserPublicUrl(array $service): ?string
     {
+        $coolifyUrl = null;
+        $customUrl = null;
+
         foreach ($this->normalizeList($service['applications'] ?? []) as $app) {
             if (! is_array($app)) {
                 continue;
@@ -1694,25 +1697,36 @@ class CoolifyApiService
                 continue;
             }
 
+            $candidates = [];
             $fqdn = trim((string) ($app['fqdn'] ?? ''));
             if ($fqdn !== '') {
-                return $this->normalizePublicUrl($fqdn);
+                $candidates[] = $fqdn;
             }
-
             foreach ($this->normalizeList($app['urls'] ?? []) as $entry) {
                 if (is_string($entry) && trim($entry) !== '') {
-                    return $this->normalizePublicUrl($entry);
-                }
-                if (is_array($entry)) {
+                    $candidates[] = $entry;
+                } elseif (is_array($entry)) {
                     $raw = $entry['url'] ?? $entry['fqdn'] ?? null;
                     if (is_string($raw) && trim($raw) !== '') {
-                        return $this->normalizePublicUrl($raw);
+                        $candidates[] = $raw;
                     }
+                }
+            }
+
+            foreach ($candidates as $raw) {
+                $url = $this->normalizePublicUrl($raw);
+                if ($url === '') {
+                    continue;
+                }
+                if ($this->isCoolifyGeneratedHost($this->hostnameFromUrl($url))) {
+                    $coolifyUrl ??= $url;
+                } else {
+                    $customUrl ??= $url;
                 }
             }
         }
 
-        return null;
+        return $coolifyUrl ?? $customUrl;
     }
 
     protected function normalizeServiceUrl(string $publicUrl): string
@@ -2074,6 +2088,24 @@ class CoolifyApiService
     {
         foreach ($this->normalizeList($service['applications'] ?? []) as $app) {
             if (! is_array($app)) {
+                continue;
+            }
+            $name = strtolower((string) ($app['name'] ?? ''));
+            if (str_contains($name, 'filebrowser') || str_contains($name, 'mariadb') || str_contains($name, 'mysql')) {
+                continue;
+            }
+            $fqdn = (string) ($app['fqdn'] ?? '');
+            if ($fqdn !== '') {
+                return $this->hostnameFromUrl($fqdn);
+            }
+        }
+
+        foreach ($this->normalizeList($service['applications'] ?? []) as $app) {
+            if (! is_array($app)) {
+                continue;
+            }
+            $name = strtolower((string) ($app['name'] ?? ''));
+            if (str_contains($name, 'filebrowser')) {
                 continue;
             }
             $fqdn = (string) ($app['fqdn'] ?? '');
