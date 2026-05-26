@@ -12,7 +12,9 @@
         if (!select || !btn || !url || !key) return;
 
         btn.addEventListener('click', async () => {
+            const prevLabel = btn.innerHTML;
             btn.disabled = true;
+            btn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>';
             const body = { user_id: select.value || null };
             body[key] = value;
             try {
@@ -38,10 +40,17 @@
                 } else if (data.success && !cellSel) {
                     setTimeout(() => location.reload(), 600);
                 }
+                if (data.success) {
+                    const toggle = wrap.closest('.dropdown')?.querySelector('[data-bs-toggle="dropdown"]');
+                    if (toggle && typeof bootstrap !== 'undefined') {
+                        bootstrap.Dropdown.getInstance(toggle)?.hide();
+                    }
+                }
             } catch {
                 if (typeof whmShowToast === 'function') whmShowToast('تعذّر الحفظ', 'danger');
             } finally {
                 btn.disabled = false;
+                btn.innerHTML = prevLabel;
             }
         });
     });
