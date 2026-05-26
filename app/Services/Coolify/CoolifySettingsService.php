@@ -88,6 +88,9 @@ class CoolifySettingsService
             'wordpress_filebrowser_enabled' => $this->getWordpressFilebrowserEnabled(),
             'wordpress_filebrowser_subdomain_prefix' => $this->getWordpressFilebrowserSubdomainPrefix(),
             'wordpress_filebrowser_subdomain_style' => $this->getWordpressFilebrowserSubdomainStyle(),
+            'wordpress_filebrowser_open_mode' => $this->getWordpressFilebrowserOpenMode(),
+            'wordpress_filebrowser_admin_username' => $this->getWordpressFilebrowserAdminUsername(),
+            'wordpress_filebrowser_password_length' => $this->getWordpressFilebrowserPasswordLength(),
             'wordpress_management_queue' => $this->getWordpressManagementQueue(),
             'wordpress_redis_enabled' => $this->getWordpressRedisEnabled(),
             'wordpress_redis_host' => $this->getWordpressRedisHost(),
@@ -376,6 +379,37 @@ class CoolifySettingsService
         )));
 
         return $style === 'nested' ? 'nested' : 'flat';
+    }
+
+    public function getWordpressFilebrowserOpenMode(): string
+    {
+        $mode = strtolower(trim((string) $this->getSettingValue(
+            'wordpress_filebrowser_open_mode',
+            config('coolify.defaults.wordpress_filebrowser_open_mode', 'embed')
+        )));
+
+        return in_array($mode, ['embed', 'new_tab'], true) ? $mode : 'embed';
+    }
+
+    public function getWordpressFilebrowserAdminUsername(): string
+    {
+        $user = strtolower(trim((string) $this->getSettingValue(
+            'wordpress_filebrowser_admin_username',
+            config('coolify.defaults.wordpress_filebrowser_admin_username', 'admin')
+        )));
+        $user = preg_replace('/[^a-z0-9_-]/', '', $user ?? '') ?? '';
+
+        return $user !== '' ? $user : 'admin';
+    }
+
+    public function getWordpressFilebrowserPasswordLength(): int
+    {
+        $len = (int) $this->getSettingValue(
+            'wordpress_filebrowser_password_length',
+            config('coolify.defaults.wordpress_filebrowser_password_length', '20')
+        );
+
+        return max(12, min(64, $len > 0 ? $len : 20));
     }
 
     public function buildWordpressFilebrowserPublicUrl(string $slug): string
@@ -824,6 +858,37 @@ class CoolifySettingsService
             SystemSetting::set(
                 $keys['wordpress_filebrowser_subdomain_style'],
                 $style === 'nested' ? 'nested' : 'flat',
+                'string',
+                self::GROUP
+            );
+        }
+
+        if (array_key_exists('wordpress_filebrowser_open_mode', $data)) {
+            $mode = strtolower(trim((string) $data['wordpress_filebrowser_open_mode']));
+            SystemSetting::set(
+                $keys['wordpress_filebrowser_open_mode'],
+                $mode === 'new_tab' ? 'new_tab' : 'embed',
+                'string',
+                self::GROUP
+            );
+        }
+
+        if (array_key_exists('wordpress_filebrowser_admin_username', $data)) {
+            $user = strtolower(trim((string) $data['wordpress_filebrowser_admin_username']));
+            $user = preg_replace('/[^a-z0-9_-]/', '', $user ?? '') ?? '';
+            SystemSetting::set(
+                $keys['wordpress_filebrowser_admin_username'],
+                $user !== '' ? $user : 'admin',
+                'string',
+                self::GROUP
+            );
+        }
+
+        if (array_key_exists('wordpress_filebrowser_password_length', $data)) {
+            $len = max(12, min(64, (int) ($data['wordpress_filebrowser_password_length'] ?? 20)));
+            SystemSetting::set(
+                $keys['wordpress_filebrowser_password_length'],
+                (string) $len,
                 'string',
                 self::GROUP
             );

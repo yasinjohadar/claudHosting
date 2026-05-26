@@ -60,16 +60,41 @@
                     value="{{ old('wordpress_filebrowser_subdomain_prefix', $form['wordpress_filebrowser_subdomain_prefix'] ?? 'files') }}"
                     placeholder="files">
             </div>
-            <div class="mb-0">
-                <label class="form-label">شكل النطاق الفرعي</label>
-                <select name="wordpress_filebrowser_subdomain_style" class="form-select">
-                    @php $fbStyle = old('wordpress_filebrowser_subdomain_style', $form['wordpress_filebrowser_subdomain_style'] ?? 'flat'); @endphp
-                    <option value="flat" {{ $fbStyle === 'flat' ? 'selected' : '' }}>مستوى واحد (موصى به + Cloudflare مجاني)</option>
-                    <option value="nested" {{ $fbStyle === 'nested' ? 'selected' : '' }}>مستويان: files.slug.domain</option>
-                </select>
-                <div class="form-text">
-                    <strong>flat:</strong> <code dir="ltr">https://my-shop-files.{{ $form['wordpress_base_domain'] ?: 'claudsoft.com' }}</code> — شهادة Cloudflare المجانية تعمل.<br>
-                    <strong>nested:</strong> <code dir="ltr">https://files.my-shop.{{ $form['wordpress_base_domain'] ?: 'claudsoft.com' }}</code> — قد يعطي <code>ERR_SSL_VERSION_OR_CIPHER_MISMATCH</code> بدون شهادة متقدمة.
+            <div class="row g-3 mb-3">
+                <div class="col-md-6">
+                    <label class="form-label">طريقة فتح FileBrowser</label>
+                    @php $fbOpen = old('wordpress_filebrowser_open_mode', $form['wordpress_filebrowser_open_mode'] ?? 'embed'); @endphp
+                    <select name="wordpress_filebrowser_open_mode" class="form-select">
+                        <option value="embed" {{ $fbOpen === 'embed' ? 'selected' : '' }}>صفحة مدمجة داخل اللوحة (افتراضي)</option>
+                        <option value="new_tab" {{ $fbOpen === 'new_tab' ? 'selected' : '' }}>تاب جديد (الرابط المباشر)</option>
+                    </select>
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label">اسم مستخدم FileBrowser الافتراضي</label>
+                    <input type="text" name="wordpress_filebrowser_admin_username" class="form-control" dir="ltr"
+                        value="{{ old('wordpress_filebrowser_admin_username', $form['wordpress_filebrowser_admin_username'] ?? 'admin') }}"
+                        pattern="[a-z0-9_-]+" maxlength="32">
+                </div>
+            </div>
+            <div class="row g-3 mb-0">
+                <div class="col-md-6">
+                    <label class="form-label">شكل النطاق الفرعي</label>
+                    <select name="wordpress_filebrowser_subdomain_style" class="form-select">
+                        @php $fbStyle = old('wordpress_filebrowser_subdomain_style', $form['wordpress_filebrowser_subdomain_style'] ?? 'flat'); @endphp
+                        <option value="flat" {{ $fbStyle === 'flat' ? 'selected' : '' }}>مستوى واحد (موصى به + Cloudflare مجاني)</option>
+                        <option value="nested" {{ $fbStyle === 'nested' ? 'selected' : '' }}>مستويان: files.slug.domain</option>
+                    </select>
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label">طول كلمة مرور FileBrowser</label>
+                    <input type="number" name="wordpress_filebrowser_password_length" class="form-control" min="12" max="64"
+                        value="{{ old('wordpress_filebrowser_password_length', $form['wordpress_filebrowser_password_length'] ?? 20) }}">
+                </div>
+                <div class="col-12">
+                    <div class="form-text">
+                        <strong>flat:</strong> <code dir="ltr">https://my-shop-files.{{ $form['wordpress_base_domain'] ?: 'claudsoft.com' }}</code> — شهادة Cloudflare المجانية تعمل.<br>
+                        <strong>nested:</strong> <code dir="ltr">https://files.my-shop.{{ $form['wordpress_base_domain'] ?: 'claudsoft.com' }}</code> — قد يعطي <code>ERR_SSL_VERSION_OR_CIPHER_MISMATCH</code> بدون شهادة متقدمة.
+                    </div>
                 </div>
             </div>
         </div>

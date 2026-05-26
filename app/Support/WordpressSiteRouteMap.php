@@ -32,6 +32,11 @@ class WordpressSiteRouteMap
             'terminalSession' => route("{$prefix}.terminal.session", $uuid),
             'terminalCommands' => route("{$prefix}.terminal.commands"),
             'syncCloudflare' => route("{$prefix}.sync-cloudflare", $uuid),
+            'filebrowser' => route("{$prefix}.filebrowser", $uuid),
+            'filebrowserProxy' => route("{$prefix}.filebrowser.proxy", ['uuid' => $uuid, 'path' => '']),
+            'filebrowserRotate' => $panel === 'admin'
+                ? route('admin.coolify.wordpress-sites.filebrowser.rotate-credentials', $uuid)
+                : '',
             'applyCoolifyDomain' => $panel === 'admin' ? route('admin.coolify.wordpress-sites.apply-coolify-domain', $uuid) : '',
             'retry' => $panel === 'admin' ? route('admin.coolify.wordpress-sites.retry', $uuid) : '',
             'restartCoolify' => $panel === 'admin' ? route('admin.coolify.wordpress-sites.restart-coolify', $uuid) : '',

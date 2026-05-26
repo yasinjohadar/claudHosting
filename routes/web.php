@@ -149,6 +149,10 @@ Route::middleware(['auth'])->group(function () {
             Route::get('/{uuid}/docker/inspect', [CoolifyWordpressSiteFilesController::class, 'dockerInspect'])->name('docker.inspect');
             Route::post('/{uuid}/terminal/session', [CoolifyWordpressSiteFilesController::class, 'terminalSession'])->name('terminal.session');
             Route::get('/terminal/commands', [CoolifyWordpressSiteFilesController::class, 'terminalCommands'])->name('terminal.commands');
+            Route::get('/{uuid}/filebrowser', [\App\Http\Controllers\Admin\Coolify\CoolifyWordpressSiteFilebrowserController::class, 'show'])->name('filebrowser');
+            Route::any('/{uuid}/filebrowser/proxy/{path?}', [\App\Http\Controllers\Admin\Coolify\CoolifyWordpressSiteFilebrowserController::class, 'proxy'])
+                ->where('path', '.*')
+                ->name('filebrowser.proxy');
             Route::post('/{uuid}/sync-cloudflare', [CoolifyWordpressSiteController::class, 'syncCloudflare'])->name('sync-cloudflare');
             Route::get('/{uuid}', [\App\Http\Controllers\Client\ClientWordpressSiteController::class, 'show'])->name('show');
         });
@@ -335,6 +339,12 @@ Route::middleware(['auth', 'admin.panel'])->group(function () {
                 Route::get('/{uuid}/docker/inspect', [CoolifyWordpressSiteFilesController::class, 'dockerInspect'])->name('docker.inspect');
                 Route::post('/{uuid}/terminal/session', [CoolifyWordpressSiteFilesController::class, 'terminalSession'])->name('terminal.session');
                 Route::get('/terminal/commands', [CoolifyWordpressSiteFilesController::class, 'terminalCommands'])->name('terminal.commands');
+                Route::get('/{uuid}/filebrowser', [\App\Http\Controllers\Admin\Coolify\CoolifyWordpressSiteFilebrowserController::class, 'show'])->name('filebrowser');
+                Route::any('/{uuid}/filebrowser/proxy/{path?}', [\App\Http\Controllers\Admin\Coolify\CoolifyWordpressSiteFilebrowserController::class, 'proxy'])
+                    ->where('path', '.*')
+                    ->name('filebrowser.proxy');
+                Route::post('/{uuid}/filebrowser/rotate-credentials', [\App\Http\Controllers\Admin\Coolify\CoolifyWordpressSiteFilebrowserController::class, 'rotateCredentials'])
+                    ->name('filebrowser.rotate-credentials');
                 Route::post('/{uuid}/sync-cloudflare', [CoolifyWordpressSiteController::class, 'syncCloudflare'])->name('sync-cloudflare');
                 Route::post('/{uuid}/attach-filebrowser', [CoolifyWordpressSiteController::class, 'attachFilebrowser'])->name('attach-filebrowser');
                 Route::post('/{uuid}/apply-coolify-domain', [CoolifyWordpressSiteController::class, 'applyCoolifyDomain'])->name('apply-coolify-domain');

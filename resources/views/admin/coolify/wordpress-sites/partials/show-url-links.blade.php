@@ -28,6 +28,11 @@
     $canOpenFilebrowserCoolify = $filebrowserCoolifyUrl
         && $site->status === 'running'
         && $filebrowserHealthy !== false;
+    $fbOpenMode = $filebrowserOpenMode ?? app(\App\Services\Coolify\CoolifySettingsService::class)->getWordpressFilebrowserOpenMode();
+    $fbEmbedRoute = ($wpSiteRoutes ?? [])['filebrowser'] ?? null;
+    $fbLinkCoolify = ($fbOpenMode === 'new_tab' ? $filebrowserCoolifyUrl : ($fbEmbedRoute ?: $filebrowserCoolifyUrl));
+    $fbLinkCustom = ($fbOpenMode === 'new_tab' ? $filebrowserCustomUrl : ($fbEmbedRoute ?: $filebrowserCustomUrl));
+    $fbOpenNewTab = $fbOpenMode === 'new_tab';
     $filebrowserCustomPending = $filebrowserCustomUrl && (
         ! $canOpenFilebrowserCoolify
         || $filebrowserDnsWarning
@@ -64,7 +69,7 @@
             <i class="fe fe-folder text-info"></i>
             <span class="small text-muted">ملفات (Coolify):</span>
             @if($canOpenFilebrowserCoolify)
-            <a href="{{ $filebrowserCoolifyUrl }}" target="_blank" rel="noopener" dir="ltr" class="text-decoration-none">{{ $filebrowserCoolifyUrl }}</a>
+            <a href="{{ $fbLinkCoolify }}" @if($fbOpenNewTab) target="_blank" rel="noopener" @endif dir="ltr" class="text-decoration-none">{{ $filebrowserCoolifyUrl }}</a>
             <span class="badge bg-success-transparent text-success ms-1">جاهز</span>
             @else
             <span dir="ltr" class="text-muted">{{ $filebrowserCoolifyUrl }}</span>
@@ -78,7 +83,7 @@
             <i class="fe fe-globe {{ $filebrowserCustomPending ? 'text-warning' : 'text-info' }}"></i>
             <span class="small text-muted">ملفات (مخصص):</span>
             @if($canOpenFilebrowserCoolify && ! $filebrowserCustomPending)
-            <a href="{{ $filebrowserCustomUrl }}" target="_blank" rel="noopener" dir="ltr" class="text-decoration-none">{{ $filebrowserCustomUrl }}</a>
+            <a href="{{ $fbLinkCustom }}" @if($fbOpenNewTab) target="_blank" rel="noopener" @endif dir="ltr" class="text-decoration-none">{{ $filebrowserCustomUrl }}</a>
             @else
             <span dir="ltr" class="text-muted">{{ $filebrowserCustomUrl }}</span>
             @endif

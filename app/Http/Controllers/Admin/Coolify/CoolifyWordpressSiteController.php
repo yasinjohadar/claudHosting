@@ -245,6 +245,7 @@ class CoolifyWordpressSiteController extends Controller
             'isClientPanel' => $panel === 'client',
             'wpSiteRoutes' => WordpressSiteRouteMap::forPanel($panel, $uuid),
             'filebrowserMissing' => $filebrowserMissing,
+            'filebrowserOpenMode' => $this->settings->getWordpressFilebrowserOpenMode(),
         ];
     }
 

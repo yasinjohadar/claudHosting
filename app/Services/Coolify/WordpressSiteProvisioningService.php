@@ -22,7 +22,8 @@ class WordpressSiteProvisioningService
         protected CoolifyApiService $coolify,
         protected CoolifySettingsService $settings,
         protected WordpressCloudflareService $wordpressCloudflare,
-        protected WordpressComposeFilebrowserMerger $filebrowserMerger
+        protected WordpressComposeFilebrowserMerger $filebrowserMerger,
+        protected FilebrowserCredentialService $filebrowserCredentials
     ) {}
 
     public function provision(CoolifyWordpressSite $site): void
@@ -94,6 +95,8 @@ class WordpressSiteProvisioningService
 
             if ($this->settings->getWordpressFilebrowserEnabled()) {
                 $metadata = array_merge($metadata, $this->buildFilebrowserMetadata($site, $service));
+                $this->syncFilebrowserCredentials($site);
+                $metadata = array_merge($metadata, $site->fresh()->metadata ?? []);
             }
 
             if ($domainWarning !== null) {
@@ -703,6 +706,7 @@ class WordpressSiteProvisioningService
 
             if ($this->serviceHasFilebrowser($service)) {
                 $this->finalizeFilebrowserForSite($site, $service);
+                $this->syncFilebrowserCredentials($site);
 
                 return ['ok' => true, 'message' => 'FileBrowser موجود مسبقاً على الخدمة'];
             }
@@ -786,6 +790,21 @@ class WordpressSiteProvisioningService
         $metadata = array_merge($site->metadata ?? [], $this->buildFilebrowserMetadata($site, $service));
 
         $site->update(['metadata' => $metadata]);
+        $this->syncFilebrowserCredentials($site);
+    }
+
+    protected function syncFilebrowserCredentials(CoolifyWordpressSite $site): void
+    {
+        $result = $this->filebrowserCredentials->ensureCredentials($site);
+        if (! ($result['ok'] ?? false)) {
+            $this->appendProvisionLog(
+                $site,
+                'filebrowser_credentials',
+                'تحذير: '.($result['message'] ?? 'تعذّر تعيين بيانات FileBrowser')
+            );
+        } else {
+            $this->appendProvisionLog($site, 'filebrowser_credentials', 'تم تعيين بيانات دخول FileBrowser للوحة');
+        }
     }
 
     /**

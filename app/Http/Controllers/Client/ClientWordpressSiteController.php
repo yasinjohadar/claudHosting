@@ -15,9 +15,10 @@ class ClientWordpressSiteController extends CoolifyWordpressSiteController
         \App\Services\Coolify\WordpressManagementService $wpManagement,
         \App\Services\Coolify\WordpressCloudflareService $wordpressCloudflare,
         \App\Services\Coolify\WordpressProvisioningProgress $provisioningProgress,
-        protected ClientAssetService $clientAssets
+        protected ClientAssetService $clientAssets,
+        \App\Services\Coolify\WordpressServiceComponentLifecycleService $componentLifecycle
     ) {
-        parent::__construct($coolify, $settings, $provisioning, $wpManagement, $wordpressCloudflare, $provisioningProgress, $clientAssets);
+        parent::__construct($coolify, $settings, $provisioning, $wpManagement, $wordpressCloudflare, $provisioningProgress, $clientAssets, $componentLifecycle);
         $this->middleware('auth');
     }
 

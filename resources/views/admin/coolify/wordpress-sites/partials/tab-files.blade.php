@@ -36,19 +36,24 @@
                 @endif
             </span>
             @if($filebrowserOpenUrl)
-            <a href="{{ $canOpenFilebrowser ? $filebrowserOpenUrl : '#' }}"
-                class="btn btn-outline-info btn-sm {{ $canOpenFilebrowser ? '' : 'disabled' }}"
-                @if($canOpenFilebrowser) target="_blank" rel="noopener" @endif>
-                <i class="fe fe-external-link"></i> فتح FileBrowser
-            </a>
+            @include('admin.coolify.wordpress-sites.partials.filebrowser-link', [
+                'canOpenFilebrowser' => $canOpenFilebrowser,
+                'filebrowserOpenUrl' => $filebrowserOpenUrl,
+            ])
             @endif
         </div>
         @if($filebrowserCustomUrl && $filebrowserCustomUrl !== $filebrowserOpenUrl)
+        @php
+            $fbCustomHref = ($filebrowserOpenMode ?? 'embed') === 'new_tab' && $canOpenFilebrowser
+                ? $filebrowserCustomUrl
+                : ($wpSiteRoutes['filebrowser'] ?? $filebrowserCustomUrl);
+            $fbCustomNewTab = ($filebrowserOpenMode ?? 'embed') === 'new_tab';
+        @endphp
         <div class="alert alert-light border py-2 small mb-3">
             <strong>نطاق مخصص:</strong>
-            <a href="{{ $canOpenFilebrowser ? $filebrowserCustomUrl : '#' }}" dir="ltr"
+            <a href="{{ $canOpenFilebrowser ? $fbCustomHref : '#' }}" dir="ltr"
                 class="{{ $canOpenFilebrowser ? '' : 'text-muted' }}"
-                @if($canOpenFilebrowser) target="_blank" rel="noopener" @endif>{{ $filebrowserCustomUrl }}</a>
+                @if($canOpenFilebrowser && $fbCustomNewTab) target="_blank" rel="noopener" @endif>{{ $filebrowserCustomUrl }}</a>
             @if(! $canOpenFilebrowser)
             <span class="text-warning ms-1">— يتطلب تشغيل حاوية filebrowser (Running/healthy)</span>
             @endif
@@ -59,7 +64,10 @@
         @endif
         @if($filebrowserOpenUrl && $canOpenFilebrowser)
         <div class="alert alert-info py-2 small mb-3">
-            عند أول فتح لـ FileBrowser عيّن كلمة مرور قوية من واجهة التطبيق.
+            FileBrowser يُفتح من اللوحة مع دخول تلقائي.
+            @if(!empty($wpSiteRoutes['filebrowser']))
+            <a href="{{ $wpSiteRoutes['filebrowser'] }}" class="alert-link">صفحة مدير الملفات المدمجة</a>
+            @endif
         </div>
         @endif
         <div id="siteFilesAlert" class="alert py-2 small d-none mb-2"></div>
