@@ -87,6 +87,7 @@ class CoolifySettingsService
             'wordpress_docker_tag' => $this->getWordpressDockerTag(),
             'wordpress_filebrowser_enabled' => $this->getWordpressFilebrowserEnabled(),
             'wordpress_filebrowser_subdomain_prefix' => $this->getWordpressFilebrowserSubdomainPrefix(),
+            'wordpress_filebrowser_subdomain_style' => $this->getWordpressFilebrowserSubdomainStyle(),
             'wordpress_management_queue' => $this->getWordpressManagementQueue(),
             'wordpress_redis_enabled' => $this->getWordpressRedisEnabled(),
             'wordpress_redis_host' => $this->getWordpressRedisHost(),
@@ -367,20 +368,43 @@ class CoolifySettingsService
         return $prefix !== '' ? $prefix : 'files';
     }
 
+    public function getWordpressFilebrowserSubdomainStyle(): string
+    {
+        $style = strtolower(trim((string) $this->getSettingValue(
+            'wordpress_filebrowser_subdomain_style',
+            config('coolify.defaults.wordpress_filebrowser_subdomain_style', 'flat')
+        )));
+
+        return $style === 'nested' ? 'nested' : 'flat';
+    }
+
     public function buildWordpressFilebrowserPublicUrl(string $slug): string
     {
         $base = $this->getWordpressBaseDomain();
         $slug = strtolower(trim($slug));
         $prefix = $this->getWordpressFilebrowserSubdomainPrefix();
+        $host = $this->buildWordpressFilebrowserHostname($slug, $prefix);
 
-        return 'https://'.$prefix.'.'.$slug.'.'.$base;
+        return 'https://'.$host.'.'.$base;
     }
 
     public function buildWordpressFilebrowserDnsName(string $slug): string
     {
         $slug = strtolower(trim($slug));
 
-        return $this->getWordpressFilebrowserSubdomainPrefix().'.'.$slug;
+        return $this->buildWordpressFilebrowserHostname($slug, $this->getWordpressFilebrowserSubdomainPrefix());
+    }
+
+    public function buildWordpressFilebrowserHostname(string $slug, ?string $prefix = null): string
+    {
+        $slug = strtolower(trim($slug));
+        $prefix = $prefix ?? $this->getWordpressFilebrowserSubdomainPrefix();
+
+        if ($this->getWordpressFilebrowserSubdomainStyle() === 'nested') {
+            return $prefix.'.'.$slug;
+        }
+
+        return $slug.'-'.$prefix;
     }
 
     public function getWordpressRedisEnabled(): bool
@@ -790,6 +814,16 @@ class CoolifySettingsService
             SystemSetting::set(
                 $keys['wordpress_filebrowser_subdomain_prefix'],
                 $prefix !== '' ? $prefix : 'files',
+                'string',
+                self::GROUP
+            );
+        }
+
+        if (array_key_exists('wordpress_filebrowser_subdomain_style', $data)) {
+            $style = strtolower(trim((string) $data['wordpress_filebrowser_subdomain_style']));
+            SystemSetting::set(
+                $keys['wordpress_filebrowser_subdomain_style'],
+                $style === 'nested' ? 'nested' : 'flat',
                 'string',
                 self::GROUP
             );

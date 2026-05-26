@@ -18,6 +18,7 @@
         wordpress_provision_queue: 'tab-wordpress-btn',
         wordpress_filebrowser_enabled: 'tab-wordpress-btn',
         wordpress_filebrowser_subdomain_prefix: 'tab-wordpress-btn',
+        wordpress_filebrowser_subdomain_style: 'tab-wordpress-btn',
         wordpress_cloudflare_enabled: 'tab-cloudflare-btn',
         wordpress_cloudflare_zone_id: 'tab-cloudflare-btn',
         wordpress_security_preset: 'tab-cloudflare-btn',

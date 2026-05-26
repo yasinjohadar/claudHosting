@@ -74,13 +74,17 @@
     @if(!empty($site->metadata['filebrowser_dns_warning']))
     <div class="alert alert-warning small border-0 mt-3 mb-0">{{ $site->metadata['filebrowser_dns_warning'] }}</div>
     @endif
+    @php
+        $fbSettings = app(\App\Services\Coolify\CoolifySettingsService::class);
+        $fbExample = $fbSettings->buildWordpressFilebrowserPublicUrl($site->slug);
+    @endphp
     <div class="alert alert-light border small mt-3 mb-0">
         <strong>خطأ SSL (ERR_SSL_VERSION_OR_CIPHER_MISMATCH):</strong>
         <ul class="mb-0 mt-2 ps-3">
-            <li>تأكد أن الرابط هو <code dir="ltr">https://files.{{ $site->slug }}.{{ app(\App\Services\Coolify\CoolifySettingsService::class)->getWordpressBaseDomain() }}</code> (وليس نطاقاً آخر مثل cloudsoft).</li>
-            <li>Cloudflare → SSL/TLS = <strong>Full</strong> (وليس Flexible). جرّب Full قبل Full (strict) حتى تعمل الشهادة على السيرفر.</li>
-            <li>بعد «مزامنة DNS» يُطبَّق النطاق تلقائياً على Coolify — أو اضغط «تطبيق النطاق على Coolify» ثم Redeploy لـ <code>filebrowser</code>.</li>
-            <li>اختبر أولاً رابط <strong>ملفات (Coolify)</strong> من أعلى الصفحة (sslip.io) — إن عمل، المشكلة DNS/SSL للنطاق المخصص فقط.</li>
+            <li>النطاق المتوقع حسب الإعدادات: <code dir="ltr">{{ $fbExample }}</code></li>
+            <li><strong>سبب شائع:</strong> <code>files.{{ $site->slug }}.domain</code> مستويان فرعيان — شهادة Cloudflare المجانية لا تغطيه. استخدم في الإعدادات شكل <strong>flat</strong> مثل <code dir="ltr">{{ $site->slug }}-files.domain</code> ثم أعد مزامنة DNS.</li>
+            <li>Cloudflare → SSL/TLS = <strong>Full</strong> (وليس Flexible).</li>
+            <li>بعد تغيير الشكل: «مزامنة DNS» + «تطبيق النطاق على Coolify» + Redeploy لـ <code>filebrowser</code>.</li>
         </ul>
     </div>
     <div class="mt-3">

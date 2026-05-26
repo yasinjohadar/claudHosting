@@ -54,12 +54,23 @@
                 </label>
                 <p class="form-text mb-0 mt-1">يُضاف كحاوية ثالثة (مع wordpress و mariadb) وتشارك ملفات الموقع. المواقع القديمة: زر «إرفاق FileBrowser» من صفحة الموقع.</p>
             </div>
-            <div class="mb-0">
+            <div class="mb-3">
                 <label class="form-label">بادئة نطاق FileBrowser</label>
                 <input type="text" name="wordpress_filebrowser_subdomain_prefix" class="form-control" dir="ltr"
                     value="{{ old('wordpress_filebrowser_subdomain_prefix', $form['wordpress_filebrowser_subdomain_prefix'] ?? 'files') }}"
                     placeholder="files">
-                <div class="form-text">مثال: <code dir="ltr">https://files.my-shop.{{ $form['wordpress_base_domain'] ?: 'claudsoft.com' }}</code></div>
+            </div>
+            <div class="mb-0">
+                <label class="form-label">شكل النطاق الفرعي</label>
+                <select name="wordpress_filebrowser_subdomain_style" class="form-select">
+                    @php $fbStyle = old('wordpress_filebrowser_subdomain_style', $form['wordpress_filebrowser_subdomain_style'] ?? 'flat'); @endphp
+                    <option value="flat" {{ $fbStyle === 'flat' ? 'selected' : '' }}>مستوى واحد (موصى به + Cloudflare مجاني)</option>
+                    <option value="nested" {{ $fbStyle === 'nested' ? 'selected' : '' }}>مستويان: files.slug.domain</option>
+                </select>
+                <div class="form-text">
+                    <strong>flat:</strong> <code dir="ltr">https://my-shop-files.{{ $form['wordpress_base_domain'] ?: 'claudsoft.com' }}</code> — شهادة Cloudflare المجانية تعمل.<br>
+                    <strong>nested:</strong> <code dir="ltr">https://files.my-shop.{{ $form['wordpress_base_domain'] ?: 'claudsoft.com' }}</code> — قد يعطي <code>ERR_SSL_VERSION_OR_CIPHER_MISMATCH</code> بدون شهادة متقدمة.
+                </div>
             </div>
         </div>
     </div>

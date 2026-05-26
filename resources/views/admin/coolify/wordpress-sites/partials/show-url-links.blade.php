@@ -14,7 +14,9 @@
     $legacyFilebrowserUrl = $site->metadata['filebrowser_url'] ?? null;
 
     if (! $filebrowserCoolifyUrl && ! $filebrowserCustomUrl && $legacyFilebrowserUrl) {
-        $filesHost = $site->slug ? 'files.'.$site->slug : '';
+        $filesHost = $site->slug
+            ? app(\App\Services\Coolify\CoolifySettingsService::class)->buildWordpressFilebrowserHostname($site->slug)
+            : '';
         if ($filesHost !== '' && str_contains($legacyFilebrowserUrl, $filesHost)) {
             $filebrowserCustomUrl = $legacyFilebrowserUrl;
         } else {

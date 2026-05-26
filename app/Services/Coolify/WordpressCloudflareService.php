@@ -456,9 +456,13 @@ class WordpressCloudflareService
         $expectedFqdn = strtolower($expectedRecord.'.'.$baseDomain);
         $prefix = strtolower($this->settings->getWordpressFilebrowserSubdomainPrefix());
 
+        $nestedName = $prefix.'.'.$site->slug;
+        $flatName = $site->slug.'-'.$prefix;
         $wrongNames = array_unique(array_filter([
             $prefix,
             $prefix.'.'.$baseDomain,
+            $nestedName,
+            $flatName,
         ]));
 
         foreach ($wrongNames as $name) {
