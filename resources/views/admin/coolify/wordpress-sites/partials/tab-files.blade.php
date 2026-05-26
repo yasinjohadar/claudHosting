@@ -5,11 +5,15 @@
 @endphp
 <div class="tab-pane fade" id="siteTabFiles" role="tabpanel">
     <div class="site-files-panel">
-        @if(!empty($filebrowserMissing))
+        @if(!empty($site->error_message) && str_contains($site->error_message, 'FileBrowser'))
+        <div class="alert alert-danger py-3 mb-3">
+            <strong>فشل إرفاق FileBrowser:</strong> {{ $site->error_message }}
+        </div>
+        @elseif(!empty($filebrowserMissing))
         <div class="alert alert-warning py-3 mb-3">
             <strong>FileBrowser غير مثبت</strong> على هذا الموقع — يظهر هنا فقط مدير الملفات عبر SSH.
             @if(empty($isClientPanel) && $site->service_uuid)
-            استخدم زر <strong>«إرفاق FileBrowser»</strong> أعلى الصفحة لإضافته وإعادة النشر.
+            اضغط <strong>«إرفاق FileBrowser»</strong> أعلى الصفحة (قد يستغرق 3–8 دقائق — لا تغلق الصفحة حتى تظهر رسالة النجاح أو الخطأ).
             @endif
         </div>
         @endif

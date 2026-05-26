@@ -5,7 +5,6 @@ namespace App\Http\Controllers\Admin\Coolify;
 use App\Http\Controllers\Admin\Coolify\Concerns\HandlesCoolifyResponses;
 use App\Http\Controllers\Concerns\ResolvesAuthorizedWordpressSite;
 use App\Http\Controllers\Controller;
-use App\Jobs\AttachFilebrowserToWordpressSiteJob;
 use App\Jobs\ProvisionWordpressSiteJob;
 use App\Models\CoolifyWordpressSite;
 use App\Services\Client\ClientAssetService;
@@ -553,11 +552,18 @@ class CoolifyWordpressSiteController extends Controller
             return back()->with('error', 'لا توجد خدمة Coolify مرتبطة بهذا الموقع.');
         }
 
-        AttachFilebrowserToWordpressSiteJob::dispatch($site->id);
+        @set_time_limit(600);
+
+        $result = $this->provisioning->attachFilebrowser($site->fresh());
 
         return redirect()
             ->route('admin.coolify.wordpress-sites.show', $site->uuid)
-            ->with('success', 'تم إرسال إرفاق FileBrowser إلى الطابور. انتظر 2–5 دقائق ثم حدّث الصفحة — يجب أن يظهر مكوّن filebrowser في المكونات المباشرة.');
+            ->with(
+                ($result['ok'] ?? false) ? 'success' : 'error',
+                $result['message'] ?? (($result['ok'] ?? false)
+                    ? 'تم إرفاق FileBrowser. حدّث تبويب البنية التحتية للتأكد من ظهور الحاوية.'
+                    : 'فشل إرفاق FileBrowser')
+            );
     }
 
     public function applyCoolifyDomain(string $uuid)

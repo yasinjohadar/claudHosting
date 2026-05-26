@@ -61,9 +61,10 @@ class WordpressSiteProvisioningService
             $this->appendProvisionLog($site, 'deploy', 'إرسال طلب تشغيل/إعادة تشغيل على Coolify...');
             $this->triggerServiceDeploy($serviceUuid);
 
-            $this->waitUntilRunning($site, $serviceUuid);
+            $requireFilebrowser = $this->settings->getWordpressFilebrowserEnabled();
+            $this->waitUntilRunning($site, $serviceUuid, $requireFilebrowser);
 
-            $filebrowserUrl = $this->settings->getWordpressFilebrowserEnabled()
+            $filebrowserUrl = $requireFilebrowser
                 ? $this->settings->buildWordpressFilebrowserPublicUrl($site->slug)
                 : null;
 
@@ -415,7 +416,7 @@ class WordpressSiteProvisioningService
         sleep(self::INITIAL_RESTART_SLEEP_SECONDS);
     }
 
-    protected function waitUntilRunning(CoolifyWordpressSite $site, string $serviceUuid): void
+    protected function waitUntilRunning(CoolifyWordpressSite $site, string $serviceUuid, bool $requireFilebrowser = false): void
     {
         $runningStatuses = ['running', 'healthy', 'started', 'active'];
         $inProgressStatuses = [
@@ -429,7 +430,10 @@ class WordpressSiteProvisioningService
         $startedAt = time();
         $lastLoggedSummary = '';
 
-        $this->appendProvisionLog($site, 'wait_containers', 'انتظار تشغيل mariadb وwordpress...');
+        $waitLabel = $requireFilebrowser
+            ? 'انتظار تشغيل mariadb وwordpress وfilebrowser...'
+            : 'انتظار تشغيل mariadb وwordpress...';
+        $this->appendProvisionLog($site, 'wait_containers', $waitLabel);
 
         for ($i = 0; $i < self::MAX_POLL_ATTEMPTS; $i++) {
             $service = $this->fetchService($serviceUuid);
@@ -459,7 +463,11 @@ class WordpressSiteProvisioningService
                 );
             }
 
-            if ($this->coolify->isServiceStackHealthy($service) || in_array($status, $runningStatuses, true)) {
+            $stackHealthy = $requireFilebrowser
+                ? $this->coolify->isServiceStackHealthyWithFilebrowser($service)
+                : $this->coolify->isServiceStackHealthy($service);
+
+            if ($stackHealthy || (! $requireFilebrowser && in_array($status, $runningStatuses, true))) {
                 return;
             }
 
@@ -467,7 +475,7 @@ class WordpressSiteProvisioningService
                 $this->failDeployment($site, $serviceUuid, $status, $service);
             }
 
-            if (in_array($status, $recoverableStatuses, true) || ! $this->coolify->isServiceStackHealthy($service)) {
+            if (in_array($status, $recoverableStatuses, true) || ! $stackHealthy) {
                 if ($inGrace && $deployRetries < $maxDeployRetries && ($i % 4 === 0)) {
                     $deployRetries++;
                     $this->appendProvisionLog($site, 'deploy', 'إعادة تشغيل الخدمة (محاولة '.$deployRetries.')');
@@ -714,6 +722,7 @@ class WordpressSiteProvisioningService
 
             $patch = $this->coolify->updateService($site->service_uuid, [
                 'docker_compose_raw' => $this->filebrowserMerger->mergeForCoolifyApi($serviceType),
+                'instant_deploy' => true,
             ]);
 
             if (! ($patch['success'] ?? false)) {
@@ -727,7 +736,14 @@ class WordpressSiteProvisioningService
 
             $this->appendProvisionLog($site, 'filebrowser_deploy', 'إعادة نشر الخدمة بعد إضافة FileBrowser...');
             $this->triggerServiceDeploy($site->service_uuid);
-            $this->waitUntilRunning($site, $site->service_uuid);
+            $this->waitUntilRunning($site, $site->service_uuid, requireFilebrowser: true);
+
+            $service = $this->fetchService($site->service_uuid);
+            if (! $this->serviceHasFilebrowser($service)) {
+                throw new \RuntimeException(
+                    'لم يظهر مكوّن filebrowser على Coolify بعد إعادة النشر. افتح الخدمة في Coolify وتحقق من السجلات، أو أعد المحاولة.'
+                );
+            }
 
             $publicUrl = $site->public_url ?: $this->settings->buildWordpressPublicUrl($site->slug);
             $filebrowserUrl = $this->settings->buildWordpressFilebrowserPublicUrl($site->slug);

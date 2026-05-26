@@ -2199,6 +2199,47 @@ class CoolifyApiService
 
     public function isServiceStackHealthy(array $service): bool
     {
+        return $this->isServiceStackHealthyWithOptions($service, false);
+    }
+
+    public function isServiceStackHealthyWithFilebrowser(array $service): bool
+    {
+        return $this->isServiceStackHealthyWithOptions($service, true);
+    }
+
+    public function serviceHasRunningFilebrowser(array $service): bool
+    {
+        foreach ($this->normalizeList($service['applications'] ?? []) as $app) {
+            if (! is_array($app)) {
+                continue;
+            }
+            $name = strtolower((string) ($app['name'] ?? ''));
+            if (! str_contains($name, 'filebrowser')) {
+                continue;
+            }
+
+            return $this->isComponentStatusRunning((string) ($app['status'] ?? ''));
+        }
+
+        return false;
+    }
+
+    public function serviceHasFilebrowserApplication(array $service): bool
+    {
+        foreach ($this->normalizeList($service['applications'] ?? []) as $app) {
+            if (! is_array($app)) {
+                continue;
+            }
+            if (str_contains(strtolower((string) ($app['name'] ?? '')), 'filebrowser')) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    protected function isServiceStackHealthyWithOptions(array $service, bool $requireFilebrowser): bool
+    {
         $components = $this->extractServiceComponentStatuses($service);
 
         if ($components === []) {
@@ -2207,18 +2248,26 @@ class CoolifyApiService
 
         $dbOk = false;
         $appOk = false;
+        $filebrowserOk = ! $requireFilebrowser;
 
         foreach ($components as $component) {
             $ok = $this->isComponentStatusRunning((string) ($component['status'] ?? ''));
+            $name = strtolower((string) ($component['name'] ?? ''));
+
             if ($component['role'] === 'database') {
                 $dbOk = $dbOk || $ok;
-            }
-            if ($component['role'] === 'application') {
+            } elseif (str_contains($name, 'filebrowser')) {
+                $filebrowserOk = $ok;
+            } elseif ($component['role'] === 'application') {
                 $appOk = $appOk || $ok;
             }
         }
 
-        return $dbOk && $appOk;
+        if ($requireFilebrowser && ! $this->serviceHasFilebrowserApplication($service)) {
+            return false;
+        }
+
+        return $dbOk && $appOk && $filebrowserOk;
     }
 
     /**
