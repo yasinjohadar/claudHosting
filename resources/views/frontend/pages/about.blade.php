@@ -1,5 +1,9 @@
 @extends('frontend.layouts.master')
 
+@push('styles')
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/devicon@2.15.1/devicon.min.css" crossorigin="anonymous">
+@endpush
+
 @section('page-title')
 حول استضافة كلاودسوفت | CloudSoft Hosting
 @endsection
@@ -88,136 +92,7 @@
         </div>
     </section>
 
-    <!-- ============ مهاراتي التفصيلية (أشرطة التقدم) ============ -->
-    <section class="section-padding" style="background: var(--clr-bg-secondary);">
-        <div class="container">
-            <div class="section-header animate-on-scroll">
-                <span class="section-badge">بنيتنا التقنية</span>
-                <h2>البنية التحتية والتقنيات المستخدمة</h2>
-                <p>نستخدم أحدث التقنيات في الخوادم، الشبكات، وقواعد البيانات لضمان أفضل أداء وأعلى مستوى من الأمان لخدمات الاستضافة</p>
-            </div>
-            <div class="skills-detailed animate-on-scroll">
-                <div class="row g-4">
-                    <div class="col-lg-6">
-                        <div class="glass-panel skills-category">
-                            <h4 class="skills-category-title">
-                                <i class="fas fa-server"></i>
-                                أنظمة التشغيل ولوحات التحكم
-                            </h4>
-                            <p class="mb-3" style="color:var(--clr-text-secondary); font-size:0.95rem;">
-                                نعتمد على أنظمة مستقرة ولوحات تحكم معروفة لنوفر إدارة سهلة للخوادم والمواقع.
-                            </p>
-                            <ul class="list-unstyled mb-0">
-                                <li class="d-flex align-items-center mb-2">
-                                    <i class="fab fa-linux me-2" style="color:var(--clr-primary);"></i>
-                                    <span>Linux (Ubuntu / AlmaLinux)</span>
-                                </li>
-                                <li class="d-flex align-items-center mb-2">
-                                    <i class="fas fa-tachometer-alt me-2" style="color:var(--clr-primary);"></i>
-                                    <span>cPanel / WHM</span>
-                                </li>
-                                <li class="d-flex align-items-center mb-2">
-                                    <i class="fas fa-columns me-2" style="color:var(--clr-primary);"></i>
-                                    <span>Plesk Panel</span>
-                                </li>
-                                <li class="d-flex align-items-center mb-2">
-                                    <i class="fas fa-exchange-alt me-2" style="color:var(--clr-primary);"></i>
-                                    <span>NGINX و Apache Web Server</span>
-                                </li>
-                            </ul>
-                        </div>
-                    </div>
-                    <div class="col-lg-6">
-                        <div class="glass-panel skills-category">
-                            <h4 class="skills-category-title">
-                                <i class="fas fa-cubes"></i>
-                                الحاويات والبنية السحابية
-                            </h4>
-                            <p class="mb-3" style="color:var(--clr-text-secondary); font-size:0.95rem;">
-                                بنية تحتية سحابية حديثة مبنية على الحاويات وبيئات VPS لضمان المرونة وقابلية التوسع.
-                            </p>
-                            <ul class="list-unstyled mb-0">
-                                <li class="d-flex align-items-center mb-2">
-                                    <i class="fab fa-docker me-2" style="color:var(--clr-primary);"></i>
-                                    <span>Docker للحاويات</span>
-                                </li>
-                                <li class="d-flex align-items-center mb-2">
-                                    <i class="fas fa-project-diagram me-2" style="color:var(--clr-primary);"></i>
-                                    <span>Kubernetes لتنسيق الحاويات</span>
-                                </li>
-                                <li class="d-flex align-items-center mb-2">
-                                    <i class="fas fa-cloud-meatball me-2" style="color:var(--clr-primary);"></i>
-                                    <span>خوادم Cloud VPS / KVM</span>
-                                </li>
-                                <li class="d-flex align-items-center mb-2">
-                                    <i class="fas fa-network-wired me-2" style="color:var(--clr-primary);"></i>
-                                    <span>CDN و Load Balancing</span>
-                                </li>
-                            </ul>
-                        </div>
-                    </div>
-                    <div class="col-lg-6">
-                        <div class="glass-panel skills-category">
-                            <h4 class="skills-category-title">
-                                <i class="fas fa-database"></i>
-                                قواعد البيانات وأنظمة التخزين
-                            </h4>
-                            <p class="mb-3" style="color:var(--clr-text-secondary); font-size:0.95rem;">
-                                حلول تخزين وقواعد بيانات مصممة لتحمل الضغط وتقديم أداء عالٍ لتطبيقات الويب والمتاجر.
-                            </p>
-                            <ul class="list-unstyled mb-0">
-                                <li class="d-flex align-items-center mb-2">
-                                    <i class="fas fa-database me-2" style="color:var(--clr-primary);"></i>
-                                    <span>MySQL / MariaDB</span>
-                                </li>
-                                <li class="d-flex align-items-center mb-2">
-                                    <i class="fas fa-database me-2" style="color:var(--clr-primary);"></i>
-                                    <span>PostgreSQL</span>
-                                </li>
-                                <li class="d-flex align-items-center mb-2">
-                                    <i class="fas fa-bolt me-2" style="color:var(--clr-primary);"></i>
-                                    <span>Redis Cache لتسريع المواقع</span>
-                                </li>
-                                <li class="d-flex align-items-center mb-2">
-                                    <i class="fas fa-cloud-download-alt me-2" style="color:var(--clr-primary);"></i>
-                                    <span>Object Storage ونسخ احتياطي خارجي</span>
-                                </li>
-                            </ul>
-                        </div>
-                    </div>
-                    <div class="col-lg-6">
-                        <div class="glass-panel skills-category">
-                            <h4 class="skills-category-title">
-                                <i class="fas fa-shield-alt"></i>
-                                الأمان والمراقبة
-                            </h4>
-                            <p class="mb-3" style="color:var(--clr-text-secondary); font-size:0.95rem;">
-                                طبقات متعددة من الحماية والمراقبة المستمرة لضمان استقرار خدمات الاستضافة وسلامة بياناتك.
-                            </p>
-                            <ul class="list-unstyled mb-0">
-                                <li class="d-flex align-items-center mb-2">
-                                    <i class="fas fa-fire-alt me-2" style="color:var(--clr-primary);"></i>
-                                    <span>جدران نارية و Web Application Firewall</span>
-                                </li>
-                                <li class="d-flex align-items-center mb-2">
-                                    <i class="fas fa-chart-line me-2" style="color:var(--clr-primary);"></i>
-                                    <span>أنظمة مراقبة وتنبيه آنية</span>
-                                </li>
-                                <li class="d-flex align-items-center mb-2">
-                                    <i class="fas fa-history me-2" style="color:var(--clr-primary);"></i>
-                                    <span>نسخ احتياطي تلقائي على فترات منتظمة</span>
-                                </li>
-                                <li class="d-flex align-items-center mb-2">
-                                    <i class="fas fa-lock me-2" style="color:var(--clr-primary);"></i>
-                                    <span>شهادات SSL وتشفير الاتصالات</span>
-                                </li>
-                            </ul>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </section>
+    @include('frontend.partials.about-infrastructure-section')
 
     <!-- ============ SKILLS DETAILED ============ -->
     <section class="section-padding" id="specialties">
