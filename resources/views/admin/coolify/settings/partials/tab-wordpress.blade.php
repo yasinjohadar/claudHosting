@@ -43,6 +43,26 @@
         </select>
         <div class="form-text">يُستخدم عند إنشاء مواقع WordPress من المعالج. Coolify لا يقبل النوع القديم <code>wordpress</code>.</div>
     </div>
+    <div class="card border mb-3">
+        <div class="card-body py-3">
+            <h6 class="card-title mb-2"><i class="fe fe-folder text-info"></i> FileBrowser (مدير ملفات الويب)</h6>
+            <div class="mb-3">
+                <label class="form-check mb-0">
+                    <input type="checkbox" name="wordpress_filebrowser_enabled" value="1" class="form-check-input"
+                        {{ old('wordpress_filebrowser_enabled', $form['wordpress_filebrowser_enabled'] ?? true) ? 'checked' : '' }}>
+                    إرفاق <strong>FileBrowser</strong> تلقائياً مع كل موقع WordPress جديد
+                </label>
+                <p class="form-text mb-0 mt-1">يُضاف كحاوية ثالثة (مع wordpress و mariadb) وتشارك ملفات الموقع. المواقع القديمة: زر «إرفاق FileBrowser» من صفحة الموقع.</p>
+            </div>
+            <div class="mb-0">
+                <label class="form-label">بادئة نطاق FileBrowser</label>
+                <input type="text" name="wordpress_filebrowser_subdomain_prefix" class="form-control" dir="ltr"
+                    value="{{ old('wordpress_filebrowser_subdomain_prefix', $form['wordpress_filebrowser_subdomain_prefix'] ?? 'files') }}"
+                    placeholder="files">
+                <div class="form-text">مثال: <code dir="ltr">https://files.my-shop.{{ $form['wordpress_base_domain'] ?: 'claudsoft.com' }}</code></div>
+            </div>
+        </div>
+    </div>
     <div class="mb-3">
         <label class="form-label">UUID وجهة السيرفر (destination) — اختياري</label>
         <input type="text" name="wordpress_default_destination_uuid" class="form-control" dir="ltr"
