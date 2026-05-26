@@ -582,9 +582,16 @@ class CoolifyWordpressSiteController extends Controller
             return back()->with('error', $result['message'] ?? 'فشل تطبيق النطاق على Coolify');
         }
 
+        $fbUrl = $this->settings->buildWordpressFilebrowserPublicUrl($site->slug);
+        $msg = 'تم تطبيق النطاق على Coolify وإعادة النشر. انتظر 1–3 دقائق لشهادة SSL ثم جرّب الموقع';
+        if ($this->settings->getWordpressFilebrowserEnabled()) {
+            $msg .= ' و FileBrowser: '.$fbUrl;
+        }
+        $msg .= '.';
+
         return redirect()
             ->route('admin.coolify.wordpress-sites.show', $site->uuid)
-            ->with('success', 'تم تطبيق النطاق على Coolify وإعادة تشغيل الخدمة. انتظر دقيقة ثم جرّب الرابط المخصص.');
+            ->with('success', $msg);
     }
 
     public function syncCloudflare(string $uuid)
@@ -609,10 +616,21 @@ class CoolifyWordpressSiteController extends Controller
         if ($fbFqdn !== null && $fbFqdn !== '') {
             $success .= ' + FileBrowser: '.$fbFqdn;
         }
+
+        $site = $site->fresh();
+        if (($result['ok'] ?? false) && $site->service_uuid) {
+            $apply = $this->provisioning->applyCoolifyDomain($site);
+            if ($apply['ok'] ?? false) {
+                $success .= ' — تم تطبيق النطاقات على Coolify (انتظر 1–3 دقائق لشهادة SSL).';
+            } else {
+                $fbWarning = trim(($fbWarning ?? '').' '.($apply['message'] ?? 'فشل تطبيق النطاق على Coolify'));
+            }
+        }
+
         if (is_string($fbWarning) && $fbWarning !== '') {
             return redirect()
                 ->to($this->wordpressSiteShowUrl($site->fresh()))
-                ->with('warning', $success.' — تحذير: '.$fbWarning);
+                ->with('warning', $success.' — '.$fbWarning);
         }
 
         return redirect()

@@ -56,6 +56,33 @@
         </div>
         @endif
     </div>
+    @php $cfFb = $site->metadata['cloudflare_filebrowser'] ?? []; @endphp
+    @if(!empty($cfFb['fqdn']))
+    <div class="mt-3">
+        @include('admin.coolify.partials.info-widget', [
+            'accent' => 'info',
+            'icon' => 'fe fe-folder',
+            'label' => 'DNS — FileBrowser',
+            'desc' => $cfFb['fqdn'],
+            'rows' => array_filter([
+                ['label' => 'السجل', 'value' => ($cfFb['record_name'] ?? '—').' ('.($cfFb['record_type'] ?? '—').') → '.($cfFb['origin'] ?? '—'), 'mono' => true],
+                ['label' => 'البروكسي', 'value' => !empty($cfFb['proxied']) ? 'مفعّل' : 'DNS فقط', 'badge' => !empty($cfFb['proxied']) ? 'success' : 'secondary'],
+            ]),
+        ])
+    </div>
+    @endif
+    @if(!empty($site->metadata['filebrowser_dns_warning']))
+    <div class="alert alert-warning small border-0 mt-3 mb-0">{{ $site->metadata['filebrowser_dns_warning'] }}</div>
+    @endif
+    <div class="alert alert-light border small mt-3 mb-0">
+        <strong>خطأ SSL (ERR_SSL_VERSION_OR_CIPHER_MISMATCH):</strong>
+        <ul class="mb-0 mt-2 ps-3">
+            <li>تأكد أن الرابط هو <code dir="ltr">https://files.{{ $site->slug }}.{{ app(\App\Services\Coolify\CoolifySettingsService::class)->getWordpressBaseDomain() }}</code> (وليس نطاقاً آخر مثل cloudsoft).</li>
+            <li>Cloudflare → SSL/TLS = <strong>Full</strong> (وليس Flexible). جرّب Full قبل Full (strict) حتى تعمل الشهادة على السيرفر.</li>
+            <li>بعد «مزامنة DNS» يُطبَّق النطاق تلقائياً على Coolify — أو اضغط «تطبيق النطاق على Coolify» ثم Redeploy لـ <code>filebrowser</code>.</li>
+            <li>اختبر أولاً رابط <strong>ملفات (Coolify)</strong> من أعلى الصفحة (sslip.io) — إن عمل، المشكلة DNS/SSL للنطاق المخصص فقط.</li>
+        </ul>
+    </div>
     <div class="mt-3">
         @include('admin.coolify.wordpress-sites.partials.sync-cloudflare-form')
     </div>
