@@ -258,41 +258,56 @@
                 <p>شروحات مرئية حول أساسيات الاستضافة، إدارة الخوادم، وتأمين مواقعك على استضافة كلاودسوفت</p>
             </div>
             <div class="row g-4">
-                <div class="col-lg-4 col-md-6">
-                    <div class="glass-panel video-card animate-on-scroll animate-delay-1">
-                        <div class="video-wrapper" onclick="window.open('https://youtube.com', '_blank')">
+                <div class="col-lg-4 col-md-6 d-flex">
+                    <a href="https://youtube.com" target="_blank" rel="noopener noreferrer"
+                        class="glass-panel video-card video-card-link animate-on-scroll animate-delay-1 w-100">
+                        <div class="video-wrapper">
                             <img src="{{ asset('frontend/assets/images/course-webdev.svg') }}" alt="شرح أساسيات استضافة المواقع" width="400" height="200" loading="lazy">
-                            <div class="play-btn"><i class="fas fa-play-circle"></i></div>
+                            <span class="video-badge-yt"><i class="fab fa-youtube"></i> يوتيوب</span>
+                            <div class="play-btn" aria-hidden="true"><i class="fas fa-play"></i></div>
                         </div>
                         <div class="video-body">
                             <h6>ما هي استضافة المواقع؟ أنواعها وكيف تختار الأنسب</h6>
-                            <span><i class="fas fa-eye"></i> 15,000 مشاهدة</span>
+                            <div class="video-meta">
+                                <span class="video-views"><i class="fas fa-eye"></i> 15,000 مشاهدة</span>
+                                <span class="video-cta">شاهد الآن <i class="fas fa-arrow-left"></i></span>
+                            </div>
                         </div>
-                    </div>
+                    </a>
                 </div>
-                <div class="col-lg-4 col-md-6">
-                    <div class="glass-panel video-card animate-on-scroll animate-delay-2">
-                        <div class="video-wrapper" onclick="window.open('https://youtube.com', '_blank')">
+                <div class="col-lg-4 col-md-6 d-flex">
+                    <a href="https://youtube.com" target="_blank" rel="noopener noreferrer"
+                        class="glass-panel video-card video-card-link animate-on-scroll animate-delay-2 w-100">
+                        <div class="video-wrapper">
                             <img src="{{ asset('frontend/assets/images/course-python.svg') }}" alt="فيديو عن إعداد الاستضافة" width="400" height="200" loading="lazy">
-                            <div class="play-btn"><i class="fas fa-play-circle"></i></div>
+                            <span class="video-badge-yt"><i class="fab fa-youtube"></i> يوتيوب</span>
+                            <div class="play-btn" aria-hidden="true"><i class="fas fa-play"></i></div>
                         </div>
                         <div class="video-body">
                             <h6>جولة في لوحة تحكم استضافة كلاودسوفت وإعداد موقعك الأول</h6>
-                            <span><i class="fas fa-eye"></i> 12,000 مشاهدة</span>
+                            <div class="video-meta">
+                                <span class="video-views"><i class="fas fa-eye"></i> 12,000 مشاهدة</span>
+                                <span class="video-cta">شاهد الآن <i class="fas fa-arrow-left"></i></span>
+                            </div>
                         </div>
-                    </div>
+                    </a>
                 </div>
-                <div class="col-lg-4 col-md-6">
-                    <div class="glass-panel video-card animate-on-scroll animate-delay-3">
-                        <div class="video-wrapper" onclick="window.open('https://youtube.com', '_blank')">
+                <div class="col-lg-4 col-md-6 d-flex">
+                    <a href="https://youtube.com" target="_blank" rel="noopener noreferrer"
+                        class="glass-panel video-card video-card-link animate-on-scroll animate-delay-3 w-100">
+                        <div class="video-wrapper">
                             <img src="{{ asset('frontend/assets/images/course-mobile.svg') }}" alt="فيديو عن أمان الاستضافة" width="400" height="200" loading="lazy">
-                            <div class="play-btn"><i class="fas fa-play-circle"></i></div>
+                            <span class="video-badge-yt"><i class="fab fa-youtube"></i> يوتيوب</span>
+                            <div class="play-btn" aria-hidden="true"><i class="fas fa-play"></i></div>
                         </div>
                         <div class="video-body">
                             <h6>حماية موقعك: نسخ احتياطي، شهادات SSL، وجدران الحماية</h6>
-                            <span><i class="fas fa-eye"></i> 8,500 مشاهدة</span>
+                            <div class="video-meta">
+                                <span class="video-views"><i class="fas fa-eye"></i> 8,500 مشاهدة</span>
+                                <span class="video-cta">شاهد الآن <i class="fas fa-arrow-left"></i></span>
+                            </div>
                         </div>
-                    </div>
+                    </a>
                 </div>
             </div>
             <div class="text-center mt-5 animate-on-scroll">
