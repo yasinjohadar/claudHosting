@@ -28,32 +28,13 @@
     </section>
 
     <!-- ============ BLOG LIST ============ -->
-    <section class="section-padding" id="blog-list" style="background: var(--clr-bg-secondary);">
+    <section class="section-padding" id="blog-list">
         <div class="container">
             @if($posts->count() > 0)
-            <div class="row g-4">
-                @foreach($posts as $index => $post)
+            <div class="row g-4 blog-cards-grid">
+                @foreach ($posts as $index => $post)
                 <div class="col-lg-3 col-md-6">
-                    <a href="{{ route('frontend.blog.show', $post->slug) }}" class="glass-panel blog-card animate-on-scroll animate-delay-{{ ($index % 4) + 1 }}" style="text-decoration:none;color:inherit;display:block;height:100%;">
-                        <div class="blog-img-wrapper">
-                            @if($post->featured_image && function_exists('blog_image_url'))
-                                <img src="{{ blog_image_url($post->featured_image) }}" alt="{{ $post->featured_image_alt ?? $post->title }}" width="400" height="180" loading="lazy">
-                            @else
-                                <img src="{{ asset('frontend/assets/images/course-webdev.svg') }}" alt="{{ $post->title }}" width="400" height="180" loading="lazy">
-                            @endif
-                        </div>
-                        <div class="blog-body">
-                            <div class="blog-meta">
-                                <span><i class="fas fa-calendar-alt"></i> {{ $post->published_at?->translatedFormat('d F Y') ?? $post->created_at->format('Y-m-d') }}</span>
-                                @if($post->category)
-                                <span><i class="fas fa-folder"></i> {{ $post->category->name }}</span>
-                                @endif
-                            </div>
-                            <h5>{{ $post->title }}</h5>
-                            <p>{{ Str::limit(strip_tags($post->excerpt), 120) }}</p>
-                            <span class="read-more">اقرأ المزيد <i class="fas fa-arrow-left"></i></span>
-                        </div>
-                    </a>
+                    @include('frontend.partials.blog-card', ['post' => $post, 'index' => $index, 'excerptLimit' => 120])
                 </div>
                 @endforeach
             </div>
