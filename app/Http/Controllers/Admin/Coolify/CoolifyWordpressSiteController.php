@@ -5,16 +5,17 @@ namespace App\Http\Controllers\Admin\Coolify;
 use App\Http\Controllers\Admin\Coolify\Concerns\HandlesCoolifyResponses;
 use App\Http\Controllers\Concerns\ResolvesAuthorizedWordpressSite;
 use App\Http\Controllers\Controller;
+use App\Jobs\AttachFilebrowserToWordpressSiteJob;
 use App\Jobs\ProvisionWordpressSiteJob;
 use App\Models\CoolifyWordpressSite;
 use App\Services\Client\ClientAssetService;
 use App\Services\Coolify\CoolifySettingsService;
-use App\Support\WordpressSiteRouteMap;
 use App\Services\Coolify\WordpressCloudflareService;
 use App\Services\Coolify\WordpressManagementService;
 use App\Services\Coolify\WordpressProvisioningProgress;
 use App\Services\Coolify\WordpressSiteProvisioningService;
 use App\Services\CoolifyApiService;
+use App\Support\WordpressSiteRouteMap;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -218,6 +219,19 @@ class CoolifyWordpressSiteController extends Controller
         ];
         $wpInfo = ($site->metadata ?? [])['wp_info'] ?? null;
         $terminalBridge = $this->settings->getTerminalBridgeConfig();
+        $filebrowserMissing = false;
+
+        if (
+            $this->settings->getWordpressFilebrowserEnabled()
+            && $site->service_uuid
+            && $this->coolify->isConfigured()
+        ) {
+            $serviceResponse = $this->coolify->getService($site->service_uuid);
+            if ($serviceResponse['success'] ?? false) {
+                $serviceData = is_array($serviceResponse['data'] ?? null) ? $serviceResponse['data'] : [];
+                $filebrowserMissing = ! $this->provisioning->serviceHasFilebrowser($serviceData);
+            }
+        }
 
         return [
             'site' => $site,
@@ -229,6 +243,7 @@ class CoolifyWordpressSiteController extends Controller
             'wpPanel' => $panel,
             'isClientPanel' => $panel === 'client',
             'wpSiteRoutes' => WordpressSiteRouteMap::forPanel($panel, $uuid),
+            'filebrowserMissing' => $filebrowserMissing,
         ];
     }
 
@@ -520,6 +535,29 @@ class CoolifyWordpressSiteController extends Controller
         return redirect()
             ->route('admin.coolify.wordpress-sites.show', $site->uuid)
             ->with('success', 'تم حفظ التعديلات');
+    }
+
+    public function attachFilebrowser(string $uuid)
+    {
+        $site = CoolifyWordpressSite::query()->where('uuid', $uuid)->firstOrFail();
+
+        if (! $this->coolify->isConfigured()) {
+            return $this->coolifyRedirectError('اضبط إعدادات Coolify أولاً.', 'admin.coolify.settings.index');
+        }
+
+        if (! $this->settings->getWordpressFilebrowserEnabled()) {
+            return back()->with('error', 'فعّل FileBrowser من إعدادات Coolify → إدارة WP أولاً.');
+        }
+
+        if (! $site->service_uuid) {
+            return back()->with('error', 'لا توجد خدمة Coolify مرتبطة بهذا الموقع.');
+        }
+
+        AttachFilebrowserToWordpressSiteJob::dispatch($site->id);
+
+        return redirect()
+            ->route('admin.coolify.wordpress-sites.show', $site->uuid)
+            ->with('success', 'تم إرسال إرفاق FileBrowser إلى الطابور. انتظر 2–5 دقائق ثم حدّث الصفحة — يجب أن يظهر مكوّن filebrowser في المكونات المباشرة.');
     }
 
     public function applyCoolifyDomain(string $uuid)

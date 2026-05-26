@@ -5,6 +5,14 @@
 @endphp
 <div class="tab-pane fade" id="siteTabFiles" role="tabpanel">
     <div class="site-files-panel">
+        @if(!empty($filebrowserMissing))
+        <div class="alert alert-warning py-3 mb-3">
+            <strong>FileBrowser غير مثبت</strong> على هذا الموقع — يظهر هنا فقط مدير الملفات عبر SSH.
+            @if(empty($isClientPanel) && $site->service_uuid)
+            استخدم زر <strong>«إرفاق FileBrowser»</strong> أعلى الصفحة لإضافته وإعادة النشر.
+            @endif
+        </div>
+        @endif
         @if(!$filesReady)
         <div class="alert alert-warning py-3 mb-3">
             <strong>غير متاح:</strong> {{ $wpManagementState['message'] ?? 'اضبط SSH أولاً' }}

@@ -291,14 +291,18 @@ class WordpressSiteProvisioningService
         $envUuid = ($site->metadata ?? [])['environment_uuid'] ?? null;
 
         $serviceType = $this->settings->getWordpressServiceType();
+        $withFilebrowser = $this->settings->getWordpressFilebrowserEnabled();
 
         $payload = [
-            'type' => $serviceType,
             'name' => $this->coolifyServiceName($site),
             'project_uuid' => $projectUuid,
             'server_uuid' => $site->server_uuid,
             'environment_name' => $envName,
         ];
+
+        if (! $withFilebrowser) {
+            $payload['type'] = $serviceType;
+        }
 
         if (filled($envUuid)) {
             $payload['environment_uuid'] = (string) $envUuid;
@@ -324,10 +328,10 @@ class WordpressSiteProvisioningService
             $payload['instant_deploy'] = true;
         }
 
-        if ($this->settings->getWordpressFilebrowserEnabled()) {
+        if ($withFilebrowser) {
             try {
-                $payload['docker_compose_raw'] = $this->filebrowserMerger->merge($serviceType);
-                $this->appendProvisionLog($site, 'filebrowser', 'دمج FileBrowser في compose الخدمة');
+                $payload['docker_compose_raw'] = $this->filebrowserMerger->mergeForCoolifyApi($serviceType);
+                $this->appendProvisionLog($site, 'filebrowser', 'compose مخصص (WordPress + FileBrowser) — بدون type منفصل');
             } catch (\Throwable $e) {
                 throw new \RuntimeException('فشل دمج FileBrowser: '.$e->getMessage(), 0, $e);
             }
@@ -621,10 +625,10 @@ class WordpressSiteProvisioningService
         }
 
         $service = $this->fetchService($site->service_uuid);
-
-        $filebrowserUrl = $this->settings->getWordpressFilebrowserEnabled()
-            && (($site->metadata ?? [])['filebrowser_enabled'] ?? false)
-            ? $this->settings->buildWordpressFilebrowserPublicUrl($site->slug)
+        $hasFilebrowser = $this->serviceHasFilebrowser($service);
+        $filebrowserUrl = $this->settings->getWordpressFilebrowserEnabled() && $hasFilebrowser
+            ? ($this->coolify->extractFilebrowserPublicUrl($service)
+                ?: $this->settings->buildWordpressFilebrowserPublicUrl($site->slug))
             : null;
 
         $urls = $filebrowserUrl !== null && $filebrowserUrl !== ''
@@ -655,6 +659,126 @@ class WordpressSiteProvisioningService
 
         $this->triggerServiceDeploy($site->service_uuid);
         $this->syncSiteFromCoolify($site);
+    }
+
+    /**
+     * @param  array<string, mixed>  $service
+     */
+    public function serviceHasFilebrowser(array $service): bool
+    {
+        foreach ($this->coolify->normalizeList($service['applications'] ?? []) as $app) {
+            if (! is_array($app)) {
+                continue;
+            }
+            if (str_contains(strtolower((string) ($app['name'] ?? '')), 'filebrowser')) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * يضيف FileBrowser لموقع موجود (تحديث compose + إعادة نشر).
+     *
+     * @return array{ok: bool, message?: string}
+     */
+    public function attachFilebrowser(CoolifyWordpressSite $site): array
+    {
+        if (! $site->service_uuid) {
+            return ['ok' => false, 'message' => 'لا توجد خدمة Coolify لهذا الموقع'];
+        }
+
+        if (! $this->settings->getWordpressFilebrowserEnabled()) {
+            return ['ok' => false, 'message' => 'FileBrowser معطّل في إعدادات Coolify → إدارة WP'];
+        }
+
+        try {
+            $service = $this->fetchService($site->service_uuid);
+
+            if ($this->serviceHasFilebrowser($service)) {
+                $this->finalizeFilebrowserForSite($site, $service);
+
+                return ['ok' => true, 'message' => 'FileBrowser موجود مسبقاً على الخدمة'];
+            }
+
+            $serviceType = strtolower(trim((string) (
+                ($site->metadata ?? [])['service_type']
+                ?? $service['type']
+                ?? $service['service_type']
+                ?? $this->settings->getWordpressServiceType()
+            )));
+
+            $site->update(['status' => 'provisioning', 'error_message' => null]);
+            $this->appendProvisionLog($site, 'filebrowser_attach', 'تحديث compose لإضافة FileBrowser...');
+
+            $patch = $this->coolify->updateService($site->service_uuid, [
+                'docker_compose_raw' => $this->filebrowserMerger->mergeForCoolifyApi($serviceType),
+            ]);
+
+            if (! ($patch['success'] ?? false)) {
+                throw new \RuntimeException($patch['message'] ?? 'فشل تحديث compose على Coolify');
+            }
+
+            $metadata = $site->metadata ?? [];
+            $metadata['filebrowser_enabled'] = true;
+            $metadata['service_type'] = $serviceType;
+            $site->update(['metadata' => $metadata]);
+
+            $this->appendProvisionLog($site, 'filebrowser_deploy', 'إعادة نشر الخدمة بعد إضافة FileBrowser...');
+            $this->triggerServiceDeploy($site->service_uuid);
+            $this->waitUntilRunning($site, $site->service_uuid);
+
+            $publicUrl = $site->public_url ?: $this->settings->buildWordpressPublicUrl($site->slug);
+            $filebrowserUrl = $this->settings->buildWordpressFilebrowserPublicUrl($site->slug);
+            $domainWarning = $this->applyUrlsToService($site->service_uuid, $publicUrl, $filebrowserUrl);
+
+            $service = $this->fetchService($site->service_uuid);
+            $cloudflareWarning = $this->applyCloudflare($site, $service);
+
+            $this->finalizeFilebrowserForSite($site, $service);
+
+            if ($domainWarning !== null || $cloudflareWarning !== null) {
+                $metadata = $site->fresh()->metadata ?? [];
+                if ($domainWarning !== null) {
+                    $metadata['domain_warning'] = $domainWarning;
+                }
+                if ($cloudflareWarning !== null) {
+                    $metadata['filebrowser_dns_warning'] = $cloudflareWarning;
+                }
+                $site->update(['metadata' => $metadata]);
+            }
+
+            $this->appendProvisionLog($site, 'filebrowser_done', 'اكتمل إرفاق FileBrowser');
+
+            $site->update(['status' => 'running', 'error_message' => null]);
+
+            return ['ok' => true, 'message' => 'تم إرفاق FileBrowser وإعادة النشر'];
+        } catch (\Throwable $e) {
+            $this->appendProvisionLog($site, 'filebrowser_failed', $e->getMessage());
+            $site->update([
+                'status' => 'running',
+                'error_message' => 'FileBrowser: '.$e->getMessage(),
+            ]);
+
+            return ['ok' => false, 'message' => $e->getMessage()];
+        }
+    }
+
+    /**
+     * @param  array<string, mixed>  $service
+     */
+    protected function finalizeFilebrowserForSite(CoolifyWordpressSite $site, array $service): void
+    {
+        $filebrowserUrl = $this->coolify->extractFilebrowserPublicUrl($service)
+            ?: $this->settings->buildWordpressFilebrowserPublicUrl($site->slug);
+
+        $metadata = array_merge($site->metadata ?? [], [
+            'filebrowser_enabled' => true,
+            'filebrowser_url' => $filebrowserUrl,
+        ]);
+
+        $site->update(['metadata' => $metadata]);
     }
 
     /**

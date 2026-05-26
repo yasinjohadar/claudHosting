@@ -60,6 +60,7 @@
             <a href="{{ route('admin.coolify.projects.show', $site->project_uuid) }}" class="btn btn-outline-secondary btn-sm">المشروع</a>
             @endif
             @if($site->service_uuid && in_array($site->status, ['running', 'failed'], true))
+            @include('admin.coolify.wordpress-sites.partials.attach-filebrowser-form')
             @include('admin.coolify.wordpress-sites.partials.apply-coolify-domain-form')
             @endif
             @if($cfEnabled && ($site->status === 'running' || empty($cf)))

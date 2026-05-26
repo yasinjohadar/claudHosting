@@ -1478,7 +1478,49 @@ class CoolifyApiService
 
     public function createService(array $data): array
     {
+        $data = $this->prepareServiceComposePayload($data);
+
         return $this->request('POST', 'services', $this->filterServicePayload($data));
+    }
+
+    /**
+     * Coolify: لا يُرسل type مع docker_compose_raw؛ والـ compose يجب أن يكون base64.
+     *
+     * @param  array<string, mixed>  $data
+     * @return array<string, mixed>
+     */
+    public function prepareServiceComposePayload(array $data): array
+    {
+        $raw = $data['docker_compose_raw'] ?? null;
+        if ($raw === null || $raw === '') {
+            return $data;
+        }
+
+        unset($data['type']);
+
+        if (! $this->isBase64EncodedCompose((string) $raw)) {
+            $data['docker_compose_raw'] = base64_encode((string) $raw);
+        }
+
+        return $data;
+    }
+
+    protected function isBase64EncodedCompose(string $value): bool
+    {
+        if ($value === '' || strlen($value) % 4 !== 0) {
+            return false;
+        }
+
+        if (! preg_match('/^[A-Za-z0-9+\/]*={0,2}$/', $value)) {
+            return false;
+        }
+
+        $decoded = base64_decode($value, true);
+        if ($decoded === false || $decoded === '') {
+            return false;
+        }
+
+        return str_contains($decoded, 'services:');
     }
 
     /**
@@ -2259,6 +2301,7 @@ class CoolifyApiService
 
     public function updateService(string $uuid, array $data): array
     {
+        $data = $this->prepareServiceComposePayload($data);
         $payload = $this->filterServicePayload($data, includeUrls: true);
 
         return $this->request('PATCH', "services/{$uuid}", $payload);

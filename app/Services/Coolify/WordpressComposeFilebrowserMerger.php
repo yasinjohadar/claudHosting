@@ -81,6 +81,14 @@ class WordpressComposeFilebrowserMerger
     }
 
     /**
+     * Coolify API يتطلب docker_compose_raw بصيغة base64 ولا يقبل type معه في نفس الطلب.
+     */
+    public function mergeForCoolifyApi(string $wordpressServiceType): string
+    {
+        return base64_encode($this->merge($wordpressServiceType));
+    }
+
+    /**
      * @param  array<int|string, mixed>  $environment
      * @param  array<int, string>  $required
      * @return array<int, string>

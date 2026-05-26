@@ -336,6 +336,7 @@ Route::middleware(['auth', 'admin.panel'])->group(function () {
                 Route::post('/{uuid}/terminal/session', [CoolifyWordpressSiteFilesController::class, 'terminalSession'])->name('terminal.session');
                 Route::get('/terminal/commands', [CoolifyWordpressSiteFilesController::class, 'terminalCommands'])->name('terminal.commands');
                 Route::post('/{uuid}/sync-cloudflare', [CoolifyWordpressSiteController::class, 'syncCloudflare'])->name('sync-cloudflare');
+                Route::post('/{uuid}/attach-filebrowser', [CoolifyWordpressSiteController::class, 'attachFilebrowser'])->name('attach-filebrowser');
                 Route::post('/{uuid}/apply-coolify-domain', [CoolifyWordpressSiteController::class, 'applyCoolifyDomain'])->name('apply-coolify-domain');
                 Route::post('/{uuid}/retry', [CoolifyWordpressSiteController::class, 'retry'])->name('retry');
                 Route::post('/{uuid}/restart-coolify', [CoolifyWordpressSiteController::class, 'restartCoolify'])->name('restart-coolify');
