@@ -501,6 +501,11 @@ class CloudflareApiService
         return $this->request('PUT', "zones/{$zoneId}/dns_records/{$recordId}", [], $payload);
     }
 
+    public function deleteDnsRecord(string $zoneId, string $recordId): array
+    {
+        return $this->request('DELETE', "zones/{$zoneId}/dns_records/{$recordId}");
+    }
+
     /**
      * @return array<string, mixed>|null
      */

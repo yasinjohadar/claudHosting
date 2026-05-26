@@ -12,6 +12,7 @@ use App\Services\Coolify\CoolifySettingsService;
 use App\Services\Coolify\WordpressCloudflareService;
 use App\Services\Coolify\WordpressManagementService;
 use App\Services\Coolify\WordpressProvisioningProgress;
+use App\Services\Coolify\WordpressServiceComponentLifecycleService;
 use App\Services\Coolify\WordpressSiteProvisioningService;
 use App\Services\CoolifyApiService;
 use App\Support\WordpressSiteRouteMap;
@@ -32,7 +33,8 @@ class CoolifyWordpressSiteController extends Controller
         protected WordpressManagementService $wpManagement,
         protected WordpressCloudflareService $wordpressCloudflare,
         protected WordpressProvisioningProgress $provisioningProgress,
-        protected ClientAssetService $clientAssets
+        protected ClientAssetService $clientAssets,
+        protected WordpressServiceComponentLifecycleService $componentLifecycle
     ) {
         $this->middleware('auth');
     }
@@ -641,6 +643,46 @@ class CoolifyWordpressSiteController extends Controller
         return redirect()
             ->route('admin.coolify.wordpress-sites.show', $site->uuid)
             ->with('success', $message);
+    }
+
+    public function restartComponent(string $uuid, string $component)
+    {
+        $site = CoolifyWordpressSite::query()->where('uuid', $uuid)->firstOrFail();
+
+        if (! $this->coolify->isConfigured()) {
+            return back()->with('error', 'اضبط إعدادات Coolify أولاً.');
+        }
+
+        $can = $this->wpManagement->canManage($site);
+        if (! ($can['ok'] ?? false)) {
+            return back()->with('error', $can['message'] ?? 'SSH غير جاهز لإدارة الحاويات');
+        }
+
+        $result = $this->componentLifecycle->restart($site, $component);
+
+        return $result['success']
+            ? back()->with('success', $result['message'])
+            : back()->with('error', $result['message']);
+    }
+
+    public function redeployComponent(string $uuid, string $component)
+    {
+        $site = CoolifyWordpressSite::query()->where('uuid', $uuid)->firstOrFail();
+
+        if (! $this->coolify->isConfigured()) {
+            return back()->with('error', 'اضبط إعدادات Coolify أولاً.');
+        }
+
+        $can = $this->wpManagement->canManage($site);
+        if (! ($can['ok'] ?? false)) {
+            return back()->with('error', $can['message'] ?? 'SSH غير جاهز لإدارة الحاويات');
+        }
+
+        $result = $this->componentLifecycle->redeploy($site, $component);
+
+        return $result['success']
+            ? back()->with('success', $result['message'])
+            : back()->with('error', $result['message']);
     }
 
     public function restartCoolify(string $uuid)

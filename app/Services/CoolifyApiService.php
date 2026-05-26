@@ -2191,6 +2191,7 @@ class CoolifyApiService
                 'name' => (string) ($app['name'] ?? 'application'),
                 'role' => 'application',
                 'status' => strtolower((string) ($app['status'] ?? '')),
+                'uuid' => (string) ($app['uuid'] ?? ''),
             ];
         }
 
@@ -2202,6 +2203,7 @@ class CoolifyApiService
                 'name' => (string) ($db['name'] ?? 'database'),
                 'role' => 'database',
                 'status' => strtolower((string) ($db['status'] ?? '')),
+                'uuid' => (string) ($db['uuid'] ?? ''),
             ];
         }
 

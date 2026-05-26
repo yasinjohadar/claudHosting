@@ -122,6 +122,53 @@ class WordpressCliService
         return $this->runOnHost($site, $command, 300);
     }
 
+    /**
+     * @return array{success: bool, output: string, exit_code: int, message?: string}
+     */
+    public function composeServiceLifecycle(CoolifyWordpressSite $site, string $serviceName, string $action): array
+    {
+        $serviceName = strtolower(preg_replace('/[^a-z0-9_-]/', '', $serviceName) ?? '');
+        if ($serviceName === '') {
+            return ['success' => false, 'output' => '', 'exit_code' => 1, 'message' => 'اسم خدمة compose غير صالح'];
+        }
+
+        if (! filled($site->service_uuid)) {
+            return ['success' => false, 'output' => '', 'exit_code' => 1, 'message' => 'معرّف الخدمة غير موجود'];
+        }
+
+        $action = match ($action) {
+            'restart', 'redeploy' => $action,
+            default => '',
+        };
+        if ($action === '') {
+            return ['success' => false, 'output' => '', 'exit_code' => 1, 'message' => 'عملية غير صالحة'];
+        }
+
+        $uuid = preg_replace('/[^a-zA-Z0-9_-]/', '', $site->service_uuid);
+        $paths = [
+            '/data/coolify/services/'.$uuid,
+            '/var/lib/coolify/services/'.$uuid,
+        ];
+
+        $composeAction = $action === 'restart'
+            ? 'restart '.$serviceName
+            : 'pull '.$serviceName.' 2>/dev/null; docker compose up -d --no-deps --force-recreate '.$serviceName;
+
+        $commands = [];
+        foreach ($paths as $path) {
+            $commands[] = sprintf(
+                'if [ -d %s ]; then cd %s && docker compose %s; fi',
+                escapeshellarg($path),
+                escapeshellarg($path),
+                $composeAction
+            );
+        }
+
+        $command = implode(' ; ', $commands).' ; echo done';
+
+        return $this->runOnHost($site, $command, $action === 'redeploy' ? 900 : 300);
+    }
+
     public function diagnose(CoolifyWordpressSite $site): string
     {
         @set_time_limit(120);

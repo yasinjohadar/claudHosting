@@ -340,6 +340,12 @@ Route::middleware(['auth', 'admin.panel'])->group(function () {
                 Route::post('/{uuid}/apply-coolify-domain', [CoolifyWordpressSiteController::class, 'applyCoolifyDomain'])->name('apply-coolify-domain');
                 Route::post('/{uuid}/retry', [CoolifyWordpressSiteController::class, 'retry'])->name('retry');
                 Route::post('/{uuid}/restart-coolify', [CoolifyWordpressSiteController::class, 'restartCoolify'])->name('restart-coolify');
+                Route::post('/{uuid}/components/{component}/restart', [CoolifyWordpressSiteController::class, 'restartComponent'])
+                    ->name('components.restart')
+                    ->where('component', '[a-zA-Z0-9_-]+');
+                Route::post('/{uuid}/components/{component}/redeploy', [CoolifyWordpressSiteController::class, 'redeployComponent'])
+                    ->name('components.redeploy')
+                    ->where('component', '[a-zA-Z0-9_-]+');
                 Route::get('/{uuid}/edit', [CoolifyWordpressSiteController::class, 'edit'])->name('edit');
                 Route::put('/{uuid}', [CoolifyWordpressSiteController::class, 'update'])->name('update');
                 Route::delete('/{uuid}', [CoolifyWordpressSiteController::class, 'destroy'])->name('destroy');

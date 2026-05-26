@@ -2,10 +2,17 @@
     $pollActive = in_array($site->status, ['pending', 'provisioning', 'failed'], true);
     $hasServiceUuid = filled($site->service_uuid);
     $wpSiteRoutes = $wpSiteRoutes ?? \App\Support\WordpressSiteRouteMap::forPanel('admin', $uuid);
+    $componentActionsReady = empty($isClientPanel ?? false)
+        && filled($site->service_uuid)
+        && ($wpManagementState['execute_ready'] ?? false);
 @endphp
 <script>
 (function() {
     const statusUrl = @json($wpSiteRoutes['status']);
+    const componentActionsEnabled = @json($componentActionsReady);
+    const componentCsrf = @json(csrf_token());
+    const componentRestartTpl = @json(route('admin.coolify.wordpress-sites.components.restart', ['uuid' => $uuid, 'component' => '__NAME__']));
+    const componentRedeployTpl = @json(route('admin.coolify.wordpress-sites.components.redeploy', ['uuid' => $uuid, 'component' => '__NAME__']));
     const labels = @json(\App\Models\CoolifyWordpressSite::STATUSES);
     const runningStatuses = ['running', 'healthy', 'started', 'active'];
     const pollActive = @json($pollActive);
@@ -80,11 +87,30 @@
             : label;
     }
 
+    function componentActionCell(name) {
+        if (!componentActionsEnabled || !name) return '';
+        const enc = encodeURIComponent(name);
+        const restartAction = componentRestartTpl.replace('__NAME__', enc);
+        const redeployAction = componentRedeployTpl.replace('__NAME__', enc);
+        const safeName = String(name).replace(/"/g, '&quot;');
+        return `<td class="text-end text-nowrap">
+            <form method="POST" action="${restartAction}" class="d-inline">
+                <input type="hidden" name="_token" value="${componentCsrf}">
+                <button type="submit" class="btn btn-outline-warning btn-sm py-0 px-2">Restart</button>
+            </form>
+            <form method="POST" action="${redeployAction}" class="d-inline ms-1" onsubmit="return confirm('إعادة نشر «${safeName}»؟');">
+                <input type="hidden" name="_token" value="${componentCsrf}">
+                <button type="submit" class="btn btn-outline-primary btn-sm py-0 px-2">Redeploy</button>
+            </form>
+        </td>`;
+    }
+
     function renderComponents(components) {
         const tbody = document.getElementById('componentsTableBody');
         if (!tbody) return;
+        const colSpan = componentActionsEnabled ? 4 : 3;
         if (!components || !components.length) {
-            tbody.innerHTML = '<tr><td colspan="3" class="text-muted text-center py-3">لا توجد بيانات حاويات بعد</td></tr>';
+            tbody.innerHTML = `<tr><td colspan="${colSpan}" class="text-muted text-center py-3">لا توجد بيانات حاويات بعد</td></tr>`;
             return;
         }
         tbody.innerHTML = components.map(c => `
@@ -92,6 +118,7 @@
                 <td><code>${c.name || '—'}</code></td>
                 <td>${c.role || '—'}</td>
                 <td><span class="badge ${compBadgeClass(c.status)}">${c.status || '—'}</span></td>
+                ${componentActionCell(c.name)}
             </tr>
         `).join('');
     }

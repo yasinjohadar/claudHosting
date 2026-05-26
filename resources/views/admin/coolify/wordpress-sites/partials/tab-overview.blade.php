@@ -114,7 +114,15 @@
         </div>
     </div>
 
+    @php
+        $componentActionsReady = empty($isClientPanel)
+            && filled($site->service_uuid)
+            && ($wpManagementState['execute_ready'] ?? false);
+    @endphp
     <h6 class="site-show-section-title">حالة الحاويات</h6>
+    @if($componentActionsReady)
+    <p class="small text-muted mb-2">إعادة التشغيل أو إعادة النشر لكل حاوية على حدة (Coolify API أو docker compose عبر SSH).</p>
+    @endif
     <div class="site-show-panel-table mb-0" id="liveCoolifyCard">
         <div class="coolify-widget-accent" style="background: var(--coolify-accent, #0ea5e9);"></div>
         <div class="d-flex justify-content-between align-items-center px-3 py-2 border-bottom">
@@ -123,17 +131,40 @@
         </div>
         <div class="table-responsive">
             <table class="table table-hover table-sm mb-0">
-                <thead><tr><th>المكوّن</th><th>الدور</th><th>الحالة</th></tr></thead>
+                <thead>
+                    <tr>
+                        <th>المكوّن</th>
+                        <th>الدور</th>
+                        <th>الحالة</th>
+                        @if($componentActionsReady)<th class="text-end">إجراءات</th>@endif
+                    </tr>
+                </thead>
                 <tbody id="componentsTableBody">
                 @forelse($site->metadata['coolify_components'] ?? [] as $comp)
+                @php
+                    $compName = (string) ($comp['name'] ?? '');
+                    $compRunning = app(\App\Services\CoolifyApiService::class)->isComponentStatusRunning((string) ($comp['status'] ?? ''));
+                @endphp
                 <tr>
-                    <td><code>{{ $comp['name'] ?? '—' }}</code></td>
+                    <td><code>{{ $compName !== '' ? $compName : '—' }}</code></td>
                     <td>{{ $comp['role'] ?? '—' }}</td>
-                    @php $compRunning = app(\App\Services\CoolifyApiService::class)->isComponentStatusRunning((string) ($comp['status'] ?? '')); @endphp
                     <td><span class="badge bg-{{ $compRunning ? 'success' : 'secondary' }}-transparent text-{{ $compRunning ? 'success' : 'secondary' }}">{{ $comp['status'] ?? '—' }}</span></td>
+                    @if($componentActionsReady && $compName !== '')
+                    <td class="text-end text-nowrap">
+                        <form method="POST" action="{{ route('admin.coolify.wordpress-sites.components.restart', [$uuid, $compName]) }}" class="d-inline">
+                            @csrf
+                            <button type="submit" class="btn btn-outline-warning btn-sm py-0 px-2" title="إعادة تشغيل {{ $compName }}">Restart</button>
+                        </form>
+                        <form method="POST" action="{{ route('admin.coolify.wordpress-sites.components.redeploy', [$uuid, $compName]) }}" class="d-inline ms-1"
+                            onsubmit="return confirm('إعادة نشر الحاوية «{{ $compName }}»؟ قد يستغرق دقيقة.');">
+                            @csrf
+                            <button type="submit" class="btn btn-outline-primary btn-sm py-0 px-2" title="إعادة نشر {{ $compName }}">Redeploy</button>
+                        </form>
+                    </td>
+                    @endif
                 </tr>
                 @empty
-                <tr><td colspan="3" class="text-muted text-center py-4">لا توجد بيانات حاويات بعد</td></tr>
+                <tr><td colspan="{{ $componentActionsReady ? 4 : 3 }}" class="text-muted text-center py-4">لا توجد بيانات حاويات بعد</td></tr>
                 @endforelse
                 </tbody>
             </table>

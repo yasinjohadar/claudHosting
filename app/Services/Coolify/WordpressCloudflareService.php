@@ -124,7 +124,7 @@ class WordpressCloudflareService
 
         $mergedMeta = array_merge($site->metadata ?? [], $metadata);
 
-        $fbWarning = $this->applyFilebrowserDns($site, $origin, $proxied, $isIp, $zoneId, $log);
+        $fbWarning = $this->applyFilebrowserDns($site, $proxied, $zoneId, $log);
         if ($fbWarning !== null) {
             $mergedMeta['filebrowser_dns_warning'] = $fbWarning;
         }
@@ -146,9 +146,7 @@ class WordpressCloudflareService
      */
     protected function applyFilebrowserDns(
         CoolifyWordpressSite $site,
-        string $origin,
         bool $proxied,
-        bool $isIp,
         string $zoneId,
         ?callable $log = null
     ): ?string {
@@ -164,51 +162,29 @@ class WordpressCloudflareService
         $recordName = $this->settings->buildWordpressFilebrowserDnsName($site->slug);
         $baseDomain = $this->settings->getWordpressBaseDomain();
         $fqdn = $recordName.'.'.$baseDomain;
+        $target = $this->resolveFilebrowserDnsTarget($site, $proxied);
 
-        $mainCf = ($site->metadata ?? [])['cloudflare'] ?? [];
-        if (isset($mainCf['origin']) && filter_var($mainCf['origin'], FILTER_VALIDATE_IP)) {
-            $origin = (string) $mainCf['origin'];
-            $isIp = true;
-        } elseif (! $isIp) {
-            $originHost = strtolower($origin);
-            $fbFqdn = strtolower($fqdn);
-            if ($originHost === $fbFqdn) {
-                $origin = strtolower($site->slug.'.'.$baseDomain);
-            }
-        }
+        $this->log(
+            $log,
+            'cloudflare_filebrowser_dns',
+            'إعداد DNS لـ FileBrowser: '.$fqdn.' → '.$target['type'].' '.$target['content']
+        );
 
-        $this->log($log, 'cloudflare_filebrowser_dns', 'إعداد DNS لـ FileBrowser: '.$fqdn.' → '.$origin);
-
-        $existing = $this->cloudflare->findDnsRecordByName(
+        $response = $this->upsertFilebrowserDnsRecord(
             $zoneId,
             $recordName,
-            $isIp ? 'A' : 'CNAME'
+            $fqdn,
+            $target['type'],
+            $target['content'],
+            $proxied
         );
-        if ($existing === null) {
-            $existing = $this->cloudflare->findDnsRecordByName($zoneId, $fqdn, $isIp ? 'A' : 'CNAME');
-        }
-
-        $recordPayload = [
-            'type' => $isIp ? 'A' : 'CNAME',
-            'name' => $recordName,
-            'content' => $origin,
-            'proxied' => $proxied,
-            'ttl' => 1,
-        ];
-
-        if ($existing !== null) {
-            $recordId = (string) ($existing['id'] ?? '');
-            $response = $this->cloudflare->updateDnsRecord($zoneId, $recordId, $recordPayload);
-        } else {
-            $response = $this->cloudflare->createDnsRecord($zoneId, $recordPayload);
-        }
 
         if (! ($response['success'] ?? false)) {
             return $response['message'] ?? 'فشل إنشاء/تحديث سجل DNS لـ FileBrowser';
         }
 
         $recordData = $response['data']['result'] ?? $response['data'] ?? [];
-        $recordId = is_array($recordData) ? (string) ($recordData['id'] ?? $existing['id'] ?? '') : '';
+        $recordId = is_array($recordData) ? (string) ($recordData['id'] ?? '') : '';
 
         $site->refresh();
         $site->update([
@@ -219,12 +195,98 @@ class WordpressCloudflareService
                     'record_name' => $recordName,
                     'fqdn' => $fqdn,
                     'proxied' => $proxied,
-                    'origin' => $origin,
+                    'record_type' => $target['type'],
+                    'origin' => $target['content'],
                 ],
             ]),
         ]);
 
         return null;
+    }
+
+    /**
+     * مع Cloudflare Proxy: files.{slug} → CNAME → {slug}.{domain} (وليس A إلى IP ولا CNAME إلى نفسه).
+     *
+     * @return array{type: string, content: string}
+     */
+    protected function resolveFilebrowserDnsTarget(CoolifyWordpressSite $site, bool $proxied): array
+    {
+        $baseDomain = strtolower(rtrim($this->settings->getWordpressBaseDomain(), '.'));
+        $mainFqdn = strtolower($site->slug.'.'.$baseDomain);
+
+        if ($proxied) {
+            return [
+                'type' => 'CNAME',
+                'content' => $mainFqdn,
+            ];
+        }
+
+        $mainCf = ($site->metadata ?? [])['cloudflare'] ?? [];
+        if (isset($mainCf['origin']) && filter_var($mainCf['origin'], FILTER_VALIDATE_IP)) {
+            return [
+                'type' => 'A',
+                'content' => (string) $mainCf['origin'],
+            ];
+        }
+
+        return [
+            'type' => 'CNAME',
+            'content' => $mainFqdn,
+        ];
+    }
+
+    /**
+     * @return array{success: bool, message?: string, data?: mixed}
+     */
+    protected function upsertFilebrowserDnsRecord(
+        string $zoneId,
+        string $recordName,
+        string $fqdn,
+        string $type,
+        string $content,
+        bool $proxied
+    ): array {
+        $type = strtoupper($type);
+        $content = strtolower(rtrim($content, '.'));
+        $fbFqdn = strtolower(rtrim($fqdn, '.'));
+
+        if ($content === $fbFqdn) {
+            return [
+                'success' => false,
+                'message' => 'CNAME content cannot reference itself',
+            ];
+        }
+
+        $existing = $this->cloudflare->findDnsRecordByName($zoneId, $recordName);
+        if ($existing === null) {
+            $existing = $this->cloudflare->findDnsRecordByName($zoneId, $fqdn);
+        }
+
+        $payload = [
+            'type' => $type,
+            'name' => $recordName,
+            'content' => $content,
+            'proxied' => $proxied,
+            'ttl' => 1,
+        ];
+
+        if ($existing !== null) {
+            $existingType = strtoupper((string) ($existing['type'] ?? ''));
+            $recordId = (string) ($existing['id'] ?? '');
+
+            if ($existingType !== $type) {
+                $delete = $this->cloudflare->deleteDnsRecord($zoneId, $recordId);
+                if (! ($delete['success'] ?? false)) {
+                    return $delete;
+                }
+
+                return $this->cloudflare->createDnsRecord($zoneId, $payload);
+            }
+
+            return $this->cloudflare->updateDnsRecord($zoneId, $recordId, $payload);
+        }
+
+        return $this->cloudflare->createDnsRecord($zoneId, $payload);
     }
 
     /**

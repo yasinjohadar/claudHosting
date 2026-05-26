@@ -35,6 +35,12 @@ class WordpressSiteRouteMap
             'applyCoolifyDomain' => $panel === 'admin' ? route('admin.coolify.wordpress-sites.apply-coolify-domain', $uuid) : '',
             'retry' => $panel === 'admin' ? route('admin.coolify.wordpress-sites.retry', $uuid) : '',
             'restartCoolify' => $panel === 'admin' ? route('admin.coolify.wordpress-sites.restart-coolify', $uuid) : '',
+            'componentRestart' => $panel === 'admin'
+                ? route('admin.coolify.wordpress-sites.components.restart', ['uuid' => $uuid, 'component' => '__NAME__'])
+                : '',
+            'componentRedeploy' => $panel === 'admin'
+                ? route('admin.coolify.wordpress-sites.components.redeploy', ['uuid' => $uuid, 'component' => '__NAME__'])
+                : '',
             'destroy' => $panel === 'admin' ? route('admin.coolify.wordpress-sites.destroy', $uuid) : '',
         ];
     }
