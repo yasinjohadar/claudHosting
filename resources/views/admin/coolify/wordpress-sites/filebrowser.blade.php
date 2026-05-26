@@ -46,14 +46,32 @@
             يُدار الدخول تلقائياً من اللوحة — لا حاجة لإدخال كلمة المرور من سجلات Coolify.
         </div>
         <div class="filebrowser-embed-frame-wrap">
+            <div id="filebrowserLoading" class="text-center py-5 text-muted">
+                <span class="spinner-border spinner-border-sm me-2"></span> جاري تحميل FileBrowser…
+            </div>
             <iframe
-                class="filebrowser-embed-frame"
-                src="{{ $proxyUrl }}"
+                id="filebrowserFrame"
+                class="filebrowser-embed-frame d-none"
+                data-src="{{ $proxyUrl }}"
                 title="FileBrowser — {{ $site->display_name }}"
                 allow="clipboard-read; clipboard-write"
                 referrerpolicy="no-referrer-when-downgrade"
             ></iframe>
         </div>
+        @push('scripts')
+        <script>
+        (function () {
+            var frame = document.getElementById('filebrowserFrame');
+            var loading = document.getElementById('filebrowserLoading');
+            if (!frame || !loading) return;
+            frame.addEventListener('load', function () {
+                loading.classList.add('d-none');
+                frame.classList.remove('d-none');
+            });
+            frame.src = frame.getAttribute('data-src');
+        })();
+        </script>
+        @endpush
     </div>
 </div>
 @endsection

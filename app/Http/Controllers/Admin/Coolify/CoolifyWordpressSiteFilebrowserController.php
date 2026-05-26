@@ -34,13 +34,9 @@ class CoolifyWordpressSiteFilebrowserController extends Controller
                 ->with('error', 'FileBrowser غير جاهز على هذا الموقع.');
         }
 
-        $this->credentials->ensureCredentials($site);
-        $site = $site->fresh();
-
-        $this->proxy->warmSession($site, (int) Auth::id());
-
         $openMode = $this->settings->getWordpressFilebrowserOpenMode();
-        $externalUrl = $this->proxy->upstreamBaseUrl($site);
+        $meta = $site->metadata ?? [];
+        $externalUrl = trim((string) ($meta['filebrowser_coolify_url'] ?? $meta['filebrowser_url'] ?? $meta['filebrowser_custom_url'] ?? '')) ?: null;
 
         $panel = str_starts_with($request->route()?->getName() ?? '', 'client.') ? 'client' : 'admin';
         $proxyUrl = route("{$this->routePrefix($request)}.filebrowser.proxy", ['uuid' => $uuid, 'path' => 'files/']);

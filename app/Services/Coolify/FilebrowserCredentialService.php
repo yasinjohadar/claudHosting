@@ -25,19 +25,6 @@ class FilebrowserCredentialService
 
         $metadata = $site->metadata ?? [];
         if (! $force && $this->hasStoredCredentials($metadata)) {
-            $resolved = $this->containerResolver->resolve($site);
-            if ($resolved['success'] ?? false) {
-                $creds = $this->getCredentials($site);
-                if ($creds !== null) {
-                    $this->applyCredentialsOnContainer(
-                        (string) $resolved['host'],
-                        (string) $resolved['container_id'],
-                        $creds['username'],
-                        $creds['password']
-                    );
-                }
-            }
-
             return ['ok' => true];
         }
 
@@ -147,7 +134,7 @@ class FilebrowserCredentialService
             escapeshellarg($inner)
         );
 
-        $result = $this->ssh->run($host, $remote, 90);
+        $result = $this->ssh->run($host, $remote, 45);
         if ($result['success'] ?? false) {
             return ['success' => true, 'database_path' => $dbPath];
         }
@@ -157,7 +144,7 @@ class FilebrowserCredentialService
             escapeshellarg($containerId),
             escapeshellarg($inner)
         );
-        $resultRoot = $this->ssh->run($host, $remoteRoot, 90);
+        $resultRoot = $this->ssh->run($host, $remoteRoot, 45);
 
         if ($resultRoot['success'] ?? false) {
             return ['success' => true, 'database_path' => $dbPath];

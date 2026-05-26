@@ -44,16 +44,31 @@ class FilebrowserProxyService
             return false;
         }
 
-        return $this->upstreamBaseUrl($site) !== null
-            || $this->upstreamResolver->publicCandidateUrls($site) !== [];
+        $meta = $site->metadata ?? [];
+        if (! ($meta['filebrowser_enabled'] ?? false)) {
+            return false;
+        }
+
+        foreach (['filebrowser_coolify_url', 'filebrowser_url', 'filebrowser_custom_url', 'filebrowser_upstream_url'] as $key) {
+            if (filled($meta[$key] ?? null)) {
+                return true;
+            }
+        }
+
+        return $this->upstreamResolver->publicCandidateUrls($site) !== [];
     }
 
     public function proxy(Request $request, CoolifyWordpressSite $site, int $userId, ?string $path = null): Response
     {
         if (! $this->credentials->hasStoredCredentials($site->metadata ?? [])) {
+            set_time_limit(120);
             $sync = $this->credentials->ensureCredentials($site);
             if (! ($sync['ok'] ?? false)) {
-                return $this->errorResponse($sync['message'] ?? 'تعذّر تجهيز بيانات الدخول', 503);
+                return $this->errorResponse(
+                    ($sync['message'] ?? 'تعذّر تجهيز بيانات الدخول')
+                    .' — نفّذ: php artisan wordpress-sites:sync-filebrowser-credentials --slug='.$site->slug,
+                    503
+                );
             }
             $site = $site->fresh();
         }

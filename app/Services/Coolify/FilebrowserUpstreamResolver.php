@@ -25,10 +25,18 @@ class FilebrowserUpstreamResolver
             }
 
             $metaUrl = trim((string) (($site->metadata ?? [])['filebrowser_upstream_url'] ?? ''));
-            if ($metaUrl !== '' && $this->isReachable($metaUrl)) {
+            if ($metaUrl !== '') {
                 Cache::put($cacheKey, $metaUrl, 3600);
 
                 return $metaUrl;
+            }
+
+            $candidates = $this->publicCandidateUrls($site);
+            if ($candidates !== []) {
+                $first = $candidates[0];
+                Cache::put($cacheKey, $first, 600);
+
+                return $first;
             }
         }
 
@@ -41,10 +49,12 @@ class FilebrowserUpstreamResolver
         }
 
         $sshUrl = $this->resolveViaSshPublishedPort($site);
-        if ($sshUrl !== null && $this->isReachable($sshUrl)) {
-            $this->rememberUpstream($site, $sshUrl, $cacheKey);
+        if ($sshUrl !== null) {
+            if ($refresh || $this->isReachable($sshUrl)) {
+                $this->rememberUpstream($site, $sshUrl, $cacheKey);
 
-            return $sshUrl;
+                return $sshUrl;
+            }
         }
 
         return null;
