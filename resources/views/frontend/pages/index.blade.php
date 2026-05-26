@@ -136,6 +136,8 @@
         </div>
     </section>
 
+    @include('frontend.partials.tech-stack-section')
+
     <!-- ============ HOSTING PACKAGES ============ -->
     <section class="section-padding" id="packages" style="background: var(--clr-bg-secondary);">
         <div class="container">
