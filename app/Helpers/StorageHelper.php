@@ -62,6 +62,49 @@ if (!function_exists('blog_image_url')) {
     }
 }
 
+if (!function_exists('hero_asset_url')) {
+    /**
+     * Get the URL for a hero image or background stored in public disk.
+     *
+     * @param  string|null  $path
+     */
+    function hero_asset_url(?string $path): ?string
+    {
+        if (empty($path)) {
+            return null;
+        }
+
+        if (filter_var($path, FILTER_VALIDATE_URL)) {
+            return $path;
+        }
+
+        $path = ltrim($path, '/');
+        $path = str_replace('storage/', '', $path);
+
+        try {
+            $storageHelper = app(\App\Services\Storage\StorageHelperService::class);
+            $url = $storageHelper->getFileUrl('public', $path);
+            if (! empty($url) && filter_var($url, FILTER_VALIDATE_URL)) {
+                return $url;
+            }
+        } catch (\Exception $e) {
+            // fallback below
+        }
+
+        $publicStoragePath = public_path('storage/' . $path);
+        if (is_file($publicStoragePath)) {
+            return asset('storage/' . $path);
+        }
+
+        $publicDirectPath = public_path($path);
+        if (is_file($publicDirectPath)) {
+            return asset($path);
+        }
+
+        return null;
+    }
+}
+
 if (!function_exists('course_image_url')) {
     /**
      * Get the URL for a course image

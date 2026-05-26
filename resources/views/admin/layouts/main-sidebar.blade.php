@@ -52,6 +52,7 @@
                         $systemMenuActive = request()->routeIs('users.*')
                             || request()->routeIs('roles.*')
                             || request()->routeIs('admin.settings.*')
+                            || request()->routeIs('admin.homepage.hero.*')
                             || request()->routeIs('admin.storage.*')
                             || request()->routeIs('admin.backups.*')
                             || request()->routeIs('admin.backup-schedules.*')
@@ -273,6 +274,9 @@
                                 <li class="slide__category">عام</li>
                                 <li class="slide">
                                     <a href="{{ route('admin.settings.index') }}" class="side-menu__item {{ request()->routeIs('admin.settings.*') ? 'active' : '' }}">إعدادات الموقع</a>
+                                </li>
+                                <li class="slide">
+                                    <a href="{{ route('admin.homepage.hero.index') }}" class="side-menu__item {{ request()->routeIs('admin.homepage.hero.*') ? 'active' : '' }}">إدارة الهيرو</a>
                                 </li>
                                 <li class="slide">
                                     <a href="{{ route('admin.system-database.index') }}" class="side-menu__item {{ request()->routeIs('admin.system-database.*') ? 'active' : '' }}">قاعدة بيانات النظام</a>

@@ -2,6 +2,14 @@
 <html lang="ar" dir="rtl" data-theme="light">
 
 <head>
+    <script>
+        (function () {
+            var theme = localStorage.getItem('yj-theme');
+            if (theme === 'dark' || theme === 'light') {
+                document.documentElement.setAttribute('data-theme', theme);
+            }
+        })();
+    </script>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="description" content="@yield('meta-description', 'استضافة كلاودسوفت - استضافة مواقع سحابية موثوقة. باقات مرنة، دعم فني مستمر، وبنية تحتية قوية لموقعك أو متجرك.')">

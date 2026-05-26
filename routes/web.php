@@ -89,8 +89,9 @@ Route::get('/', function () {
         ->orderBy('name')
         ->take(6)
         ->get();
+    $hero = app(\App\Services\HeroSettingsService::class)->resolveForFrontend();
 
-    return view('frontend.pages.index', compact('latestBlogPosts', 'featuredPackages'));
+    return view('frontend.pages.index', compact('latestBlogPosts', 'featuredPackages', 'hero'));
 })->name('home');
 
 // مسارات المصادقة
@@ -218,6 +219,11 @@ Route::middleware(['auth', 'admin.panel'])->group(function () {
         // إعدادات الموقع (تواصل، سوشيال، عام)
         Route::get('/settings', [SettingController::class, 'index'])->name('settings.index');
         Route::put('/settings', [SettingController::class, 'update'])->name('settings.update');
+
+        Route::prefix('homepage')->name('homepage.')->group(function () {
+            Route::get('/hero', [\App\Http\Controllers\Admin\HeroSettingsController::class, 'index'])->name('hero.index');
+            Route::put('/hero', [\App\Http\Controllers\Admin\HeroSettingsController::class, 'update'])->name('hero.update');
+        });
 
         Route::prefix('system-database')->name('system-database.')->group(function () {
             Route::get('/', [SystemDatabaseController::class, 'index'])->name('index');

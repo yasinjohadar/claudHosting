@@ -13,63 +13,7 @@
 @endsection
 
 @section('content')
-    <!-- ============ HERO SECTION ============ -->
-    <section class="hero-section" id="hero">
-        <div class="container">
-            <div class="row align-items-center g-5">
-                <div class="col-lg-7 order-2 order-lg-1">
-                    <div class="hero-content animate-on-scroll">
-                        <h1>
-                            مرحباً بك في
-                            <span id="typingText"
-                                data-texts="استضافة كلاودسوفت|خوادم سحابية موثوقة|باقات استضافة تناسب مشروعك">استضافة
-                                كلاودسوفت</span>
-                            <span class="blinking-cursor"
-                                style="animation: blink 0.8s infinite; color: var(--clr-primary);">|</span>
-                        </h1>
-                        <p class="subtitle">
-                            استضافة كلاودسوفت تمنحك بنية سحابية مستقرة، سريعة وآمنة لموقعك أو متجرك الإلكتروني، مع خطط
-                            مرنة تبدأ من المواقع الشخصية وحتى مشاريع الشركات. اختر باقتك وابدأ خلال دقائق مع لوحة تحكم
-                            سهلة ودعم فني مستمر.
-                        </p>
-                        <div class="hero-btns">
-                            <a href="{{ route('frontend.packages') }}" class="btn-primary-custom">
-                                <i class="fas fa-server"></i> تصفّح الباقات
-                            </a>
-                            <a href="/contact" class="btn-outline-custom">
-                                <i class="fas fa-paper-plane"></i> تواصل معنا
-                            </a>
-                        </div>
-
-                        <div class="hero-stats">
-                            <div class="hero-stat-item">
-                                <span class="stat-num counter-num" data-count="200">0+</span>
-                                <span class="stat-label">موقع مستضاف</span>
-                            </div>
-                            <div class="hero-stat-item">
-                                <span class="stat-num counter-num" data-count="500">0+</span>
-                                <span class="stat-label">عميل نشط</span>
-                            </div>
-                            <div class="hero-stat-item">
-                                <span class="stat-num counter-num" data-count="5">0+</span>
-                                <span class="stat-label">سنوات خبرة في الاستضافة</span>
-                            </div>
-                            <div class="hero-stat-item">
-                                <span class="stat-num counter-num" data-count="99">0+</span>
-                                <span class="stat-label">نسبة توفر %</span>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                <div class="col-lg-5 order-1 order-lg-2">
-                    <div class="hero-image-wrapper animate-on-scroll">
-                        <div class="hero-ring"></div>
-                        <img src="{{ asset('frontend/assets/images/hero-servers.svg') }}" alt="خوادم استضافة سحابية موثوقة - استضافة كلاودسوفت" class="hero-img" width="400" height="400" loading="eager">
-                    </div>
-                </div>
-            </div>
-        </div>
-    </section>
+    @include('frontend.partials.hero-section', ['hero' => $hero ?? null])
 
     <!-- ============ SKILLS SECTION ============ -->
     <section class="section-padding" id="skills">
