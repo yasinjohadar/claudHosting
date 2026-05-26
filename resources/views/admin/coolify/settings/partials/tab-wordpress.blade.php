@@ -32,6 +32,22 @@
         </select>
         <div class="form-text">يُستخدم عند اختيار «مشروع مشترك» في معالج إنشاء الموقع.</div>
     </div>
+    <div class="card border mb-3">
+        <div class="card-body py-3">
+            <h6 class="card-title mb-2"><i class="fe fe-globe text-primary"></i> أنواع النطاق في المعالج</h6>
+            <label class="form-check mb-2">
+                <input type="hidden" name="wordpress_custom_domain_enabled" value="0">
+                <input type="checkbox" name="wordpress_custom_domain_enabled" value="1" class="form-check-input"
+                    {{ old('wordpress_custom_domain_enabled', $form['wordpress_custom_domain_enabled'] ?? true) ? 'checked' : '' }}>
+                السماح بإنشاء مواقع على <strong>دومين مستقل</strong> (مثل <code dir="ltr">example.com</code>)
+            </label>
+            <p class="form-text mb-0">
+                عند التفعيل يظهر خيار «دومين مستقل» في معالج الإنشاء مع FileBrowser على
+                <code dir="ltr">files.{الدومين}</code>.
+                تعطيله لا يؤثر على مواقع النطاق الفرعي الحالية (<code>slug.{{ $form['wordpress_base_domain'] ?: '…' }}</code>).
+            </p>
+        </div>
+    </div>
     <div class="mb-3">
         <label class="form-label">نوع خدمة WordPress</label>
         <select name="wordpress_service_type" class="form-select">

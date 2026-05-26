@@ -70,7 +70,12 @@
                                         </span>
                                         <div class="min-w-0">
                                             <div class="wp-site-name__title text-truncate">{{ $site->display_name }}</div>
-                                            <div class="wp-site-name__slug">{{ $site->slug }}</div>
+                                            <div class="wp-site-name__slug">
+                                                @if ($site->isCustomDomain())
+                                                    <span class="badge bg-info-subtle text-info me-1" style="font-size:0.65rem">مستقل</span>
+                                                @endif
+                                                {{ $site->slug }}
+                                            </div>
                                         </div>
                                     </div>
                                 </td>

@@ -11,6 +11,7 @@
     <input type="hidden" name="description" value="{{ request('description') }}">
     <input type="hidden" name="project_mode" value="{{ request('project_mode', 'new') }}">
     <input type="hidden" name="project_uuid" value="{{ request('project_uuid') ?: (request('project_mode') === 'shared' ? $sharedProject : '') }}">
+    @include('admin.coolify.wordpress-sites.partials.wizard-domain-hidden-fields')
 
     <div class="wp-wizard-summary">
         <div class="wp-wizard-summary__name">
@@ -18,10 +19,7 @@
             {{ request('display_name') }}
         </div>
         <div class="wp-wizard-summary__meta">
-            <span class="wp-wizard-summary__pill">
-                <i class="fe fe-link"></i>
-                <code dir="ltr">https://{{ request('slug') }}.{{ $baseDomain }}</code>
-            </span>
+            @include('admin.coolify.wordpress-sites.partials.wizard-domain-summary')
             <span class="wp-wizard-summary__pill">
                 <i class="fe fe-folder"></i>
                 {{ $projectModeLabel }}
@@ -99,11 +97,29 @@
             <p class="small text-muted mb-0 mt-2">
                 موصى به بعد الإنشاء: Redis Object Cache، تقييد محاولات الدخول، نسخ احتياطي Coolify.
             </p>
+            @if (request('domain_type') === \App\Models\CoolifyWordpressSite::DOMAIN_TYPE_CUSTOM)
+                <p class="small text-info mb-0 mt-2">
+                    <i class="fe fe-info me-1"></i>
+                    إن وُجدت منطقة الدومين في Cloudflare يُربط DNS تلقائياً؛ وإلا ستظهر تعليمات DNS يدوية بعد الإنشاء.
+                </p>
+            @endif
         </div>
     </div>
 
     <div class="wp-wizard-actions">
-        <a href="{{ route('admin.coolify.wordpress-sites.create', array_filter(['step' => 2, 'display_name' => request('display_name'), 'slug' => request('slug'), 'description' => request('description'), 'project_mode' => request('project_mode'), 'project_uuid' => request('project_uuid'), 'cloudflare_enabled' => request('cloudflare_enabled'), 'security_preset' => request('security_preset')])) }}"
+        <a href="{{ route('admin.coolify.wordpress-sites.create', array_filter([
+            'step' => 2,
+            'display_name' => request('display_name'),
+            'slug' => request('slug'),
+            'description' => request('description'),
+            'domain_type' => request('domain_type'),
+            'custom_domain_apex_input' => request('custom_domain_apex_input'),
+            'custom_host_choice' => request('custom_host_choice'),
+            'project_mode' => request('project_mode'),
+            'project_uuid' => request('project_uuid'),
+            'cloudflare_enabled' => request('cloudflare_enabled'),
+            'security_preset' => request('security_preset'),
+        ])) }}"
             class="wp-wizard-btn-back">
             <i class="fe fe-arrow-left"></i> السابق
         </a>

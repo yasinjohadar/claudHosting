@@ -5,6 +5,7 @@
     <input type="hidden" name="description" value="{{ request('description') }}">
     <input type="hidden" name="cloudflare_enabled" value="{{ request('cloudflare_enabled', $defaultCloudflareEnabled ? '1' : '0') }}">
     <input type="hidden" name="security_preset" value="{{ request('security_preset', $defaultSecurityPreset ?? 'basic') }}">
+    @include('admin.coolify.wordpress-sites.partials.wizard-domain-hidden-fields')
 
     <div class="wp-wizard-panel">
         <div class="wp-wizard-panel__head">
@@ -39,7 +40,7 @@
                     </span>
                     <span>
                         <div class="wp-wizard-option__title">مشروع مشترك</div>
-                        <p class="wp-wizard-option__text">إضافة الموقع إلى مشروع موجود مسبقاً — مفيد لتجميع عدة مواقع في بيئة واحدة.</p>
+                        <p class="wp-wizard-option__text">إضافة الموقع إلى مشروع موجود مسبقاً.</p>
                     </span>
                 </span>
             </label>
@@ -65,13 +66,21 @@
 
     <div class="wp-wizard-hint">
         <i class="fe fe-info"></i>
-        <span>الموقع <strong>{{ request('display_name') }}</strong> على
-            <code dir="ltr">{{ request('slug') }}.{{ $baseDomain }}</code></span>
+        <span>الموقع <strong>{{ request('display_name') }}</strong> —
+            @include('admin.coolify.wordpress-sites.partials.wizard-domain-summary')
+        </span>
     </div>
 
     <div class="wp-wizard-actions">
-        <a href="{{ route('admin.coolify.wordpress-sites.create', ['step' => 1, 'display_name' => request('display_name'), 'slug' => request('slug'), 'description' => request('description')]) }}"
-            class="wp-wizard-btn-back">
+        <a href="{{ route('admin.coolify.wordpress-sites.create', array_filter([
+            'step' => 1,
+            'display_name' => request('display_name'),
+            'slug' => request('slug'),
+            'description' => request('description'),
+            'domain_type' => request('domain_type'),
+            'custom_domain_apex_input' => request('custom_domain_apex_input'),
+            'custom_host_choice' => request('custom_host_choice'),
+        ])) }}" class="wp-wizard-btn-back">
             <i class="fe fe-arrow-left"></i> السابق
         </a>
         <button type="submit" class="btn btn-primary wp-wizard-btn-next">

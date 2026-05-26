@@ -84,6 +84,7 @@ class CoolifySettingsService
             'wordpress_cloudflare_ssl_mode' => $this->getWordpressCloudflareSslMode(),
             'wordpress_security_preset' => $this->getWordpressSecurityPreset(),
             'wordpress_cloudflare_enabled' => $this->getWordpressCloudflareEnabled(),
+            'wordpress_custom_domain_enabled' => $this->getWordpressCustomDomainEnabled(),
             'wordpress_docker_tag' => $this->getWordpressDockerTag(),
             'wordpress_filebrowser_enabled' => $this->getWordpressFilebrowserEnabled(),
             'wordpress_filebrowser_subdomain_prefix' => $this->getWordpressFilebrowserSubdomainPrefix(),
@@ -255,6 +256,14 @@ class CoolifySettingsService
     {
         return filter_var(
             $this->getSettingValue('wordpress_cloudflare_enabled', config('coolify.defaults.wordpress_cloudflare_enabled', '1')),
+            FILTER_VALIDATE_BOOLEAN
+        );
+    }
+
+    public function getWordpressCustomDomainEnabled(): bool
+    {
+        return filter_var(
+            $this->getSettingValue('wordpress_custom_domain_enabled', config('coolify.defaults.wordpress_custom_domain_enabled', '1')),
             FILTER_VALIDATE_BOOLEAN
         );
     }
@@ -829,6 +838,15 @@ class CoolifySettingsService
             );
         }
 
+        if (array_key_exists('wordpress_custom_domain_enabled', $data)) {
+            SystemSetting::set(
+                $keys['wordpress_custom_domain_enabled'],
+                filter_var($data['wordpress_custom_domain_enabled'] ?? true, FILTER_VALIDATE_BOOLEAN) ? '1' : '0',
+                'string',
+                self::GROUP
+            );
+        }
+
         if (array_key_exists('wordpress_docker_tag', $data)) {
             SystemSetting::set($keys['wordpress_docker_tag'], trim((string) $data['wordpress_docker_tag']), 'string', self::GROUP);
         }
@@ -1036,6 +1054,7 @@ class CoolifySettingsService
             $keys['wordpress_cloudflare_ssl_mode'] => $defaults['wordpress_cloudflare_ssl_mode'],
             $keys['wordpress_security_preset'] => $defaults['wordpress_security_preset'],
             $keys['wordpress_cloudflare_enabled'] => $defaults['wordpress_cloudflare_enabled'],
+            $keys['wordpress_custom_domain_enabled'] => $defaults['wordpress_custom_domain_enabled'],
             $keys['terminal_bridge_enabled'] => $defaults['terminal_bridge_enabled'],
             $keys['terminal_bridge_url'] => $defaults['terminal_bridge_url'],
             $keys['terminal_bridge_secret'] => $defaults['terminal_bridge_secret'],

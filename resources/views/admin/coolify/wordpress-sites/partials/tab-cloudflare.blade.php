@@ -6,6 +6,10 @@
 <div class="tab-pane fade" id="siteTabCloudflare" role="tabpanel">
     <h6 class="site-show-section-title">حماية وتسريع</h6>
 
+    @if($site->isCustomDomain())
+        @include('admin.coolify.wordpress-sites.partials.manual-dns-instructions')
+    @endif
+
     @if(!$cfEnabled)
     @include('admin.coolify.partials.info-widget', [
         'accent' => 'secondary',

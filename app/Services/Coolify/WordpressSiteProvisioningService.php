@@ -3,6 +3,7 @@
 namespace App\Services\Coolify;
 
 use App\Models\CoolifyWordpressSite;
+use App\Services\Coolify\Wordpress\Domain\WordpressSiteDomainResolver;
 use App\Services\CoolifyApiService;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Str;
@@ -22,6 +23,7 @@ class WordpressSiteProvisioningService
         protected CoolifyApiService $coolify,
         protected CoolifySettingsService $settings,
         protected WordpressCloudflareService $wordpressCloudflare,
+        protected WordpressSiteDomainResolver $domainResolver,
         protected WordpressComposeFilebrowserMerger $filebrowserMerger,
         protected FilebrowserCredentialService $filebrowserCredentials
     ) {}
@@ -44,7 +46,7 @@ class WordpressSiteProvisioningService
             $site->update(['project_uuid' => $projectUuid]);
             $this->appendProvisionLog($site, 'create_project', 'المشروع جاهز: '.$projectUuid);
 
-            $publicUrl = $site->public_url ?: $this->settings->buildWordpressPublicUrl($site->slug);
+            $publicUrl = $site->public_url ?: $this->domainResolver->for($site)->buildPublicUrl($site);
 
             $serviceUuid = $site->service_uuid;
             if ($serviceUuid === null || $serviceUuid === '') {
@@ -66,7 +68,7 @@ class WordpressSiteProvisioningService
             $this->waitUntilRunning($site, $serviceUuid, $requireFilebrowser);
 
             $filebrowserUrl = $requireFilebrowser
-                ? $this->settings->buildWordpressFilebrowserPublicUrl($site->slug)
+                ? $this->domainResolver->for($site)->buildFilebrowserPublicUrl($site)
                 : null;
 
             $this->appendProvisionLog($site, 'apply_domain', 'تعيين النطاق: '.$publicUrl);
@@ -131,7 +133,12 @@ class WordpressSiteProvisioningService
      */
     protected function applyCloudflare(CoolifyWordpressSite $site, array $service): ?string
     {
-        if (! $this->wordpressCloudflare->isEnabledForSite($site)) {
+        $strategy = $this->domainResolver->for($site);
+        $cloudflareEnabled = $site->isCustomDomain()
+            ? app(WordpressCustomDomainCloudflareService::class)->isEnabledForSite($site)
+            : $this->wordpressCloudflare->isEnabledForSite($site);
+
+        if (! $cloudflareEnabled) {
             $this->appendProvisionLog($site, 'cloudflare_skip', 'Cloudflare غير مفعّل لهذا الموقع');
 
             return null;
@@ -139,7 +146,7 @@ class WordpressSiteProvisioningService
 
         $preset = ($site->metadata ?? [])['security_preset'] ?? null;
 
-        $result = $this->wordpressCloudflare->applyForSite(
+        $result = $strategy->applyDns(
             $site,
             $service,
             is_string($preset) ? $preset : null,
@@ -147,6 +154,10 @@ class WordpressSiteProvisioningService
         );
 
         if ($result['ok'] ?? false) {
+            if ($site->isCustomDomain() && ($site->fresh()->metadata['dns_provisioning'] ?? '') === 'manual') {
+                return 'DNS يدوي — راجع تبويب Cloudflare للتعليمات';
+            }
+
             return null;
         }
 
@@ -636,7 +647,7 @@ class WordpressSiteProvisioningService
         $hasFilebrowser = $this->serviceHasFilebrowser($service);
         $filebrowserUrl = $this->settings->getWordpressFilebrowserEnabled() && $hasFilebrowser
             ? ($this->coolify->extractFilebrowserPublicUrl($service)
-                ?: $this->settings->buildWordpressFilebrowserPublicUrl($site->slug))
+                ?: $this->domainResolver->for($site)->buildFilebrowserPublicUrl($site))
             : null;
 
         $urls = $filebrowserUrl !== null && $filebrowserUrl !== ''
@@ -746,8 +757,8 @@ class WordpressSiteProvisioningService
                 );
             }
 
-            $publicUrl = $site->public_url ?: $this->settings->buildWordpressPublicUrl($site->slug);
-            $filebrowserUrl = $this->settings->buildWordpressFilebrowserPublicUrl($site->slug);
+            $publicUrl = $site->public_url ?: $this->domainResolver->for($site)->buildPublicUrl($site);
+            $filebrowserUrl = $this->domainResolver->for($site)->buildFilebrowserPublicUrl($site);
             $domainWarning = $this->applyUrlsToService($site->service_uuid, $publicUrl, $filebrowserUrl);
 
             $service = $this->fetchService($site->service_uuid);
@@ -814,7 +825,7 @@ class WordpressSiteProvisioningService
     protected function buildFilebrowserMetadata(CoolifyWordpressSite $site, array $service): array
     {
         $coolifyUrl = $this->coolify->extractFilebrowserPublicUrl($service);
-        $customUrl = $this->settings->buildWordpressFilebrowserPublicUrl($site->slug);
+        $customUrl = $this->domainResolver->for($site)->buildFilebrowserPublicUrl($site) ?? '';
 
         return [
             'filebrowser_enabled' => true,

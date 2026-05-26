@@ -5,11 +5,14 @@ namespace App\Http\Controllers\Admin\Coolify;
 use App\Http\Controllers\Admin\Coolify\Concerns\HandlesCoolifyResponses;
 use App\Http\Controllers\Concerns\ResolvesAuthorizedWordpressSite;
 use App\Http\Controllers\Controller;
+use App\Actions\Coolify\CreateWordpressSiteAction;
 use App\Jobs\ProvisionWordpressSiteJob;
 use App\Models\CoolifyWordpressSite;
+use App\Support\WordpressDomainHelper;
 use App\Services\Client\ClientAssetService;
 use App\Services\Coolify\CoolifySettingsService;
 use App\Services\Coolify\WordpressCloudflareService;
+use App\Services\Coolify\WordpressCustomDomainCloudflareService;
 use App\Services\Coolify\WordpressManagementService;
 use App\Services\Coolify\WordpressProvisioningProgress;
 use App\Services\Coolify\WordpressServiceComponentLifecycleService;
@@ -109,19 +112,28 @@ class CoolifyWordpressSiteController extends Controller
             'defaultSecurityPreset' => $this->settings->getWordpressSecurityPreset(),
             'securityPresets' => $this->settings->getWordpressSecurityPresetOptions(),
             'step' => max(1, min(3, (int) $request->get('step', 1))),
-            'prefill' => $request->only(['display_name', 'slug', 'project_mode', 'project_uuid', 'server_uuid', 'environment_name', 'description', 'cloudflare_enabled', 'security_preset']),
+            'customDomainEnabled' => $this->settings->getWordpressCustomDomainEnabled(),
+            'prefill' => $request->only([
+                'display_name', 'slug', 'domain_type', 'custom_domain_apex_input', 'custom_host_choice',
+                'project_mode', 'project_uuid', 'server_uuid', 'environment_name', 'description',
+                'cloudflare_enabled', 'security_preset',
+            ]),
         ]);
     }
 
-    public function store(Request $request)
+    public function store(Request $request, CreateWordpressSiteAction $createSite)
     {
         $readiness = $this->settings->getWordpressReadiness();
         if (! $readiness['ready']) {
             return $this->coolifyRedirectError('إعدادات WordPress غير مكتملة.', 'admin.coolify.settings.index');
         }
 
-        $validated = $request->validate([
+        $domainType = $request->input('domain_type', CoolifyWordpressSite::DOMAIN_TYPE_PLATFORM);
+        $baseDomain = $this->settings->getWordpressBaseDomain();
+
+        $rules = [
             'display_name' => 'required|string|max:255',
+            'domain_type' => 'required|in:'.CoolifyWordpressSite::DOMAIN_TYPE_PLATFORM.','.CoolifyWordpressSite::DOMAIN_TYPE_CUSTOM,
             'slug' => ['required', 'string', 'min:3', 'max:63', 'regex:/^[a-z0-9]([a-z0-9\-]*[a-z0-9])?$/', Rule::unique('coolify_wordpress_sites', 'slug')],
             'project_mode' => 'required|in:new,shared',
             'project_uuid' => 'nullable|string|required_if:project_mode,shared',
@@ -130,13 +142,26 @@ class CoolifyWordpressSiteController extends Controller
             'description' => 'nullable|string|max:2000',
             'cloudflare_enabled' => 'nullable|boolean',
             'security_preset' => 'nullable|string|in:basic,performance,strict',
-        ], [
-            'slug.min' => 'المعرّف الفرعي: 3 أحرف على الأقل (مطابق لمتطلبات Coolify).',
-            'slug.regex' => 'المعرّف الفرعي: أحرف إنجليزية صغيرة وأرقام وشرطة فقط.',
+        ];
+
+        if ($domainType === CoolifyWordpressSite::DOMAIN_TYPE_CUSTOM) {
+            $rules['custom_domain_apex_input'] = ['required', 'string', 'max:253', 'regex:/^([a-z0-9]([a-z0-9\-]*[a-z0-9])?\.)+[a-z]{2,}$/i'];
+            $rules['custom_host_choice'] = 'nullable|in:apex,www';
+        }
+
+        $validated = $request->validate($rules, [
+            'slug.min' => 'المعرّف الداخلي: 3 أحرف على الأقل.',
+            'slug.regex' => 'المعرّف الداخلي: أحرف إنجليزية صغيرة وأرقام وشرطة فقط.',
             'project_uuid.required_if' => 'اختر المشروع المشترك.',
+            'custom_domain_apex_input.regex' => 'أدخل دوميناً صالحاً (مثل example.com).',
         ]);
 
-        $publicUrl = $this->settings->buildWordpressPublicUrl($validated['slug']);
+        if ($domainType === CoolifyWordpressSite::DOMAIN_TYPE_CUSTOM) {
+            $apexInput = WordpressDomainHelper::normalizeHostname((string) $validated['custom_domain_apex_input']);
+            if (WordpressDomainHelper::isSubdomainOfBase($apexInput, $baseDomain)) {
+                return back()->withInput()->with('error', 'استخدم «نطاق فرعي على المنصة» لهذا العنوان بدلاً من دومين مستقل.');
+            }
+        }
 
         $projectUuid = null;
         if ($validated['project_mode'] === 'shared') {
@@ -145,6 +170,11 @@ class CoolifyWordpressSiteController extends Controller
                 return back()->withInput()->with('error', 'حدّد مشروعاً مشتركاً في المعالج أو في إعدادات Coolify.');
             }
         }
+        $validated['project_uuid'] = $projectUuid;
+
+        $validated['cloudflare_enabled'] = $request->has('cloudflare_enabled')
+            ? $request->boolean('cloudflare_enabled')
+            : $this->settings->getWordpressCloudflareEnabled();
 
         $preflight = $this->provisioning->preflight(
             $validated['server_uuid'],
@@ -156,29 +186,7 @@ class CoolifyWordpressSiteController extends Controller
             return back()->withInput()->with('error', $preflight['message'] ?? 'فشل التحقق من Coolify');
         }
 
-        $cloudflareEnabled = $request->has('cloudflare_enabled')
-            ? $request->boolean('cloudflare_enabled')
-            : $this->settings->getWordpressCloudflareEnabled();
-
-        $securityPreset = $validated['security_preset'] ?? $this->settings->getWordpressSecurityPreset();
-
-        $site = CoolifyWordpressSite::create([
-            'display_name' => $validated['display_name'],
-            'slug' => $validated['slug'],
-            'project_mode' => $validated['project_mode'],
-            'project_uuid' => $projectUuid,
-            'server_uuid' => $validated['server_uuid'],
-            'environment_name' => $validated['environment_name'] ?? $this->settings->getWordpressDefaultEnvironment(),
-            'public_url' => $publicUrl,
-            'description' => $validated['description'] ?? null,
-            'status' => 'pending',
-            'metadata' => [
-                'cloudflare_enabled' => $cloudflareEnabled,
-                'security_preset' => $securityPreset,
-                'job_dispatched_at' => now()->toIso8601String(),
-            ],
-            'created_by' => Auth::id(),
-        ]);
+        $site = $createSite->execute($validated, Auth::id());
 
         ProvisionWordpressSiteJob::dispatch($site->id);
 
@@ -599,7 +607,37 @@ class CoolifyWordpressSiteController extends Controller
     {
         $site = $this->resolveAuthorizedWordpressSite($uuid);
 
-        $result = $this->wordpressCloudflare->syncFromExistingDns($site);
+        if ($site->isCustomDomain()) {
+            if (! $site->service_uuid) {
+                return back()->with('error', 'الخدمة غير جاهزة بعد — انتظر اكتمال التزويد.');
+            }
+
+            $servicePayload = $this->coolify->getService($site->service_uuid);
+            $service = is_array($servicePayload['data'] ?? null) ? $servicePayload['data'] : [];
+            $preset = ($site->metadata ?? [])['security_preset'] ?? null;
+
+            $cfResult = app(WordpressCustomDomainCloudflareService::class)->applyForSite(
+                $site,
+                $service,
+                is_string($preset) ? $preset : null
+            );
+
+            if (! ($cfResult['ok'] ?? false)) {
+                return back()->with('error', $cfResult['message'] ?? 'فشل ربط Cloudflare للدومين المستقل');
+            }
+
+            $site = $site->fresh();
+            $mainFqdn = (string) ($site->metadata['cloudflare']['fqdn'] ?? $site->primary_hostname);
+            $fbFqdn = (string) ($site->metadata['cloudflare_filebrowser']['fqdn'] ?? '');
+            $result = [
+                'ok' => true,
+                'main_fqdn' => $mainFqdn,
+                'filebrowser_fqdn' => $fbFqdn !== '' ? $fbFqdn : null,
+                'filebrowser_warning' => $site->metadata['filebrowser_dns_warning'] ?? null,
+            ];
+        } else {
+            $result = $this->wordpressCloudflare->syncFromExistingDns($site);
+        }
 
         $mainFqdn = $result['main_fqdn'] ?? (($result['metadata']['cloudflare']['fqdn'] ?? null) ?: $site->slug);
         $fbFqdn = $result['filebrowser_fqdn'] ?? null;

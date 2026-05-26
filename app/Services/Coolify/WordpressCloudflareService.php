@@ -24,6 +24,10 @@ class WordpressCloudflareService
         ?string $preset = null,
         ?callable $log = null
     ): array {
+        if ($site->isCustomDomain()) {
+            return ['ok' => true, 'message' => 'موقع بدومين مستقل — يُدار DNS عبر مسار منفصل'];
+        }
+
         if (! $this->isEnabledForSite($site)) {
             return ['ok' => true, 'message' => 'Cloudflare معطّل لهذا الموقع'];
         }
@@ -311,6 +315,10 @@ class WordpressCloudflareService
      */
     public function syncFromExistingDns(CoolifyWordpressSite $site): array
     {
+        if ($site->isCustomDomain()) {
+            return ['ok' => false, 'message' => 'مزامنة DNS هذه مخصّصة لمواقع النطاق الفرعي — استخدم «إعادة ربط Cloudflare» للدومين المستقل'];
+        }
+
         if (! $this->isEnabledForSite($site)) {
             return ['ok' => false, 'message' => 'Cloudflare معطّل لهذا الموقع'];
         }

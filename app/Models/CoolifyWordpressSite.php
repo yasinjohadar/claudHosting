@@ -20,10 +20,22 @@ class CoolifyWordpressSite extends Model
         'shared' => 'مشروع مشترك',
     ];
 
+    public const DOMAIN_TYPE_PLATFORM = 'platform_subdomain';
+
+    public const DOMAIN_TYPE_CUSTOM = 'custom';
+
+    public const DOMAIN_TYPES = [
+        self::DOMAIN_TYPE_PLATFORM => 'نطاق فرعي على المنصة',
+        self::DOMAIN_TYPE_CUSTOM => 'دومين مستقل',
+    ];
+
     protected $fillable = [
         'uuid',
         'display_name',
         'slug',
+        'domain_type',
+        'primary_hostname',
+        'custom_domain_apex',
         'project_mode',
         'project_uuid',
         'project_name',
@@ -64,6 +76,31 @@ class CoolifyWordpressSite extends Model
     public function client(): BelongsTo
     {
         return $this->belongsTo(User::class, 'user_id');
+    }
+
+    public function isCustomDomain(): bool
+    {
+        return $this->domain_type === self::DOMAIN_TYPE_CUSTOM;
+    }
+
+    public function isPlatformSubdomain(): bool
+    {
+        return ! $this->isCustomDomain();
+    }
+
+    public function resolvedPublicHostname(): string
+    {
+        if ($this->isCustomDomain() && filled($this->primary_hostname)) {
+            return strtolower(trim((string) $this->primary_hostname));
+        }
+
+        if (filled($this->public_url)) {
+            $host = parse_url((string) $this->public_url, PHP_URL_HOST);
+
+            return is_string($host) ? strtolower($host) : '';
+        }
+
+        return '';
     }
 
     public static function slugFromName(string $name): string

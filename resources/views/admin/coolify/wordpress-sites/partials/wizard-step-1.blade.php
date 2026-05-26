@@ -1,14 +1,51 @@
-<form method="GET" action="{{ route('admin.coolify.wordpress-sites.create') }}">
+@php
+    $selectedDomainType = old('domain_type', $prefill['domain_type'] ?? \App\Models\CoolifyWordpressSite::DOMAIN_TYPE_PLATFORM);
+    $customEnabled = $customDomainEnabled ?? false;
+@endphp
+
+<form method="GET" action="{{ route('admin.coolify.wordpress-sites.create') }}" id="wpWizardStep1Form">
     <input type="hidden" name="step" value="2">
+    <input type="hidden" name="domain_type" id="domainTypeInput" value="{{ $selectedDomainType }}">
 
     <div class="wp-wizard-panel">
         <div class="wp-wizard-panel__head">
             <span class="wp-wizard-panel__head-icon"><i class="fe fe-globe"></i></span>
             <div>
-                <h5 class="wp-wizard-panel__title">بيانات الموقع الأساسية</h5>
-                <p class="wp-wizard-panel__desc">اختر اسماً واضحاً ومعرّفاً فريداً للنطاق الفرعي</p>
+                <h5 class="wp-wizard-panel__title">بيانات الموقع والنطاق</h5>
+                <p class="wp-wizard-panel__desc">نطاق فرعي على المنصة أو دومين رئيسي مستقل بالكامل</p>
             </div>
         </div>
+
+        @if ($customEnabled)
+        <div class="wp-wizard-options mb-3">
+            <label class="wp-wizard-option">
+                <input type="radio" name="domain_type_choice" value="{{ \App\Models\CoolifyWordpressSite::DOMAIN_TYPE_PLATFORM }}"
+                    class="domain-type-radio" {{ $selectedDomainType !== \App\Models\CoolifyWordpressSite::DOMAIN_TYPE_CUSTOM ? 'checked' : '' }}>
+                <span class="wp-wizard-option__card">
+                    <span class="wp-wizard-option__icon wp-wizard-option__icon--new">
+                        <i class="fe fe-link-2"></i>
+                    </span>
+                    <span>
+                        <div class="wp-wizard-option__title">نطاق فرعي على المنصة</div>
+                        <p class="wp-wizard-option__text">مثل <code dir="ltr">my-shop.{{ $baseDomain }}</code> — كما هو اليوم.</p>
+                    </span>
+                </span>
+            </label>
+            <label class="wp-wizard-option">
+                <input type="radio" name="domain_type_choice" value="{{ \App\Models\CoolifyWordpressSite::DOMAIN_TYPE_CUSTOM }}"
+                    class="domain-type-radio" {{ $selectedDomainType === \App\Models\CoolifyWordpressSite::DOMAIN_TYPE_CUSTOM ? 'checked' : '' }}>
+                <span class="wp-wizard-option__card">
+                    <span class="wp-wizard-option__icon wp-wizard-option__icon--shared">
+                        <i class="fe fe-globe"></i>
+                    </span>
+                    <span>
+                        <div class="wp-wizard-option__title">دومين مستقل</div>
+                        <p class="wp-wizard-option__text">دومينك الخاص مثل <code dir="ltr">example.com</code> مع FileBrowser على <code dir="ltr">files.example.com</code>.</p>
+                    </span>
+                </span>
+            </label>
+        </div>
+        @endif
 
         <div class="wp-wizard-field">
             <label class="form-label" for="displayName">اسم الموقع <span class="text-danger">*</span></label>
@@ -19,21 +56,15 @@
             </div>
         </div>
 
-        <div class="wp-wizard-field">
-            <label class="form-label" for="siteSlug">المعرّف الفرعي (للرابط) <span class="text-danger">*</span></label>
-            <div class="input-group wp-wizard-slug-group" dir="ltr">
-                <input type="text" name="slug" id="siteSlug" class="form-control text-start" required
-                    pattern="[a-z0-9]([a-z0-9\-]*[a-z0-9])?"
-                    value="{{ old('slug', $prefill['slug'] ?? '') }}" placeholder="my-shop"
-                    aria-describedby="urlPreview">
-                <span class="input-group-text">.{{ $baseDomain }}</span>
-            </div>
-            <div class="wp-wizard-url-preview" id="urlPreviewWrap">
-                <i class="fe fe-link"></i>
-                <span>معاينة:</span>
-                <code id="urlPreview">https://—.{{ $baseDomain }}</code>
-            </div>
+        <div id="wpWizardSubdomainFields" style="{{ ($customEnabled && $selectedDomainType === \App\Models\CoolifyWordpressSite::DOMAIN_TYPE_CUSTOM) ? 'display:none' : '' }}">
+            @include('admin.coolify.wordpress-sites.partials.wizard-step-1-subdomain')
         </div>
+
+        @if ($customEnabled)
+        <div id="wpWizardCustomFields" style="{{ $selectedDomainType === \App\Models\CoolifyWordpressSite::DOMAIN_TYPE_CUSTOM ? '' : 'display:none' }}">
+            @include('admin.coolify.wordpress-sites.partials.wizard-step-1-custom')
+        </div>
+        @endif
 
         <div class="wp-wizard-field">
             <label class="form-label" for="siteDescription">وصف (اختياري)</label>
