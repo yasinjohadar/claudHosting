@@ -44,81 +44,61 @@
                 <p>مجموعة من خدمات الاستضافة السحابية المصممة لتغطية احتياجات المواقع الشخصية، المتاجر الإلكترونية، وتطبيقات الشركات</p>
             </div>
             <div class="row g-4">
-                <div class="col-lg-4 col-md-6">
-                    <div class="glass-panel animate-on-scroll animate-delay-1" style="padding:30px; height:100%;">
-                        <div style="display:flex; align-items:center; gap:15px; margin-bottom:20px;">
-                            <div
-                                style="width:55px; height:55px; border-radius:var(--radius-md); background:linear-gradient(135deg, var(--clr-primary), var(--clr-primary-dark)); display:flex; align-items:center; justify-content:center; color:#fff; font-size:1.4rem; flex-shrink:0;">
-                                <i class="fas fa-code"></i></div>
-                            <h5 style="font-weight:700; margin:0;">استضافة المواقع والبريد الإلكتروني</h5>
-                        </div>
-                            <p style="color:var(--clr-text-secondary); font-size:0.95rem;">
-                                استضافة سريعة وآمنة للمواقع والبريد الإلكتروني مع شهادات SSL مجانية، نسخ احتياطي يومي،
-                                ولوحة تحكم عربية سهلة الاستخدام.
-                            </p>
-                        <div style="display:flex; flex-wrap:wrap; gap:8px; margin-top:15px;">
-                            <span
-                                style="background:var(--clr-surface); padding:4px 12px; border-radius:50px; font-size:0.78rem; color:var(--clr-text-secondary);">cPanel</span>
-                            <span
-                                style="background:var(--clr-surface); padding:4px 12px; border-radius:50px; font-size:0.78rem; color:var(--clr-text-secondary);">Email Hosting</span>
-                            <span
-                                style="background:var(--clr-surface); padding:4px 12px; border-radius:50px; font-size:0.78rem; color:var(--clr-text-secondary);">SSL</span>
-                            <span
-                                style="background:var(--clr-surface); padding:4px 12px; border-radius:50px; font-size:0.78rem; color:var(--clr-text-secondary);">Backups</span>
-                        </div>
-                        <a href="{{ route('frontend.packages') }}" class="btn-outline-custom mt-3" style="display:inline-flex; padding:8px 18px; font-size:0.88rem;"><i class="fas fa-arrow-left"></i> استعرض الباقات</a>
+                @php
+                    $specialties = [
+                        [
+                            'title' => 'استضافة المواقع والبريد الإلكتروني',
+                            'icon' => 'fas fa-code',
+                            'desc' => 'استضافة سريعة وآمنة للمواقع والبريد الإلكتروني مع شهادات SSL مجانية، نسخ احتياطي يومي، ولوحة تحكم عربية سهلة الاستخدام.',
+                            'chips' => ['cPanel', 'Email Hosting', 'SSL', 'Backups'],
+                            'url' => route('frontend.packages'),
+                            'cta' => 'استعرض الباقات',
+                            'modifier' => 'about-specialty-card--hosting',
+                            'delay' => '1',
+                        ],
+                        [
+                            'title' => 'إدارة الخوادم والبنية التحتية',
+                            'icon' => 'fas fa-server',
+                            'desc' => 'إدارة وإعداد الخوادم السحابية و VPS مع مراقبة مستمرة، موازنة أحمال، وتحديثات أمان دورية لضمان أعلى مستوى من الاعتمادية.',
+                            'chips' => ['Linux', 'Docker', 'NGINX', 'Monitoring'],
+                            'url' => route('frontend.service-detail-servers'),
+                            'cta' => 'اعرف المزيد',
+                            'modifier' => 'about-specialty-card--infra',
+                            'delay' => '2',
+                        ],
+                        [
+                            'title' => 'خدمات القيمة المضافة',
+                            'icon' => 'fas fa-puzzle-piece',
+                            'desc' => 'خدمات إضافية مثل إدارة النطاقات، شهادات الحماية المتقدمة، التكامل مع منصات الدفع، وخدمات CDN لتسريع تحميل المواقع حول العالم.',
+                            'chips' => ['Domains', 'CDN', 'WAF', 'Payment Integrations'],
+                            'url' => route('frontend.service-detail-web'),
+                            'cta' => 'اعرف المزيد',
+                            'modifier' => 'about-specialty-card--value',
+                            'delay' => '3',
+                        ],
+                    ];
+                @endphp
+                @foreach ($specialties as $card)
+                    <div class="col-lg-4 col-md-6">
+                        <article class="glass-panel about-specialty-card {{ $card['modifier'] }} animate-on-scroll animate-delay-{{ $card['delay'] }}">
+                            <header class="about-specialty-card__head">
+                                <span class="about-specialty-card__icon" aria-hidden="true">
+                                    <i class="{{ $card['icon'] }}"></i>
+                                </span>
+                                <h5 class="about-specialty-card__title">{{ $card['title'] }}</h5>
+                            </header>
+                            <p class="about-specialty-card__desc">{{ $card['desc'] }}</p>
+                            <div class="about-specialty-card__chips">
+                                @foreach ($card['chips'] as $chip)
+                                    <span class="about-specialty-card__chip">{{ $chip }}</span>
+                                @endforeach
+                            </div>
+                            <a href="{{ $card['url'] }}" class="about-specialty-card__cta btn-outline-custom">
+                                <i class="fas fa-arrow-left"></i> {{ $card['cta'] }}
+                            </a>
+                        </article>
                     </div>
-                </div>
-                <div class="col-lg-4 col-md-6">
-                    <div class="glass-panel animate-on-scroll animate-delay-2" style="padding:30px; height:100%;">
-                        <div style="display:flex; align-items:center; gap:15px; margin-bottom:20px;">
-                            <div
-                                style="width:55px; height:55px; border-radius:var(--radius-md); background:linear-gradient(135deg, var(--clr-primary), var(--clr-primary-dark)); display:flex; align-items:center; justify-content:center; color:#fff; font-size:1.4rem; flex-shrink:0;">
-                                <i class="fas fa-server"></i></div>
-                            <h5 style="font-weight:700; margin:0;">إدارة الخوادم والبنية التحتية</h5>
-                        </div>
-                            <p style="color:var(--clr-text-secondary); font-size:0.95rem;">
-                                إدارة وإعداد الخوادم السحابية و VPS مع مراقبة مستمرة، موازنة أحمال، وتحديثات أمان دورية
-                                لضمان أعلى مستوى من الاعتمادية.
-                            </p>
-                        <div style="display:flex; flex-wrap:wrap; gap:8px; margin-top:15px;">
-                            <span
-                                style="background:var(--clr-surface); padding:4px 12px; border-radius:50px; font-size:0.78rem; color:var(--clr-text-secondary);">Linux</span>
-                            <span
-                                style="background:var(--clr-surface); padding:4px 12px; border-radius:50px; font-size:0.78rem; color:var(--clr-text-secondary);">Docker</span>
-                            <span
-                                style="background:var(--clr-surface); padding:4px 12px; border-radius:50px; font-size:0.78rem; color:var(--clr-text-secondary);">NGINX</span>
-                            <span
-                                style="background:var(--clr-surface); padding:4px 12px; border-radius:50px; font-size:0.78rem; color:var(--clr-text-secondary);">Monitoring</span>
-                        </div>
-                        <a href="{{ route('frontend.service-detail-servers') }}" class="btn-outline-custom mt-3" style="display:inline-flex; padding:8px 18px; font-size:0.88rem;"><i class="fas fa-arrow-left"></i> اعرف المزيد</a>
-                    </div>
-                </div>
-                <div class="col-lg-4 col-md-6">
-                    <div class="glass-panel animate-on-scroll animate-delay-3" style="padding:30px; height:100%;">
-                        <div style="display:flex; align-items:center; gap:15px; margin-bottom:20px;">
-                            <div
-                                style="width:55px; height:55px; border-radius:var(--radius-md); background:linear-gradient(135deg, var(--clr-primary), var(--clr-primary-dark)); display:flex; align-items:center; justify-content:center; color:#fff; font-size:1.4rem; flex-shrink:0;">
-                                <i class="fas fa-mobile-alt"></i></div>
-                            <h5 style="font-weight:700; margin:0;">خدمات القيمة المضافة</h5>
-                        </div>
-                            <p style="color:var(--clr-text-secondary); font-size:0.95rem;">
-                                خدمات إضافية مثل إدارة النطاقات، شهادات الحماية المتقدمة، التكامل مع منصات الدفع، وخدمات
-                                CDN لتسريع تحميل المواقع حول العالم.
-                            </p>
-                        <div style="display:flex; flex-wrap:wrap; gap:8px; margin-top:15px;">
-                            <span
-                                style="background:var(--clr-surface); padding:4px 12px; border-radius:50px; font-size:0.78rem; color:var(--clr-text-secondary);">Domains</span>
-                            <span
-                                style="background:var(--clr-surface); padding:4px 12px; border-radius:50px; font-size:0.78rem; color:var(--clr-text-secondary);">CDN</span>
-                            <span
-                                style="background:var(--clr-surface); padding:4px 12px; border-radius:50px; font-size:0.78rem; color:var(--clr-text-secondary);">WAF</span>
-                            <span
-                                style="background:var(--clr-surface); padding:4px 12px; border-radius:50px; font-size:0.78rem; color:var(--clr-text-secondary);">Payment Integrations</span>
-                        </div>
-                        <a href="{{ route('frontend.service-detail-web') }}" class="btn-outline-custom mt-3" style="display:inline-flex; padding:8px 18px; font-size:0.88rem;"><i class="fas fa-arrow-left"></i> اعرف المزيد</a>
-                    </div>
-                </div>
+                @endforeach
             </div>
         </div>
     </section>

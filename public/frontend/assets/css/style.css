@@ -3389,6 +3389,208 @@ ul {
     }
 }
 
+/* ===========================
+   ABOUT SPECIALTIES CARDS
+   =========================== */
+.about-specialty-card {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    height: 100%;
+    padding: 1.85rem 1.55rem 1.45rem;
+    border-radius: 1.05rem;
+    overflow: hidden;
+    isolation: isolate;
+}
+
+.about-specialty-card::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(140deg, color-mix(in srgb, var(--specialty-accent) 10%, transparent) 0%, transparent 65%);
+    opacity: 0;
+    transition: opacity var(--transition);
+    z-index: 0;
+}
+
+.about-specialty-card::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    right: 0;
+    left: 0;
+    height: 3px;
+    background: linear-gradient(90deg, color-mix(in srgb, var(--specialty-accent) 60%, white), var(--specialty-accent));
+    transform: scaleX(0.28);
+    opacity: 0;
+    transform-origin: center;
+    transition: transform var(--transition), opacity var(--transition);
+}
+
+.about-specialty-card:hover,
+.about-specialty-card:focus-within {
+    transform: translateY(-8px);
+    border-color: color-mix(in srgb, var(--specialty-accent) 30%, var(--clr-border));
+    box-shadow:
+        0 8px 22px rgba(0, 0, 0, 0.06),
+        0 20px 46px color-mix(in srgb, var(--specialty-accent) 16%, transparent);
+}
+
+.about-specialty-card:hover::before,
+.about-specialty-card:focus-within::before {
+    opacity: 1;
+}
+
+.about-specialty-card:hover::after,
+.about-specialty-card:focus-within::after {
+    opacity: 1;
+    transform: scaleX(1);
+}
+
+.about-specialty-card__head,
+.about-specialty-card__desc,
+.about-specialty-card__chips,
+.about-specialty-card__cta {
+    position: relative;
+    z-index: 1;
+}
+
+.about-specialty-card__head {
+    display: flex;
+    align-items: center;
+    gap: 0.9rem;
+}
+
+.about-specialty-card__icon {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 3.35rem;
+    height: 3.35rem;
+    border-radius: 0.9rem;
+    background: linear-gradient(145deg, color-mix(in srgb, var(--specialty-accent) 75%, #fff), var(--specialty-accent));
+    color: #fff;
+    font-size: 1.2rem;
+    box-shadow:
+        0 10px 24px color-mix(in srgb, var(--specialty-accent) 35%, transparent),
+        inset 0 1px 0 rgba(255, 255, 255, 0.2);
+    transition: transform var(--transition-fast), box-shadow var(--transition-fast);
+}
+
+.about-specialty-card__icon::after {
+    content: '';
+    position: absolute;
+    inset: -7px;
+    border-radius: 1rem;
+    border: 1px dashed color-mix(in srgb, var(--specialty-accent) 45%, transparent);
+    opacity: 0.55;
+    transition: transform var(--transition), opacity var(--transition);
+}
+
+.about-specialty-card:hover .about-specialty-card__icon,
+.about-specialty-card:focus-within .about-specialty-card__icon {
+    transform: translateY(-3px) scale(1.05);
+    box-shadow:
+        0 14px 30px color-mix(in srgb, var(--specialty-accent) 42%, transparent),
+        inset 0 1px 0 rgba(255, 255, 255, 0.28);
+}
+
+.about-specialty-card:hover .about-specialty-card__icon::after,
+.about-specialty-card:focus-within .about-specialty-card__icon::after {
+    transform: rotate(16deg) scale(1.02);
+    opacity: 0.95;
+}
+
+.about-specialty-card__title {
+    margin: 0;
+    font-weight: 800;
+    font-size: 1.2rem;
+    line-height: 1.5;
+    color: var(--clr-text);
+}
+
+.about-specialty-card__desc {
+    margin: 0;
+    color: var(--clr-text-secondary);
+    font-size: 0.94rem;
+    line-height: 1.85;
+}
+
+.about-specialty-card__chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+}
+
+.about-specialty-card__chip {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.3rem 0.72rem;
+    border-radius: 999px;
+    font-size: 0.74rem;
+    font-weight: 600;
+    letter-spacing: 0.01em;
+    color: color-mix(in srgb, var(--specialty-accent) 78%, var(--clr-text-secondary));
+    background: color-mix(in srgb, var(--specialty-accent) 11%, var(--clr-surface));
+    border: 1px solid color-mix(in srgb, var(--specialty-accent) 22%, transparent);
+    transition: transform var(--transition-fast), background var(--transition-fast), border-color var(--transition-fast);
+}
+
+.about-specialty-card:hover .about-specialty-card__chip,
+.about-specialty-card:focus-within .about-specialty-card__chip {
+    transform: translateY(-1px);
+    background: color-mix(in srgb, var(--specialty-accent) 16%, var(--clr-surface));
+    border-color: color-mix(in srgb, var(--specialty-accent) 35%, transparent);
+}
+
+.about-specialty-card__cta {
+    margin-top: auto;
+    display: inline-flex;
+    width: fit-content;
+    padding: 0.48rem 1rem;
+    font-size: 0.86rem;
+    gap: 0.38rem;
+}
+
+.about-specialty-card__cta i {
+    transition: transform var(--transition-fast);
+}
+
+.about-specialty-card:hover .about-specialty-card__cta i,
+.about-specialty-card:focus-within .about-specialty-card__cta i {
+    transform: translateX(-2px);
+}
+
+.about-specialty-card--hosting {
+    --specialty-accent: #0057B8;
+}
+
+.about-specialty-card--infra {
+    --specialty-accent: #10b981;
+}
+
+.about-specialty-card--value {
+    --specialty-accent: #8b5cf6;
+}
+
+@media (max-width: 575.98px) {
+    .about-specialty-card {
+        padding: 1.45rem 1.15rem 1.15rem;
+    }
+
+    .about-specialty-card__title {
+        font-size: 1.06rem;
+    }
+
+    .about-specialty-card__icon {
+        width: 3rem;
+        height: 3rem;
+        font-size: 1.08rem;
+    }
+}
+
 .timeline {
     position: relative;
     padding-right: 40px;

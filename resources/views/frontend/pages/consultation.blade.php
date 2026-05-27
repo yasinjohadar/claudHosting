@@ -19,6 +19,8 @@
                 <nav class="page-banner-breadcrumb" aria-label="breadcrumb">
                     <a href="{{ url('/') }}">الرئيسية</a>
                     <span class="page-banner-sep">/</span>
+                    <a href="{{ route('frontend.about') }}#specialties">الخدمات</a>
+                    <span class="page-banner-sep">/</span>
                     <span>حجز موعد واستشارة</span>
                 </nav>
             </div>
@@ -26,27 +28,33 @@
         <div class="page-banner-shape"></div>
     </section>
 
-    <section class="section-padding">
+    <section class="section-padding security-intro-section">
         <div class="container">
-            <div class="row align-items-center g-4">
+            <div class="row align-items-center g-5">
                 <div class="col-lg-6">
-                    <div class="animate-on-scroll">
+                    <div class="service-detail-intro animate-on-scroll">
                         <span class="section-badge">استشارة مخصصة</span>
-                        <h2 class="mb-3">ما هي الاستشارة التقنية؟</h2>
-                        <p class="text-secondary mb-2">جلسة واحدة أو أكثر (أونلاين أو حسب الاتفاق) نناقش فيها مشروعك، فكرتك، أو مسارك في البرمجة وتطوير الويب والموبايل. أساعدك في اختيار التقنيات، مراجعة الكود، وضع خطة تعلم، أو الإجابة عن أسئلتك التقنية.</p>
-                        <p class="text-secondary mb-0">المدة المعتادة بين 30 دقيقة وساعة واحدة حسب نوع الاستشارة. بعد إرسال النموذج سأتواصل معك لتأكيد الموعد والطريقة (مكالمة فيديو، زوم، تيمز، أو واتساب).</p>
+                        <h2 class="service-detail-heading">استشارة تقنية واضحة ومباشرة لمشروعك</h2>
+                        <p class="service-detail-lead">
+                            جلسة واحدة أو أكثر (أونلاين أو حسب الاتفاق) نناقش فيها مشروعك، فكرتك، أو مسارك المهني في البرمجة وتطوير الويب والموبايل.
+                            نساعدك في اختيار التقنيات المناسبة، مراجعة الكود، وضع خطة تنفيذ، أو الإجابة عن أي تحدٍ تقني.
+                        </p>
+                        <p class="service-detail-text">
+                            المدة المعتادة بين 30 دقيقة وساعة حسب نوع الاستشارة. بعد إرسال النموذج سنتواصل معك لتأكيد الموعد والطريقة
+                            (Google Meet، Zoom، Teams، أو واتساب) مع ملخص واضح لما سنغطيه في الجلسة.
+                        </p>
                     </div>
                 </div>
                 <div class="col-lg-6">
-                    <div class="glass-panel animate-on-scroll p-4">
-                        <h5 class="mb-3"><i class="fas fa-check-circle text-primary me-2"></i>ماذا يمكن أن نناقش؟</h5>
-                        <ul class="list-unstyled mb-0">
-                            <li class="mb-2"><i class="fas fa-chevron-left text-primary me-2 small"></i>اختيار تقنيات مناسبة لمشروعك</li>
-                            <li class="mb-2"><i class="fas fa-chevron-left text-primary me-2 small"></i>مراجعة فكرة مشروع أو خطة عمل</li>
-                            <li class="mb-2"><i class="fas fa-chevron-left text-primary me-2 small"></i>تحديد مسار تعلم (ويب، موبايل، بايثون...)</li>
-                            <li class="mb-2"><i class="fas fa-chevron-left text-primary me-2 small"></i>حل مشكلة تقنية أو خطأ برمجي</li>
-                            <li class="mb-2"><i class="fas fa-chevron-left text-primary me-2 small"></i>استشارة لشركة أو فريق (تدريب، منهجية)</li>
-                            <li><i class="fas fa-chevron-left text-primary me-2 small"></i>أي سؤال تقني ضمن تخصصاتي</li>
+                    <div class="glass-panel service-detail-feature-list animate-on-scroll">
+                        <h4 class="service-detail-feature-list-title"><i class="fas fa-check-circle"></i> ماذا يمكن أن نناقش؟</h4>
+                        <ul class="service-detail-feature-list-ul">
+                            <li><i class="fas fa-chevron-left"></i>اختيار التقنيات المناسبة لمشروعك</li>
+                            <li><i class="fas fa-chevron-left"></i>مراجعة فكرة المشروع وخارطة التنفيذ</li>
+                            <li><i class="fas fa-chevron-left"></i>تحسين الأداء أو حل مشاكل تقنية معقدة</li>
+                            <li><i class="fas fa-chevron-left"></i>مراجعة كود وهيكلية المشروع</li>
+                            <li><i class="fas fa-chevron-left"></i>تخطيط مسار تعلم عملي حسب هدفك</li>
+                            <li><i class="fas fa-chevron-left"></i>استشارة تقنية للفِرق والشركات</li>
                         </ul>
                     </div>
                 </div>
@@ -63,31 +71,31 @@
             </div>
             <div class="row g-4">
                 <div class="col-md-6 col-lg-3">
-                    <div class="glass-panel consultation-type-card animate-on-scroll text-center p-4 h-100">
+                    <div class="glass-panel service-offer-card consultation-type-card animate-on-scroll text-center">
                         <div class="consultation-type-icon mb-3"><i class="fas fa-bolt"></i></div>
                         <h6 class="mb-2">استشارة سريعة</h6>
-                        <p class="small text-secondary mb-0">حوالي 30 دقيقة — سؤال محدد أو اختيار تقنية سريع</p>
+                        <p>حوالي 30 دقيقة — سؤال محدد أو اختيار تقنية سريع</p>
                     </div>
                 </div>
                 <div class="col-md-6 col-lg-3">
-                    <div class="glass-panel consultation-type-card animate-on-scroll text-center p-4 h-100">
+                    <div class="glass-panel service-offer-card consultation-type-card animate-on-scroll text-center">
                         <div class="consultation-type-icon mb-3"><i class="fas fa-comments"></i></div>
                         <h6 class="mb-2">استشارة معمقة</h6>
-                        <p class="small text-secondary mb-0">حوالي 60 دقيقة — نقاش مشروع أو مسار كامل</p>
+                        <p>حوالي 60 دقيقة — نقاش مشروع أو مسار كامل</p>
                     </div>
                 </div>
                 <div class="col-md-6 col-lg-3">
-                    <div class="glass-panel consultation-type-card animate-on-scroll text-center p-4 h-100">
+                    <div class="glass-panel service-offer-card consultation-type-card animate-on-scroll text-center">
                         <div class="consultation-type-icon mb-3"><i class="fas fa-code"></i></div>
                         <h6 class="mb-2">مراجعة مشروع / كود</h6>
-                        <p class="small text-secondary mb-0">مراجعة كود أو هيكل مشروع وتقديم توصيات</p>
+                        <p>مراجعة كود أو هيكل مشروع وتقديم توصيات عملية</p>
                     </div>
                 </div>
                 <div class="col-md-6 col-lg-3">
-                    <div class="glass-panel consultation-type-card animate-on-scroll text-center p-4 h-100">
+                    <div class="glass-panel service-offer-card consultation-type-card animate-on-scroll text-center">
                         <div class="consultation-type-icon mb-3"><i class="fas fa-road"></i></div>
                         <h6 class="mb-2">تخطيط مسار تعلم</h6>
-                        <p class="small text-secondary mb-0">وضع خطة دراسية حسب هدفك ووقتك</p>
+                        <p>وضع خطة دراسية واضحة حسب هدفك ووقتك</p>
                     </div>
                 </div>
             </div>
@@ -103,31 +111,31 @@
             </div>
             <div class="row g-4">
                 <div class="col-md-6 col-lg-3">
-                    <div class="consultation-step animate-on-scroll text-center">
+                    <div class="glass-panel service-offer-card consultation-step animate-on-scroll text-center">
                         <span class="consultation-step-num">1</span>
                         <h6 class="mt-2 mb-1">املأ النموذج</h6>
-                        <p class="small text-secondary mb-0">اختر نوع الاستشارة، التاريخ والوقت المناسبين واكتب ملخصاً لموضوعك</p>
+                        <p>اختر نوع الاستشارة، التاريخ والوقت المناسبين واكتب ملخصاً لموضوعك</p>
                     </div>
                 </div>
                 <div class="col-md-6 col-lg-3">
-                    <div class="consultation-step animate-on-scroll text-center">
+                    <div class="glass-panel service-offer-card consultation-step animate-on-scroll text-center">
                         <span class="consultation-step-num">2</span>
                         <h6 class="mt-2 mb-1">مراجعة الطلب</h6>
-                        <p class="small text-secondary mb-0">أراجع طلبك وأتواصل معك خلال 24–48 ساعة لتأكيد الموعد أو اقتراح بديل</p>
+                        <p>نراجع طلبك ونتواصل خلال 24-48 ساعة لتأكيد الموعد أو اقتراح بديل</p>
                     </div>
                 </div>
                 <div class="col-md-6 col-lg-3">
-                    <div class="consultation-step animate-on-scroll text-center">
+                    <div class="glass-panel service-offer-card consultation-step animate-on-scroll text-center">
                         <span class="consultation-step-num">3</span>
                         <h6 class="mt-2 mb-1">تأكيد الموعد</h6>
-                        <p class="small text-secondary mb-0">نُرسل لك رابط المكالمة (زوم / تيمز / Meet) أو نحدد طريقة التواصل المناسبة</p>
+                        <p>نرسل لك رابط المكالمة أو نحدد طريقة التواصل المناسبة</p>
                     </div>
                 </div>
                 <div class="col-md-6 col-lg-3">
-                    <div class="consultation-step animate-on-scroll text-center">
+                    <div class="glass-panel service-offer-card consultation-step animate-on-scroll text-center">
                         <span class="consultation-step-num">4</span>
                         <h6 class="mt-2 mb-1">الجلسة</h6>
-                        <p class="small text-secondary mb-0">نلتقي في الموعد المحدد — تأكد من اتصال جيد وبيئة هادئة</p>
+                        <p>نلتقي في الموعد المحدد مع توصيات وخطوات واضحة بعد الجلسة</p>
                     </div>
                 </div>
             </div>
@@ -208,10 +216,11 @@
             <div class="section-header animate-on-scroll">
                 <span class="section-badge">أسئلة شائعة</span>
                 <h2>كل ما تحتاج معرفته</h2>
+                <p>إجابات سريعة على أهم الأسئلة قبل الحجز</p>
             </div>
             <div class="row justify-content-center">
                 <div class="col-lg-8">
-                    <div class="accordion consultation-accordion animate-on-scroll" id="consultationFaq">
+                    <div class="accordion consultation-accordion animate-on-scroll glass-panel p-3" id="consultationFaq">
                         <div class="accordion-item border rounded-3 mb-2 overflow-hidden">
                             <h3 class="accordion-header">
                                 <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#faq1">كيف تتم الجلسة — أونلاين أم حضورياً؟</button>
@@ -250,12 +259,72 @@
         </div>
     </section>
 
+    <section class="section-padding service-related-section" style="background: var(--clr-bg-secondary);">
+        <div class="container">
+            <div class="section-header animate-on-scroll">
+                <span class="section-badge">خدمات مرتبطة</span>
+                <h2>مجالات تساعدك بعد الاستشارة</h2>
+                <p>يمكننا تنفيذ التوصيات مباشرة عبر خدماتنا التقنية</p>
+            </div>
+            <div class="row g-4">
+                @php
+                    $relatedServices = [
+                        [
+                            'url' => route('frontend.service-detail-web'),
+                            'icon' => 'fas fa-globe',
+                            'title' => 'تطوير تطبيقات الويب',
+                            'desc' => 'تحويل الفكرة إلى منصة جاهزة للإطلاق',
+                            'accent' => '#0057B8',
+                        ],
+                        [
+                            'url' => route('frontend.service-detail-mobile'),
+                            'icon' => 'fas fa-mobile-alt',
+                            'title' => 'تطبيقات الجوال',
+                            'desc' => 'تطبيقات Android و iOS بمعايير حديثة',
+                            'accent' => '#2E9AD0',
+                        ],
+                        [
+                            'url' => route('frontend.service-detail-servers'),
+                            'icon' => 'fas fa-server',
+                            'title' => 'إدارة السيرفرات',
+                            'desc' => 'تشغيل مستقر وآمن للبنية التحتية',
+                            'accent' => '#10b981',
+                        ],
+                        [
+                            'url' => route('frontend.service-detail-security'),
+                            'icon' => 'fas fa-shield-alt',
+                            'title' => 'أمن المعلومات',
+                            'desc' => 'تقوية الحماية وتقليل المخاطر الأمنية',
+                            'accent' => '#6366f1',
+                        ],
+                    ];
+                @endphp
+                @foreach ($relatedServices as $i => $service)
+                    <div class="col-sm-6 col-lg-3">
+                        <a href="{{ $service['url'] }}"
+                            class="service-related-card animate-on-scroll animate-delay-{{ ($i % 4) + 1 }}"
+                            style="--related-accent: {{ $service['accent'] }}">
+                            <span class="service-related-card__icon" aria-hidden="true">
+                                <i class="{{ $service['icon'] }}"></i>
+                            </span>
+                            <h6>{{ $service['title'] }}</h6>
+                            <p>{{ $service['desc'] }}</p>
+                            <span class="service-related-card__link">
+                                اعرف المزيد <i class="fas fa-arrow-left"></i>
+                            </span>
+                        </a>
+                    </div>
+                @endforeach
+            </div>
+        </div>
+    </section>
+
     <section class="cta-section">
         <div class="container animate-on-scroll">
-            <h2>تفضل التواصل المباشر؟</h2>
-            <p>يمكنك مراسلتي عبر البريد أو واتساب للاستفسار السريع أو طلب موعد دون تعبئة النموذج</p>
-            <a href="{{ route('frontend.contact') }}" class="btn-light-custom me-2"><i class="fas fa-paper-plane"></i> تواصل معنا</a>
-            <a href="https://wa.me/963XXXXXXXXX" target="_blank" rel="noopener noreferrer" class="btn-primary-custom"><i class="fab fa-whatsapp"></i> واتساب</a>
+            <h2>جاهز لحجز استشارتك؟</h2>
+            <p>يمكنك تعبئة النموذج أو التواصل المباشر عبر صفحة التواصل لمناقشة التفاصيل بسرعة</p>
+            <a href="#booking-form" class="btn-light-custom me-2"><i class="fas fa-calendar-check"></i> احجز الآن</a>
+            <a href="{{ route('frontend.contact') }}" class="btn-primary-custom"><i class="fas fa-paper-plane"></i> تواصل معنا</a>
         </div>
     </section>
 @endsection
