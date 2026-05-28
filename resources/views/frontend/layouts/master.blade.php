@@ -12,53 +12,48 @@
     </script>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="@yield('meta-description', 'استضافة كلاودسوفت - استضافة مواقع سحابية موثوقة. باقات مرنة، دعم فني مستمر، وبنية تحتية قوية لموقعك أو متجرك.')">
-    <title>@yield('page-title', 'استضافة كلاودسوفت | ClaudSoft')</title>
-
-    <!-- Canonical URL -->
-    <link rel="canonical" href="@yield('canonical', url()->current())">
+    @php
+        $seoActive = !empty($seo['enabled']);
+        $pageTitle = $seoActive ? ($seo['meta_title'] ?? '') : trim($__env->yieldContent('page-title'));
+        $pageDescription = $seoActive ? ($seo['meta_description'] ?? '') : trim($__env->yieldContent('meta-description'));
+        if ($pageTitle === '') {
+            $pageTitle = 'استضافة كلاودسوفت | ClaudSoft';
+        }
+        if ($pageDescription === '') {
+            $pageDescription = 'استضافة كلاودسوفت - استضافة مواقع سحابية موثوقة. باقات مرنة، دعم فني مستمر، وبنية تحتية قوية لموقعك أو متجرك.';
+        }
+    @endphp
+    <meta name="description" content="{{ $pageDescription }}">
+    <title>{{ $pageTitle }}</title>
 
     <!-- Favicon (نفس اللوغو: logo.png) -->
     <link rel="icon" type="image/png" href="{{ asset('frontend/assets/images/logo.png') }}">
 
-    @hasSection('meta-og')
-        @yield('meta-og')
+    @if ($seoActive)
+        @include('frontend.partials.seo-head')
     @else
-    <!-- Open Graph / Facebook -->
-    <meta property="og:type" content="@yield('og-type', 'website')">
-    <meta property="og:url" content="@yield('og-url', url()->current())">
-    <meta property="og:title" content="@yield('og-title', 'استضافة كلاودسوفت | ClaudSoft')">
-    <meta property="og:description" content="@yield('og-description', 'استضافة كلاودسوفت - استضافة مواقع سحابية موثوقة. باقات مرنة، دعم فني مستمر، وبنية تحتية قوية.')">
-    <meta property="og:image" content="@yield('og-image', asset('frontend/assets/images/logo.png'))">
-    <meta property="og:locale" content="ar_AR">
-    @endif
+        <link rel="canonical" href="@yield('canonical', url()->current())">
 
-    @hasSection('meta-twitter')
-        @yield('meta-twitter')
-    @else
-    <!-- Twitter Card -->
-    <meta name="twitter:card" content="summary_large_image">
-    <meta name="twitter:title" content="@yield('twitter-title', 'استضافة كلاودسوفت | ClaudSoft')">
-    <meta name="twitter:description" content="@yield('twitter-description', 'استضافة كلاودسوفت - استضافة مواقع سحابية موثوقة. باقات مرنة ودعم فني مستمر.')">
-    <meta name="twitter:image" content="@yield('twitter-image', asset('frontend/assets/images/logo.png'))">
-    @endif
+        @hasSection('meta-og')
+            @yield('meta-og')
+        @else
+            <meta property="og:type" content="@yield('og-type', 'website')">
+            <meta property="og:url" content="@yield('og-url', url()->current())">
+            <meta property="og:title" content="@yield('og-title', 'استضافة كلاودسوفت | ClaudSoft')">
+            <meta property="og:description" content="@yield('og-description', 'استضافة كلاودسوفت - استضافة مواقع سحابية موثوقة. باقات مرنة، دعم فني مستمر، وبنية تحتية قوية.')">
+            <meta property="og:image" content="@yield('og-image', asset('frontend/assets/images/logo.png'))">
+            <meta property="og:locale" content="ar_AR">
+        @endif
 
-    <!-- Structured Data (JSON-LD) for SEO - WebSite (default) -->
-    <script type="application/ld+json">
-    {
-        "@context": "https://schema.org",
-        "@type": "WebSite",
-        "name": "استضافة كلاودسوفت",
-        "url": "{{ config('app.url', url()->current()) }}",
-        "description": "استضافة مواقع سحابية موثوقة - باقات مرنة ودعم فني مستمر",
-        "inLanguage": "ar",
-        "publisher": {
-            "@type": "Organization",
-            "name": "ClaudSoft",
-            "url": "{{ config('app.url', url()->current()) }}"
-        }
-    }
-    </script>
+        @hasSection('meta-twitter')
+            @yield('meta-twitter')
+        @else
+            <meta name="twitter:card" content="summary_large_image">
+            <meta name="twitter:title" content="@yield('twitter-title', 'استضافة كلاودسوفت | ClaudSoft')">
+            <meta name="twitter:description" content="@yield('twitter-description', 'استضافة كلاودسوفت - استضافة مواقع سحابية موثوقة. باقات مرنة ودعم فني مستمر.')">
+            <meta name="twitter:image" content="@yield('twitter-image', asset('frontend/assets/images/logo.png'))">
+        @endif
+    @endif
 
     @stack('head')
 

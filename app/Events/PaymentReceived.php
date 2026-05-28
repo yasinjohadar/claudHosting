@@ -1,0 +1,21 @@
+<?php
+
+namespace App\Events;
+
+use App\Models\Customer;
+use App\Models\Invoice;
+use App\Models\Payment;
+use Illuminate\Foundation\Events\Dispatchable;
+use Illuminate\Queue\SerializesModels;
+
+class PaymentReceived
+{
+    use Dispatchable, SerializesModels;
+
+    public function __construct(
+        public Payment $payment,
+        public Invoice $invoice,
+        public Customer $customer,
+        public bool $initiatedByClient
+    ) {}
+}

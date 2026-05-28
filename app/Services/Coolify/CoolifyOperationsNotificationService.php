@@ -3,13 +3,17 @@
 namespace App\Services\Coolify;
 
 use App\Models\CoolifyActivityLog;
+use App\Services\Mail\MailTemplateResolver;
+use App\Services\Mail\TemplateRendererService;
 use Illuminate\Support\Facades\Mail;
 
 class CoolifyOperationsNotificationService
 {
     public function __construct(
         protected CoolifyOperationsService $operations,
-        protected CoolifySettingsService $settings
+        protected CoolifySettingsService $settings,
+        protected MailTemplateResolver $templateResolver,
+        protected TemplateRendererService $renderer
     ) {}
 
     /**
@@ -84,13 +88,19 @@ class CoolifyOperationsNotificationService
             return 0;
         }
 
-        $body = "تنبيهات Coolify:\n\n".implode("\n", array_map(fn ($i) => '• '.$i, $issues));
+        $template = $this->templateResolver->resolve('coolify.ops_alert');
+        $context = [
+            'issues_html' => implode('<br>', array_map(fn ($i) => '• '.e($i), $issues)),
+            'issues_text' => implode("\n", array_map(fn ($i) => '• '.$i, $issues)),
+        ];
+        $subject = $this->renderer->render($template['subject'], $context);
+        $body = $this->renderer->render($template['body_text'], $context);
         $sent = 0;
 
         foreach ($emails as $email) {
             try {
-                Mail::raw($body, function ($message) use ($email) {
-                    $message->to($email)->subject('تنبيه Coolify — مركز العمليات');
+                Mail::raw($body, function ($message) use ($email, $subject) {
+                    $message->to($email)->subject($subject);
                 });
                 $sent++;
             } catch (\Throwable) {

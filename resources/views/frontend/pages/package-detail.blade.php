@@ -1,13 +1,5 @@
 @extends('frontend.layouts.master')
 
-@section('page-title')
-{{ $product->name }} | استضافة كلاودسوفت
-@endsection
-
-@section('meta-description')
-{{ Str::limit(strip_tags($product->description ?? $product->name . ' — باقة استضافة من استضافة كلاودسوفت. خطط مرنة، دعم فني، وبنية سحابية موثوقة.'), 160) }}
-@endsection
-
 @section('content')
     <section class="course-detail-hero">
         <div class="container">

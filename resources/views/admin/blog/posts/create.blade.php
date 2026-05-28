@@ -81,7 +81,7 @@
 
                             <div class="mb-3">
                                 <label class="form-label">المقتطف</label>
-                                <textarea name="excerpt" rows="3" class="form-control @error('excerpt') is-invalid @enderror">{{ old('excerpt') }}</textarea>
+                                <textarea name="excerpt" id="excerpt" rows="3" class="form-control @error('excerpt') is-invalid @enderror">{{ old('excerpt') }}</textarea>
                                 <small class="text-muted">نبذة مختصرة عن المقال (اختياري)</small>
                                 @error('excerpt')
                                 <div class="invalid-feedback">{{ $message }}</div>
@@ -98,50 +98,7 @@
                         </div>
                     </div>
 
-                    <!-- SEO Settings -->
-                    <div class="card custom-card mb-4">
-                        <div class="card-header">
-                            <div class="card-title">إعدادات SEO</div>
-                        </div>
-                        <div class="card-body">
-                            <div class="mb-3">
-                                <label class="form-label">عنوان SEO (Meta Title)</label>
-                                <input type="text" name="meta_title" class="form-control @error('meta_title') is-invalid @enderror"
-                                       value="{{ old('meta_title') }}" maxlength="255">
-                                <small class="text-muted">سيتم استخدام عنوان المقال إذا تُرك فارغاً</small>
-                                @error('meta_title')
-                                <div class="invalid-feedback">{{ $message }}</div>
-                                @enderror
-                            </div>
-
-                            <div class="mb-3">
-                                <label class="form-label">وصف SEO (Meta Description)</label>
-                                <textarea name="meta_description" rows="2" class="form-control @error('meta_description') is-invalid @enderror">{{ old('meta_description') }}</textarea>
-                                @error('meta_description')
-                                <div class="invalid-feedback">{{ $message }}</div>
-                                @enderror
-                            </div>
-
-                            <div class="mb-3">
-                                <label class="form-label">الكلمات المفتاحية (Meta Keywords)</label>
-                                <input type="text" name="meta_keywords" class="form-control @error('meta_keywords') is-invalid @enderror"
-                                       value="{{ old('meta_keywords') }}">
-                                <small class="text-muted">افصل الكلمات بفاصلة</small>
-                                @error('meta_keywords')
-                                <div class="invalid-feedback">{{ $message }}</div>
-                                @enderror
-                            </div>
-
-                            <div class="mb-3">
-                                <label class="form-label">الكلمة المفتاحية الرئيسية (Focus Keyword)</label>
-                                <input type="text" name="focus_keyword" class="form-control @error('focus_keyword') is-invalid @enderror"
-                                       value="{{ old('focus_keyword') }}">
-                                @error('focus_keyword')
-                                <div class="invalid-feedback">{{ $message }}</div>
-                                @enderror
-                            </div>
-                        </div>
-                    </div>
+                    @include('admin.blog.posts.partials.seo-panel', ['post' => null])
 
                 </div>
 

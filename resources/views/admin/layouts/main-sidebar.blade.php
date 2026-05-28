@@ -36,7 +36,11 @@
                         $salesMenuActive = request()->routeIs('admin.customers.*')
                             || request()->routeIs('admin.products.*')
                             || request()->routeIs('admin.order-requests.*')
+                            || request()->routeIs('admin.service-types.*')
+                            || request()->routeIs('admin.offered-services.*')
+                            || request()->routeIs('admin.customer-services.*')
                             || request()->routeIs('admin.invoices.*')
+                            || request()->routeIs('admin.payments.*')
                             || request()->routeIs('admin.tickets.*');
 
                         $contentMenuActive = request()->routeIs('admin.blog.*')
@@ -52,7 +56,10 @@
                         $systemMenuActive = request()->routeIs('users.*')
                             || request()->routeIs('roles.*')
                             || request()->routeIs('admin.settings.*')
+                            || request()->routeIs('admin.mail-settings.*')
+                            || request()->routeIs('admin.mail-templates.*')
                             || request()->routeIs('admin.homepage.hero.*')
+                            || request()->routeIs('admin.homepage.seo.*')
                             || request()->routeIs('admin.storage.*')
                             || request()->routeIs('admin.backups.*')
                             || request()->routeIs('admin.backup-schedules.*')
@@ -113,12 +120,35 @@
                                 <li class="slide">
                                     <a href="{{ route('admin.order-requests.index') }}" class="side-menu__item {{ request()->routeIs('admin.order-requests.*') ? 'active' : '' }}">طلبات الباقات</a>
                                 </li>
+                                <li class="slide__category">الخدمات</li>
+                                <li class="slide">
+                                    <a href="{{ route('admin.service-types.index') }}" class="side-menu__item {{ request()->routeIs('admin.service-types.*') ? 'active' : '' }}">أنواع الخدمات</a>
+                                </li>
+                                <li class="slide">
+                                    <a href="{{ route('admin.offered-services.index') }}" class="side-menu__item {{ request()->routeIs('admin.offered-services.index') || request()->routeIs('admin.offered-services.show') || request()->routeIs('admin.offered-services.edit') ? 'active' : '' }}">قائمة الخدمات</a>
+                                </li>
+                                <li class="slide">
+                                    <a href="{{ route('admin.offered-services.create') }}" class="side-menu__item {{ request()->routeIs('admin.offered-services.create') ? 'active' : '' }}">إضافة خدمة</a>
+                                </li>
+                                <li class="slide__category">خدمات العملاء</li>
+                                <li class="slide">
+                                    <a href="{{ route('admin.customer-services.index') }}" class="side-menu__item {{ request()->routeIs('admin.customer-services.index') || request()->routeIs('admin.customer-services.show') || request()->routeIs('admin.customer-services.edit') ? 'active' : '' }}">قائمة خدمات العملاء</a>
+                                </li>
+                                <li class="slide">
+                                    <a href="{{ route('admin.customer-services.create') }}" class="side-menu__item {{ request()->routeIs('admin.customer-services.create') ? 'active' : '' }}">تسجيل خدمة لعميل</a>
+                                </li>
                                 <li class="slide__category">الفواتير</li>
                                 <li class="slide">
                                     <a href="{{ route('admin.invoices.index') }}" class="side-menu__item {{ request()->routeIs('admin.invoices.index') ? 'active' : '' }}">قائمة الفواتير</a>
                                 </li>
                                 <li class="slide">
                                     <a href="{{ route('admin.invoices.create') }}" class="side-menu__item {{ request()->routeIs('admin.invoices.create') ? 'active' : '' }}">إنشاء فاتورة</a>
+                                </li>
+                                <li class="slide">
+                                    <a href="{{ route('admin.payments.index') }}" class="side-menu__item {{ request()->routeIs('admin.payments.index') || request()->routeIs('admin.payments.show') ? 'active' : '' }}">المدفوعات</a>
+                                </li>
+                                <li class="slide">
+                                    <a href="{{ route('admin.payments.index', ['status' => 'Pending']) }}" class="side-menu__item {{ request('status') === 'Pending' && request()->routeIs('admin.payments.*') ? 'active' : '' }}">مدفوعات معلّقة</a>
                                 </li>
                                 <li class="slide__category">الدعم الفني</li>
                                 <li class="slide">
@@ -276,7 +306,16 @@
                                     <a href="{{ route('admin.settings.index') }}" class="side-menu__item {{ request()->routeIs('admin.settings.*') ? 'active' : '' }}">إعدادات الموقع</a>
                                 </li>
                                 <li class="slide">
+                                    <a href="{{ route('admin.mail-settings.index') }}" class="side-menu__item {{ request()->routeIs('admin.mail-settings.*') ? 'active' : '' }}">إعدادات SMTP</a>
+                                </li>
+                                <li class="slide">
+                                    <a href="{{ route('admin.mail-templates.index') }}" class="side-menu__item {{ request()->routeIs('admin.mail-templates.*') ? 'active' : '' }}">قوالب البريد</a>
+                                </li>
+                                <li class="slide">
                                     <a href="{{ route('admin.homepage.hero.index') }}" class="side-menu__item {{ request()->routeIs('admin.homepage.hero.*') ? 'active' : '' }}">إدارة الهيرو</a>
+                                </li>
+                                <li class="slide">
+                                    <a href="{{ route('admin.homepage.seo.index') }}" class="side-menu__item {{ request()->routeIs('admin.homepage.seo.*') ? 'active' : '' }}">إعدادات SEO</a>
                                 </li>
                                 <li class="slide">
                                     <a href="{{ route('admin.system-database.index') }}" class="side-menu__item {{ request()->routeIs('admin.system-database.*') ? 'active' : '' }}">قاعدة بيانات النظام</a>

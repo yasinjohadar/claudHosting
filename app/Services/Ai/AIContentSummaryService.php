@@ -2,15 +2,20 @@
 
 namespace App\Services\Ai;
 
+use App\Ai\Agents\ContentSummaryAgent;
 use App\Models\ContentSummary;
 use App\Models\AIModel;
 use Illuminate\Support\Facades\Log;
+use Laravel\Ai\Enums\Lab;
 
 class AIContentSummaryService
 {
     public function __construct(
         private AIModelService $modelService,
-        private AIPromptService $promptService
+        private AIPromptService $promptService,
+        private AIModelResolver $resolver,
+        private LaravelAiConfigurator $configurator,
+        private LegacyProviderGateway $legacyGateway,
     ) {}
 
     /**
@@ -31,14 +36,12 @@ class AIContentSummaryService
 
         try {
             $prompt = $this->promptService->getContentSummaryPrompt($content, $type);
-            
-            $provider = AIProviderFactory::create($model);
-            $response = $provider->generateText($prompt, [
+            $response = $this->promptModel($model, $prompt, [
                 'max_tokens' => $model->max_tokens,
                 'temperature' => 0.5,
             ]);
 
-            $tokensUsed = $provider->estimateTokens($prompt . $response);
+            $tokensUsed = (int) ceil(strlen($prompt.$response) / 4);
             $cost = $model->getCost($tokensUsed);
 
             $summary = ContentSummary::create([
@@ -57,6 +60,29 @@ class AIContentSummaryService
             Log::error('Error summarizing content: ' . $e->getMessage());
             throw $e;
         }
+    }
+
+    protected function promptModel(AIModel $model, string $prompt, array $options = []): string
+    {
+        if ($this->resolver->isLegacy($model)) {
+            return $this->legacyGateway->prompt($model, $prompt, $options);
+        }
+
+        $lab = $this->resolver->resolveLab($model);
+        if (! $lab instanceof Lab) {
+            throw new \RuntimeException("Unsupported AI provider: {$model->provider}");
+        }
+
+        return $this->configurator->using($model, function () use ($model, $prompt, $lab, $options) {
+            $response = ContentSummaryAgent::make()->prompt(
+                $prompt,
+                provider: $lab,
+                model: $model->model_key,
+                timeout: 180
+            );
+
+            return (string) $response;
+        });
     }
 
     // تم إزالة summarizeLesson و summarizeCourse لأن Lesson و Course models غير موجودة في هذا المشروع

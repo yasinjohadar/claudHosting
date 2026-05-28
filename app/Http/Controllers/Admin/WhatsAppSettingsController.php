@@ -45,6 +45,7 @@ class WhatsAppSettingsController extends Controller
             'strict_signature' => 'nullable',
             'auto_reply' => 'nullable',
             'auto_reply_message' => 'nullable|string|max:500',
+            'send_payment_notifications' => 'nullable',
             'timeout' => 'nullable|integer|min:1|max:300',
             'custom_api_url' => 'required_if:whatsapp_provider,custom_api|nullable|string|url|max:500',
             'custom_api_key' => 'nullable|string|max:500',
@@ -76,6 +77,7 @@ class WhatsAppSettingsController extends Controller
             $validated['whatsapp_enabled'] = $request->has('whatsapp_enabled') ? '1' : '0';
             $validated['strict_signature'] = $request->has('strict_signature') ? '1' : '0';
             $validated['auto_reply'] = $request->has('auto_reply') ? '1' : '0';
+            $validated['send_payment_notifications'] = $request->has('send_payment_notifications') ? '1' : '0';
             $validated['random_delay_enabled'] = $request->has('random_delay_enabled') ? '1' : '0';
 
             // If access_token, app_secret, custom_api_key, or whatsapp_web_api_token is empty, keep existing values

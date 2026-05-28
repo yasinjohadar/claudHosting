@@ -19,6 +19,8 @@ class InvoiceItem extends Model
         'whmcs_invoice_item_id',
         'invoice_id',
         'product_id',
+        'offered_service_id',
+        'customer_service_id',
         'whmcs_service_id',
         'description',
         'amount',
@@ -51,6 +53,16 @@ class InvoiceItem extends Model
     public function product()
     {
         return $this->belongsTo(Product::class, 'product_id');
+    }
+
+    public function offeredService()
+    {
+        return $this->belongsTo(OfferedService::class);
+    }
+
+    public function customerService()
+    {
+        return $this->belongsTo(CustomerService::class);
     }
 
     /**

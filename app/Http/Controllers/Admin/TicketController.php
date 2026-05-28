@@ -3,83 +3,59 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
-use App\Models\Ticket;
-use App\Models\TicketReply;
-use App\Models\TicketNote;
 use App\Models\Customer;
-use App\Services\WhmcsApiService;
+use App\Models\Ticket;
+use App\Models\TicketNote;
+use App\Models\TicketReply;
+use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
-use Carbon\Carbon;
 
 class TicketController extends Controller
 {
-    protected $whmcsApiService;
-
-    public function __construct(WhmcsApiService $whmcsApiService)
+    public function __construct()
     {
-        $this->whmcsApiService = $whmcsApiService;
         $this->middleware('auth');
     }
 
-    /**
-     * عرض قائمة التذاكر
-     *
-     * @return \Illuminate\View\View
-     */
     public function index(Request $request)
     {
         $query = Ticket::with('customer');
-        
-        // تصفية حسب الحالة
+
         if ($request->filled('status')) {
             $query->where('status', $request->status);
         }
-        
-        // تصفية حسب الأولوية
+
         if ($request->filled('priority')) {
             $query->where('priority', $request->priority);
         }
-        
-        // تصفية حسب القسم
+
         if ($request->filled('department')) {
             $query->where('department', $request->department);
         }
-        
-        // تصفية حسب التاريخ من
+
         if ($request->filled('date_from')) {
             $query->whereDate('date', '>=', $request->date_from);
         }
-        
-        // تصفية حسب التاريخ إلى
+
         if ($request->filled('date_to')) {
             $query->whereDate('date', '<=', $request->date_to);
         }
-        
+
         $tickets = $query->orderBy('date', 'desc')->paginate(10);
-        $customers = Customer::all();
-        
+        $customers = Customer::orderBy('fullname')->get();
+
         return view('admin.tickets.index', compact('tickets', 'customers'));
     }
 
-    /**
-     * عرض نموذج إضافة تذكرة جديدة
-     *
-     * @return \Illuminate\View\View
-     */
     public function create()
     {
-        $customers = Customer::all();
+        $customers = Customer::orderBy('fullname')->get();
+
         return view('admin.tickets.create', compact('customers'));
     }
 
-    /**
-     * حفظ تذكرة جديدة
-     *
-     * @param  \Illuminate\Http\Request  $request
-     * @return \Illuminate\Http\RedirectResponse
-     */
     public function store(Request $request)
     {
         $validator = Validator::make($request->all(), [
@@ -99,17 +75,18 @@ class TicketController extends Controller
         }
 
         DB::beginTransaction();
-        
+
         try {
             $customer = Customer::findOrFail($request->customer_id);
-            
-            // إنشاء التذكرة في النظام المحلي
-            $ticket = Ticket::create([
-                'whmcs_id' => null, // سيتم تحديثه لاحقًا بعد إنشائه في WHMCS
+            $ticketNumber = $this->generateTicketNumber();
+
+            Ticket::create([
+                'customer_id' => $customer->id,
+                'whmcs_id' => null,
                 'whmcs_client_id' => $customer->whmcs_id,
-                'tid' => $this->generateTicketNumber(),
+                'tid' => $ticketNumber,
                 'deptid' => $request->deptid,
-                'userid' => $customer->whmcs_id,
+                'userid' => $customer->id,
                 'name' => $customer->fullname,
                 'email' => $customer->email,
                 'subject' => $request->subject,
@@ -120,76 +97,41 @@ class TicketController extends Controller
                 'department' => $request->department,
                 'date' => Carbon::now(),
                 'lastmodified' => Carbon::now(),
-                'synced_at' => null, // لم تتم المزامنة بعد
+                'synced_at' => null,
             ]);
-            
-            // إنشاء التذكرة في WHMCS
-            $whmcsTicket = $this->whmcsApiService->openTicket([
-                'deptid' => $request->deptid,
-                'subject' => $request->subject,
-                'message' => $request->message,
-                'priority' => $request->priority,
-                'clientid' => $customer->whmcs_id,
-            ]);
-            
-            if ($whmcsTicket && isset($whmcsTicket['id'])) {
-                // تحديث التذكرة المحلية بمعرف WHMCS
-                $ticket->whmcs_id = $whmcsTicket['id'];
-                $ticket->tid = $whmcsTicket['tid'];
-                $ticket->synced_at = Carbon::now();
-                $ticket->save();
-            }
-            
+
             DB::commit();
-            
+
             return redirect()->route('admin.tickets.index')
                 ->with('success', 'تم إنشاء التذكرة بنجاح');
-                
         } catch (\Exception $e) {
             DB::rollBack();
-            
+
             return redirect()->back()
-                ->with('error', 'حدث خطأ أثناء إنشاء التذكرة: ' . $e->getMessage())
+                ->with('error', 'حدث خطأ أثناء إنشاء التذكرة: '.$e->getMessage())
                 ->withInput();
         }
     }
 
-    /**
-     * عرض تفاصيل التذكرة
-     *
-     * @param  int  $id
-     * @return \Illuminate\View\View
-     */
     public function show($id)
     {
         $ticket = Ticket::with('customer', 'replies', 'notes')->findOrFail($id);
+
         return view('admin.tickets.show', compact('ticket'));
     }
 
-    /**
-     * عرض نموذج تعديل التذكرة
-     *
-     * @param  int  $id
-     * @return \Illuminate\View\View
-     */
     public function edit($id)
     {
         $ticket = Ticket::findOrFail($id);
-        $customers = Customer::all();
+        $customers = Customer::orderBy('fullname')->get();
+
         return view('admin.tickets.edit', compact('ticket', 'customers'));
     }
 
-    /**
-     * تحديث بيانات التذكرة
-     *
-     * @param  \Illuminate\Http\Request  $request
-     * @param  int  $id
-     * @return \Illuminate\Http\RedirectResponse
-     */
     public function update(Request $request, $id)
     {
         $ticket = Ticket::findOrFail($id);
-        
+
         $validator = Validator::make($request->all(), [
             'deptid' => 'required|integer',
             'subject' => 'required|string|max:255',
@@ -205,94 +147,47 @@ class TicketController extends Controller
                 ->withInput();
         }
 
-        DB::beginTransaction();
-        
-        try {
-            // تحديث التذكرة في النظام المحلي
-            $ticket->update([
-                'deptid' => $request->deptid,
-                'subject' => $request->subject,
-                'priority' => $request->priority,
-                'urgency' => $request->urgency,
-                'department' => $request->department,
-                'status' => $request->status,
-                'lastmodified' => Carbon::now(),
-            ]);
-            
-            // تحديث التذكرة في WHMCS إذا كان لديها معرف
-            if ($ticket->whmcs_id) {
-                $this->whmcsApiService->updateTicket($ticket->whmcs_id, [
-                    'deptid' => $request->deptid,
-                    'subject' => $request->subject,
-                    'priority' => $request->priority,
-                    'status' => $request->status,
-                ]);
-                
-                $ticket->synced_at = Carbon::now();
-                $ticket->save();
-            }
-            
-            DB::commit();
-            
-            return redirect()->route('admin.tickets.index')
-                ->with('success', 'تم تحديث بيانات التذكرة بنجاح');
-                
-        } catch (\Exception $e) {
-            DB::rollBack();
-            
-            return redirect()->back()
-                ->with('error', 'حدث خطأ أثناء تحديث بيانات التذكرة: ' . $e->getMessage())
-                ->withInput();
-        }
+        $ticket->update([
+            'deptid' => $request->deptid,
+            'subject' => $request->subject,
+            'priority' => $request->priority,
+            'urgency' => $request->urgency,
+            'department' => $request->department,
+            'status' => $request->status,
+            'lastmodified' => Carbon::now(),
+        ]);
+
+        return redirect()->route('admin.tickets.index')
+            ->with('success', 'تم تحديث بيانات التذكرة بنجاح');
     }
 
-    /**
-     * حذف التذكرة
-     *
-     * @param  int  $id
-     * @return \Illuminate\Http\RedirectResponse
-     */
     public function destroy($id)
     {
         $ticket = Ticket::findOrFail($id);
-        
+
         DB::beginTransaction();
-        
+
         try {
-            // حذف التذكرة من WHMCS إذا كان لديها معرف
-            if ($ticket->whmcs_id) {
-                $this->whmcsApiService->deleteTicket($ticket->whmcs_id);
-            }
-            
-            // حذف الردود والملاحظات والتذكرة من النظام المحلي
             $ticket->replies()->delete();
             $ticket->notes()->delete();
             $ticket->delete();
-            
+
             DB::commit();
-            
+
             return redirect()->route('admin.tickets.index')
                 ->with('success', 'تم حذف التذكرة بنجاح');
-                
         } catch (\Exception $e) {
             DB::rollBack();
-            
+
             return redirect()->back()
-                ->with('error', 'حدث خطأ أثناء حذف التذكرة: ' . $e->getMessage());
+                ->with('error', 'حدث خطأ أثناء حذف التذكرة: '.$e->getMessage());
         }
     }
-    
-    /**
-     * الرد على التذكرة
-     *
-     * @param  \Illuminate\Http\Request  $request
-     * @param  int  $id
-     * @return \Illuminate\Http\RedirectResponse
-     */
+
     public function reply(Request $request, $id)
     {
         $ticket = Ticket::findOrFail($id);
-        
+
         $validator = Validator::make($request->all(), [
             'message' => 'required|string',
         ]);
@@ -303,90 +198,41 @@ class TicketController extends Controller
                 ->withInput();
         }
 
-        DB::beginTransaction();
-        
-        try {
-            // إنشاء الرد في النظام المحلي
-            TicketReply::create([
-                'ticket_id' => $ticket->id,
-                'admin' => auth()->user()->name,
-                'name' => auth()->user()->name,
-                'email' => auth()->user()->email,
-                'date' => Carbon::now(),
-                'message' => $request->message,
-            ]);
-            
-            // تحديث حالة التذكرة
-            $ticket->update([
-                'status' => 'Answered',
-                'lastreply' => Carbon::now(),
-                'lastmodified' => Carbon::now(),
-            ]);
-            
-            // إضافة الرد في WHMCS إذا كان للتذكرة معرف
-            if ($ticket->whmcs_id) {
-                $this->whmcsApiService->addTicketReply((int) $ticket->whmcs_id, $request->message);
-                
-                $ticket->synced_at = Carbon::now();
-                $ticket->save();
-            }
-            
-            DB::commit();
-            
-            return redirect()->route('admin.tickets.show', $id)
-                ->with('success', 'تم إضافة الرد بنجاح');
-                
-        } catch (\Exception $e) {
-            DB::rollBack();
-            
-            return redirect()->back()
-                ->with('error', 'حدث خطأ أثناء إضافة الرد: ' . $e->getMessage());
-        }
+        TicketReply::create([
+            'ticket_id' => $ticket->id,
+            'whmcs_id' => null,
+            'whmcs_ticket_id' => null,
+            'type' => 'admin',
+            'admin' => auth()->user()->name,
+            'name' => auth()->user()->name,
+            'email' => auth()->user()->email,
+            'date' => Carbon::now(),
+            'message' => $request->message,
+        ]);
+
+        $ticket->update([
+            'status' => 'Answered',
+            'lastreply' => Carbon::now(),
+            'lastmodified' => Carbon::now(),
+        ]);
+
+        return redirect()->route('admin.tickets.show', $id)
+            ->with('success', 'تم إضافة الرد بنجاح');
     }
-    
-    /**
-     * إغلاق التذكرة
-     *
-     * @param  int  $id
-     * @return \Illuminate\Http\RedirectResponse
-     */
+
     public function close($id)
     {
         $ticket = Ticket::findOrFail($id);
-        
-        DB::beginTransaction();
-        
-        try {
-            // تحديث حالة التذكرة في النظام المحلي
-            $ticket->update([
-                'status' => 'Closed',
-                'lastmodified' => Carbon::now(),
-            ]);
-            
-            // إغلاق التذكرة في WHMCS إذا كان لها معرف
-            if ($ticket->whmcs_id) {
-                $this->whmcsApiService->closeTicket($ticket->whmcs_id);
-                
-                $ticket->synced_at = Carbon::now();
-                $ticket->save();
-            }
-            
-            DB::commit();
-            
-            return redirect()->route('admin.tickets.show', $id)
-                ->with('success', 'تم إغلاق التذكرة بنجاح');
-                
-        } catch (\Exception $e) {
-            DB::rollBack();
-            
-            return redirect()->back()
-                ->with('error', 'حدث خطأ أثناء إغلاق التذكرة: ' . $e->getMessage());
-        }
+
+        $ticket->update([
+            'status' => 'Closed',
+            'lastmodified' => Carbon::now(),
+        ]);
+
+        return redirect()->route('admin.tickets.show', $id)
+            ->with('success', 'تم إغلاق التذكرة بنجاح');
     }
 
-    /**
-     * إضافة ملاحظة داخلية على التذكرة
-     */
     public function addNote(Request $request, $id)
     {
         $ticket = Ticket::findOrFail($id);
@@ -394,130 +240,49 @@ class TicketController extends Controller
         if ($validator->fails()) {
             return redirect()->back()->withErrors($validator)->withInput();
         }
-        try {
-            TicketNote::create([
-                'ticket_id' => $ticket->id,
-                'admin_id' => auth()->id(),
-                'admin_name' => auth()->user()->name ?? '',
-                'note' => $request->message,
-                'date' => Carbon::now(),
-            ]);
-            if ($ticket->whmcs_id) {
-                $this->whmcsApiService->addTicketNote((int) $ticket->whmcs_id, $request->message, true);
-                $ticket->update(['synced_at' => Carbon::now()]);
-            }
-            return redirect()->route('admin.tickets.show', $id)->with('success', 'تم إضافة الملاحظة بنجاح');
-        } catch (\Exception $e) {
-            return redirect()->back()->with('error', 'حدث خطأ: ' . $e->getMessage());
-        }
+
+        TicketNote::create([
+            'ticket_id' => $ticket->id,
+            'admin_id' => auth()->id(),
+            'admin_name' => auth()->user()->name ?? '',
+            'note' => $request->message,
+            'date' => Carbon::now(),
+        ]);
+
+        return redirect()->route('admin.tickets.show', $id)->with('success', 'تم إضافة الملاحظة بنجاح');
     }
-    
-    /**
-     * إعادة فتح التذكرة
-     *
-     * @param  int  $id
-     * @return \Illuminate\Http\RedirectResponse
-     */
+
     public function reopen($id)
     {
         $ticket = Ticket::findOrFail($id);
-        
-        DB::beginTransaction();
-        
-        try {
-            // تحديث حالة التذكرة في النظام المحلي
-            $ticket->update([
-                'status' => 'Open',
-                'lastmodified' => Carbon::now(),
-            ]);
-            
-            // إعادة فتح التذكرة في WHMCS إذا كان لها معرف
-            if ($ticket->whmcs_id) {
-                $this->whmcsApiService->openTicket((int) $ticket->whmcs_id);
-                
-                $ticket->synced_at = Carbon::now();
-                $ticket->save();
-            }
-            
-            DB::commit();
-            
-            return redirect()->route('admin.tickets.show', $id)
-                ->with('success', 'تم إعادة فتح التذكرة بنجاح');
-                
-        } catch (\Exception $e) {
-            DB::rollBack();
-            
-            return redirect()->back()
-                ->with('error', 'حدث خطأ أثناء إعادة فتح التذكرة: ' . $e->getMessage());
-        }
+
+        $ticket->update([
+            'status' => 'Open',
+            'lastmodified' => Carbon::now(),
+        ]);
+
+        return redirect()->route('admin.tickets.show', $id)
+            ->with('success', 'تم إعادة فتح التذكرة بنجاح');
     }
-    
-    /**
-     * مزامنة التذكرة مع WHMCS
-     *
-     * @param  int  $id
-     * @return \Illuminate\Http\RedirectResponse
-     */
-    public function sync($id)
-    {
-        $ticket = Ticket::findOrFail($id);
-        
-        try {
-            // مزامنة التذكرة مع WHMCS
-            $this->whmcsApiService->syncTicket($ticket);
-            
-            return redirect()->route('admin.tickets.show', $id)
-                ->with('success', 'تمت مزامنة التذكرة مع WHMCS بنجاح');
-                
-        } catch (\Exception $e) {
-            return redirect()->back()
-                ->with('error', 'حدث خطأ أثناء مزامنة التذكرة: ' . $e->getMessage());
-        }
-    }
-    
-    /**
-     * مزامنة جميع التذاكر مع WHMCS
-     *
-     * @return \Illuminate\Http\RedirectResponse
-     */
-    public function syncAll()
-    {
-        try {
-            $count = $this->whmcsApiService->syncTickets();
-            
-            return redirect()->route('admin.tickets.index')
-                ->with('success', 'تمت مزامنة ' . $count . ' تذكرة مع WHMCS بنجاح');
-                
-        } catch (\Exception $e) {
-            return redirect()->back()
-                ->with('error', 'حدث خطأ أثناء مزامنة التذاكر: ' . $e->getMessage());
-        }
-    }
-    
-    /**
-     * توليد رقم تذكرة فريد
-     *
-     * @return string
-     */
-    private function generateTicketNumber()
+
+    private function generateTicketNumber(): string
     {
         $prefix = 'TCK-';
         $year = date('Y');
         $month = date('m');
-        
-        // الحصول على آخر رقم تذكرة في الشهر الحالي
+
         $lastTicket = Ticket::whereYear('created_at', $year)
             ->whereMonth('created_at', $month)
             ->orderBy('created_at', 'desc')
             ->first();
-            
+
         if ($lastTicket && $lastTicket->tid) {
-            $lastNumber = intval(substr($lastTicket->tid, -4));
-            $newNumber = str_pad($lastNumber + 1, 4, '0', STR_PAD_LEFT);
+            $lastNumber = (int) substr($lastTicket->tid, -4);
+            $newNumber = str_pad((string) ($lastNumber + 1), 4, '0', STR_PAD_LEFT);
         } else {
             $newNumber = '0001';
         }
-        
-        return $prefix . $year . $month . $newNumber;
+
+        return $prefix.$year.$month.$newNumber;
     }
 }

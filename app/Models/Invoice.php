@@ -185,7 +185,10 @@ class Invoice extends Model
      */
     public function getBalanceAttribute()
     {
-        $paidAmount = $this->payments()->sum('amount');
+        $paidAmount = $this->payments()
+            ->where('status', Payment::STATUS_COMPLETED)
+            ->sum('amount');
+
         return max(0, $this->total - $paidAmount);
     }
 

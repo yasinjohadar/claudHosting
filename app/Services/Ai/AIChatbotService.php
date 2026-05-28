@@ -2,18 +2,23 @@
 
 namespace App\Services\Ai;
 
+use App\Ai\Agents\ChatbotAgent;
 use App\Models\AIConversation;
 use App\Models\AIMessage;
 use App\Models\AIModel;
 use App\Models\User;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Log;
+use Laravel\Ai\Enums\Lab;
 
 class AIChatbotService
 {
     public function __construct(
         private AIModelService $modelService,
-        private AIPromptService $promptService
+        private AIPromptService $promptService,
+        private AIModelResolver $resolver,
+        private LaravelAiConfigurator $configurator,
+        private LegacyProviderGateway $legacyGateway,
     ) {}
 
     /**
@@ -88,26 +93,25 @@ class AIChatbotService
 
         // إرسال الطلب إلى AI
         try {
-            $provider = AIProviderFactory::create($model);
-            $response = $provider->chat($messages);
-
-            if (!$response['success']) {
-                throw new \Exception($response['error'] ?? 'خطأ في الاتصال بـ AI');
+            $reply = $this->chatWithModel($model, $messages);
+            if (trim($reply) === '') {
+                throw new \Exception('خطأ في الاتصال بـ AI');
             }
 
             // إضافة رد AI
-            $assistantMessage = $conversation->addMessage('assistant', $response['content'], [
-                'tokens_used' => $response['tokens_used'] ?? 0,
-                'prompt_tokens' => $response['prompt_tokens'] ?? 0,
-                'completion_tokens' => $response['completion_tokens'] ?? 0,
+            $tokensUsed = (int) ceil(strlen($message.$reply) / 4);
+            $assistantMessage = $conversation->addMessage('assistant', $reply, [
+                'tokens_used' => $tokensUsed,
+                'prompt_tokens' => 0,
+                'completion_tokens' => 0,
             ]);
 
             // تحديث التكلفة والوقت
             $responseTime = (microtime(true) - $startTime) * 1000; // بالمللي ثانية
-            $cost = $model->getCost($response['tokens_used'] ?? 0);
+            $cost = $model->getCost($tokensUsed);
 
             $assistantMessage->update([
-                'tokens_used' => $response['tokens_used'] ?? 0,
+                'tokens_used' => $tokensUsed,
                 'cost' => $cost,
                 'response_time' => (int) $responseTime,
             ]);
@@ -154,10 +158,54 @@ class AIChatbotService
             return 0;
         }
 
-        $provider = AIProviderFactory::create($model);
-        $estimatedTokens = $provider->estimateTokens($message);
+        $estimatedTokens = (int) ceil(strlen($message) / 4);
         
         return $model->getCost($estimatedTokens);
+    }
+
+    protected function chatWithModel(AIModel $model, array $messages): string
+    {
+        $prompt = $this->messagesToPrompt($messages);
+
+        if ($this->resolver->isLegacy($model)) {
+            return $this->legacyGateway->prompt($model, $prompt, [
+                'max_tokens' => $model->max_tokens,
+                'temperature' => $model->temperature,
+            ]);
+        }
+
+        $lab = $this->resolver->resolveLab($model);
+        if (! $lab instanceof Lab) {
+            throw new \RuntimeException("Unsupported AI provider: {$model->provider}");
+        }
+
+        return $this->configurator->using($model, function () use ($model, $lab, $prompt) {
+            $response = ChatbotAgent::make()->prompt(
+                $prompt,
+                provider: $lab,
+                model: $model->model_key,
+                timeout: 180
+            );
+
+            return (string) $response;
+        });
+    }
+
+    protected function messagesToPrompt(array $messages): string
+    {
+        $lines = [];
+
+        foreach ($messages as $message) {
+            $role = $message['role'] ?? 'user';
+            $content = trim((string) ($message['content'] ?? ''));
+            if ($content === '') {
+                continue;
+            }
+
+            $lines[] = strtoupper($role).': '.$content;
+        }
+
+        return implode("\n\n", $lines);
     }
 }
 

@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Facades\Crypt;
+use Laravel\Ai\Enums\Lab;
 
 class AIModel extends Model
 {
@@ -75,11 +76,11 @@ class AIModel extends Model
         'anthropic' => 'Anthropic (Claude)',
         'google' => 'Google (Gemini)',
         'openrouter' => 'OpenRouter',
-        'zai' => 'Z.ai (GLM)',
-        'manus' => 'Manus AI',
+        'zai' => 'Z.ai (Legacy)',
+        'manus' => 'Manus AI (Legacy)',
         'groq' => 'Groq',
-        'local' => 'Local LLM',
-        'custom' => 'Custom API',
+        'local' => 'Ollama (Local)',
+        'custom' => 'OpenRouter / Custom URL',
     ];
 
     /**
@@ -217,5 +218,23 @@ class AIModel extends Model
     public function scopeByCapability($query, string $capability)
     {
         return $query->whereJsonContains('capabilities', $capability);
+    }
+
+    public function mapsToSdk(): bool
+    {
+        return $this->sdkLab() instanceof Lab;
+    }
+
+    public function sdkLab(): ?Lab
+    {
+        return match ($this->provider) {
+            'openai' => Lab::OpenAI,
+            'anthropic' => Lab::Anthropic,
+            'google' => Lab::Gemini,
+            'openrouter', 'custom' => Lab::OpenRouter,
+            'groq' => Lab::Groq,
+            'local' => Lab::Ollama,
+            default => null,
+        };
     }
 }

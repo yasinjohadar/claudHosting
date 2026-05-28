@@ -1,13 +1,5 @@
 @extends('frontend.layouts.master')
 
-@section('page-title')
-الباقات | استضافة كلاودسوفت
-@endsection
-
-@section('meta-description')
-باقات استضافة كلاودسوفت — خطط مرنة للمواقع الشخصية والمتاجر والشركات. استضافة سريعة وآمنة مع دعم فني متواصل ولوحة تحكم عربية. اختر باقتك وابدأ اليوم.
-@endsection
-
 @section('content')
     <!-- ============ PAGE BANNER (نفس About) ============ -->
     <section class="page-banner page-banner-about">

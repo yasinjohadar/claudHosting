@@ -6,6 +6,7 @@ document.addEventListener('DOMContentLoaded', function () {
     const itemsTable = document.querySelector('#itemsTable tbody');
     const totalAmount = document.getElementById('totalAmount');
     const invoiceForm = document.getElementById('invoiceForm');
+    const customerSelect = document.getElementById('customer_id');
 
     function rowTemplate(index) {
         return `
@@ -16,6 +17,8 @@ document.addEventListener('DOMContentLoaded', function () {
         </button>
     </td>
     <td style="min-width:12rem;width:35%">
+        <input type="hidden" name="items[${index}][offered_service_id]" class="item-offered-service-id" value="">
+        <input type="hidden" name="items[${index}][customer_service_id]" class="item-customer-service-id" value="">
         <input type="text" class="form-control form-control-sm item-description" name="items[${index}][description]" placeholder="وصف البند" required>
     </td>
     <td style="width:10rem" class="text-center">
@@ -48,6 +51,29 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     }
 
+    function fillRow(row, opts) {
+        const desc = row.querySelector('.item-description');
+        const amount = row.querySelector('.item-amount');
+        const offeredId = row.querySelector('.item-offered-service-id');
+        const customerServiceId = row.querySelector('.item-customer-service-id');
+        if (desc) desc.value = opts.name || '';
+        if (amount) amount.value = opts.price || '';
+        if (offeredId) offeredId.value = opts.offeredServiceId || '';
+        if (customerServiceId) customerServiceId.value = opts.customerServiceId || '';
+        calculateTotal();
+    }
+
+    function getOrCreateEmptyRow() {
+        let lastRow = itemsTable.querySelector('tr.item-row:last-child');
+        let desc = lastRow.querySelector('.item-description');
+        let amount = lastRow.querySelector('.item-amount');
+        if (desc.value.trim() !== '' || (parseFloat(amount.value) || 0) > 0) {
+            addItemBtn.click();
+            lastRow = itemsTable.querySelector('tr.item-row:last-child');
+        }
+        return lastRow;
+    }
+
     if (addItemBtn) {
         addItemBtn.addEventListener('click', function () {
             itemsTable.insertAdjacentHTML('beforeend', rowTemplate(itemCount));
@@ -72,20 +98,36 @@ document.addEventListener('DOMContentLoaded', function () {
     document.querySelectorAll('.add-product-item').forEach(function (el) {
         el.addEventListener('click', function (e) {
             e.preventDefault();
-            const productName = this.dataset.productName;
-            const productPrice = this.dataset.productPrice;
-            let lastRow = itemsTable.querySelector('tr.item-row:last-child');
-            let desc = lastRow.querySelector('.item-description');
-            let amount = lastRow.querySelector('.item-amount');
-            if (desc.value.trim() !== '' || (parseFloat(amount.value) || 0) > 0) {
-                addItemBtn.click();
-                lastRow = itemsTable.querySelector('tr.item-row:last-child');
-                desc = lastRow.querySelector('.item-description');
-                amount = lastRow.querySelector('.item-amount');
+            fillRow(getOrCreateEmptyRow(), {
+                name: this.dataset.productName,
+                price: this.dataset.productPrice,
+            });
+        });
+    });
+
+    document.querySelectorAll('.add-offered-service-item').forEach(function (el) {
+        el.addEventListener('click', function (e) {
+            e.preventDefault();
+            fillRow(getOrCreateEmptyRow(), {
+                name: this.dataset.serviceName,
+                price: this.dataset.servicePrice,
+                offeredServiceId: this.dataset.serviceId,
+            });
+        });
+    });
+
+    document.querySelectorAll('.add-customer-service-item').forEach(function (el) {
+        el.addEventListener('click', function (e) {
+            e.preventDefault();
+            if (customerSelect && this.dataset.customerId) {
+                customerSelect.value = this.dataset.customerId;
             }
-            desc.value = productName;
-            amount.value = productPrice;
-            calculateTotal();
+            fillRow(getOrCreateEmptyRow(), {
+                name: this.dataset.serviceName,
+                price: this.dataset.servicePrice,
+                offeredServiceId: this.dataset.offeredServiceId,
+                customerServiceId: this.dataset.customerServiceId,
+            });
         });
     });
 

@@ -36,6 +36,7 @@ class WhatsAppSettingsService
             'strict_signature' => filter_var($settings['strict_signature'] ?? true, FILTER_VALIDATE_BOOLEAN),
             'auto_reply' => filter_var($settings['auto_reply'] ?? false, FILTER_VALIDATE_BOOLEAN),
             'auto_reply_message' => $settings['auto_reply_message'] ?? 'شكراً لك، تم استلام رسالتك. سنرد عليك قريباً.',
+            'send_payment_notifications' => filter_var($settings['send_payment_notifications'] ?? true, FILTER_VALIDATE_BOOLEAN),
             'timeout' => $settings['timeout'] ?? 30,
             // Custom API settings
             'custom_api_url' => $settings['custom_api_url'] ?? '',
@@ -112,6 +113,7 @@ class WhatsAppSettingsService
             'strict_signature' => true,
             'auto_reply' => false,
             'auto_reply_message' => 'شكراً لك، تم استلام رسالتك. سنرد عليك قريباً.',
+            'send_payment_notifications' => true,
             'timeout' => 30,
             'custom_api_url' => '',
             'custom_api_key' => '',

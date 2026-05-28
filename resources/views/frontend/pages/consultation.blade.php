@@ -1,13 +1,5 @@
 @extends('frontend.layouts.master')
 
-@section('page-title')
-حجز موعد واستشارة تقنية | استضافة كلاودسوفت
-@endsection
-
-@section('meta-description')
-احجز جلستك الاستشارية مع فريق كلاودسوفت — نقاش مباشر حول مشروعك، الاستضافة، المسار المهني أو أي سؤال تقني. نرتب معك الموعد المناسب.
-@endsection
-
 @section('content')
     <section class="page-banner page-banner-about">
         <div class="page-banner-overlay"></div>

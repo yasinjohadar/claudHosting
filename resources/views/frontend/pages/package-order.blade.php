@@ -1,13 +1,5 @@
 @extends('frontend.layouts.master')
 
-@section('page-title')
-طلب الباقة: {{ $product->name }} | استضافة كلاودسوفت
-@endsection
-
-@section('meta-description')
-اطلب باقة {{ $product->name }} من استضافة كلاودسوفت — اختر دورة الفوترة، أضف ملاحظاتك، وسنكمل طلبك مع دعم فني مستمر.
-@endsection
-
 @section('content')
     <section class="course-detail-hero">
         <div class="container">

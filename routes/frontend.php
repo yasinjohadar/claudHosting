@@ -4,6 +4,7 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Frontend\BlogController;
 use App\Http\Controllers\Frontend\PackageController;
 use App\Http\Controllers\Frontend\DomainSearchController;
+use App\Http\Controllers\Frontend\SitemapController;
 
 /*
 |--------------------------------------------------------------------------
@@ -13,6 +14,8 @@ use App\Http\Controllers\Frontend\DomainSearchController;
 | لوحة التحكم (الداشبورد) فقط تحت /admin في web.php.
 |
 */
+
+Route::get('/sitemap.xml', SitemapController::class)->name('sitemap');
 
 Route::prefix('')->name('frontend.')->group(function () {
     // الصفحات الداخلية للفرونت اند (الرئيسية / من web.php)

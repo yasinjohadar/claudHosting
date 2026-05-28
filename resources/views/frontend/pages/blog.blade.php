@@ -1,13 +1,5 @@
 @extends('frontend.layouts.master')
 
-@section('page-title')
-المدونة | استضافة كلاودسوفت
-@endsection
-
-@section('meta-description')
-المدونة — مقالات تقنية وتعليمية في الاستضافة، البرمجة، إدارة الخوادم، والأمان. نصائح ودروس من فريق استضافة كلاودسوفت لمساعدتك في مشاريعك.
-@endsection
-
 @section('content')
     <!-- ============ PAGE BANNER (نفس About) ============ -->
     <section class="page-banner page-banner-about">

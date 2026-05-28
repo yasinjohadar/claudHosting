@@ -2,16 +2,20 @@
 
 namespace App\Services\Ai;
 
+use App\Ai\Agents\BlogPostGeneratorAgent;
 use App\Models\AIModel;
 use App\Models\BlogCategory;
 use Illuminate\Support\Facades\Log;
-use App\Services\Ai\AIProviderFactory;
 use Illuminate\Support\Str;
+use Laravel\Ai\Enums\Lab;
 
 class AIBlogPostService
 {
     public function __construct(
-        private AIModelService $modelService
+        private AIModelService $modelService,
+        private AIModelResolver $resolver,
+        private LaravelAiConfigurator $configurator,
+        private LegacyProviderGateway $legacyGateway,
     ) {}
 
     /**
@@ -156,8 +160,7 @@ class AIBlogPostService
 }";
 
         try {
-            $provider = AIProviderFactory::create($model);
-            $response = $provider->generateText($prompt, [
+            $response = $this->promptModel($model, $prompt, [
                 'max_tokens' => $model->max_tokens ?? 4000,
                 'temperature' => $model->temperature ?? 0.7,
             ]);
@@ -234,8 +237,7 @@ class AIBlogPostService
 }";
 
         try {
-            $provider = AIProviderFactory::create($model);
-            $response = $provider->generateText($prompt, [
+            $response = $this->promptModel($model, $prompt, [
                 'max_tokens' => 500,
                 'temperature' => 0.5,
             ]);
@@ -349,8 +351,7 @@ class AIBlogPostService
 يرجى إرجاع النتيجة كقائمة مفصولة بفواصل فقط، بدون أرقام أو نقاط أو رموز.";
 
         try {
-            $provider = AIProviderFactory::create($model);
-            $response = $provider->generateText($prompt, [
+            $response = $this->promptModel($model, $prompt, [
                 'max_tokens' => 200,
                 'temperature' => 0.6,
             ]);
@@ -544,6 +545,29 @@ class AIBlogPostService
         
         // If JSON parsing fails, try to extract data from text
         return [];
+    }
+
+    private function promptModel(AIModel $model, string $prompt, array $options = []): string
+    {
+        if ($this->resolver->isLegacy($model)) {
+            return $this->legacyGateway->prompt($model, $prompt, $options);
+        }
+
+        $lab = $this->resolver->resolveLab($model);
+        if (! $lab instanceof Lab) {
+            throw new \RuntimeException("Unsupported AI provider: {$model->provider}");
+        }
+
+        return $this->configurator->using($model, function () use ($model, $prompt, $lab) {
+            $response = BlogPostGeneratorAgent::make()->prompt(
+                $prompt,
+                provider: $lab,
+                model: $model->model_key,
+                timeout: 500
+            );
+
+            return (string) $response;
+        });
     }
 
     /**

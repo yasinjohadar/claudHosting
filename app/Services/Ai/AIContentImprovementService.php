@@ -2,14 +2,19 @@
 
 namespace App\Services\Ai;
 
+use App\Ai\Agents\ContentImprovementAgent;
 use App\Models\AIModel;
 use Illuminate\Support\Facades\Log;
+use Laravel\Ai\Enums\Lab;
 
 class AIContentImprovementService
 {
     public function __construct(
         private AIModelService $modelService,
-        private AIPromptService $promptService
+        private AIPromptService $promptService,
+        private AIModelResolver $resolver,
+        private LaravelAiConfigurator $configurator,
+        private LegacyProviderGateway $legacyGateway,
     ) {}
 
     /**
@@ -29,9 +34,7 @@ class AIContentImprovementService
 
         try {
             $prompt = $this->promptService->getContentImprovementPrompt($content, $type);
-            
-            $provider = AIProviderFactory::create($model);
-            $response = $provider->generateText($prompt, [
+            $response = $this->promptModel($model, $prompt, [
                 'max_tokens' => $model->max_tokens,
                 'temperature' => 0.4,
             ]);
@@ -64,9 +67,7 @@ class AIContentImprovementService
 
         try {
             $prompt = $this->promptService->getGrammarCheckPrompt($text);
-            
-            $provider = AIProviderFactory::create($model);
-            $response = $provider->generateText($prompt, [
+            $response = $this->promptModel($model, $prompt, [
                 'max_tokens' => $model->max_tokens,
                 'temperature' => 0.2,
             ]);
@@ -109,9 +110,7 @@ class AIContentImprovementService
 
         try {
             $prompt = $this->promptService->getClarityEnhancementPrompt($text);
-            
-            $provider = AIProviderFactory::create($model);
-            return $provider->generateText($prompt, [
+            return $this->promptModel($model, $prompt, [
                 'max_tokens' => $model->max_tokens,
                 'temperature' => 0.4,
             ]);
@@ -136,9 +135,7 @@ class AIContentImprovementService
 
         try {
             $prompt = $this->promptService->getImprovementSuggestionsPrompt($content);
-            
-            $provider = AIProviderFactory::create($model);
-            $response = $provider->generateText($prompt, [
+            $response = $this->promptModel($model, $prompt, [
                 'max_tokens' => $model->max_tokens,
                 'temperature' => 0.5,
             ]);
@@ -172,6 +169,29 @@ class AIContentImprovementService
         }
 
         return $suggestions;
+    }
+
+    protected function promptModel(AIModel $model, string $prompt, array $options = []): string
+    {
+        if ($this->resolver->isLegacy($model)) {
+            return $this->legacyGateway->prompt($model, $prompt, $options);
+        }
+
+        $lab = $this->resolver->resolveLab($model);
+        if (! $lab instanceof Lab) {
+            throw new \RuntimeException("Unsupported AI provider: {$model->provider}");
+        }
+
+        return $this->configurator->using($model, function () use ($model, $prompt, $lab) {
+            $response = ContentImprovementAgent::make()->prompt(
+                $prompt,
+                provider: $lab,
+                model: $model->model_key,
+                timeout: 180
+            );
+
+            return (string) $response;
+        });
     }
 }
 

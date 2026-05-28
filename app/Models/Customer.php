@@ -71,7 +71,12 @@ class Customer extends Model
      */
     public function tickets()
     {
-        return $this->hasMany(Ticket::class, 'whmcs_client_id', 'whmcs_id');
+        return $this->hasMany(Ticket::class, 'customer_id');
+    }
+
+    public function customerServices()
+    {
+        return $this->hasMany(CustomerService::class);
     }
 
     /**

@@ -1,140 +1,170 @@
 @extends('admin.layouts.master')
 
-@section('title', 'تعديل التذكرة: ' . $ticket->title)
+@section('page-title')
+تعديل التذكرة
+@stop
 
 @section('content')
-<div class="container-fluid">
-    <div class="row">
-        <div class="col-md-8">
-            <div class="card">
-                <div class="card-header">
-                    <h3 class="card-title">تعديل التذكرة: {{ $ticket->title }}</h3>
-                    <div class="card-tools">
-                        <a href="{{ route('admin.tickets.show', $ticket->id) }}" class="btn btn-info btn-sm">
-                            <i class="fas fa-eye"></i> عرض
-                        </a>
-                        <a href="{{ route('admin.tickets.index') }}" class="btn btn-default btn-sm">
-                            <i class="fas fa-arrow-left"></i> العودة
-                        </a>
-                    </div>
-                </div>
-                <form action="{{ route('admin.tickets.update', $ticket->id) }}" method="POST">
-                    @csrf
-                    @method('PUT')
-                    <div class="card-body">
-                        <div class="form-group">
-                            <label for="userid">العميل <span class="text-danger">*</span></label>
-                            <select class="form-control @error('userid') is-invalid @enderror" id="userid" name="userid" required>
-                                <option value="">-- اختر العميل --</option>
-                                @foreach ($customers as $customer)
-                                    <option value="{{ $customer->id }}" {{ old('userid', $ticket->userid) == $customer->id ? 'selected' : '' }}>
-                                        {{ $customer->firstname }} {{ $customer->lastname }} ({{ $customer->email }})
-                                    </option>
-                                @endforeach
-                            </select>
-                            @error('userid')
-                                <span class="invalid-feedback" role="alert">{{ $message }}</span>
-                            @enderror
+<div class="main-content app-content">
+    <div class="container-fluid">
+
+        <div class="d-md-flex d-block align-items-center justify-content-between my-4 page-header-breadcrumb">
+            <div>
+                <h4 class="mb-0">تعديل التذكرة</h4>
+                <p class="mb-0 text-muted">{{ $ticket->subject }} — {{ $ticket->tid }}</p>
+                <nav class="mt-1">
+                    <ol class="breadcrumb mb-0">
+                        <li class="breadcrumb-item"><a href="{{ route('admin.dashboard') }}">الرئيسية</a></li>
+                        <li class="breadcrumb-item"><a href="{{ route('admin.tickets.index') }}">التذاكر</a></li>
+                        <li class="breadcrumb-item active" aria-current="page">تعديل</li>
+                    </ol>
+                </nav>
+            </div>
+            <div class="ms-auto pageheader-btn d-flex flex-wrap gap-2">
+                <a href="{{ route('admin.tickets.show', $ticket->id) }}" class="btn btn-info-light">
+                    <i class="fe fe-eye"></i> عرض
+                </a>
+                <a href="{{ route('admin.tickets.index') }}" class="btn btn-light">
+                    <i class="fe fe-arrow-right"></i> القائمة
+                </a>
+            </div>
+        </div>
+
+        @if($errors->any())
+            <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                <ul class="mb-0">
+                    @foreach($errors->all() as $error)
+                        <li>{{ $error }}</li>
+                    @endforeach
+                </ul>
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+        @endif
+
+        <form action="{{ route('admin.tickets.update', $ticket->id) }}" method="POST">
+            @csrf
+            @method('PUT')
+            <div class="row g-4">
+                <div class="col-xl-8">
+                    <div class="card custom-card">
+                        <div class="card-header">
+                            <div class="card-title">بيانات التذكرة</div>
                         </div>
-                        
-                        <div class="row">
-                            <div class="col-md-6">
-                                <div class="form-group">
-                                    <label for="deptid">القسم <span class="text-danger">*</span></label>
-                                    <select class="form-control @error('deptid') is-invalid @enderror" id="deptid" name="deptid" required>
-                                        <option value="">-- اختر القسم --</option>
-                                        <option value="1" {{ old('deptid', $ticket->deptid) == '1' ? 'selected' : '' }}>المبيعات</option>
-                                        <option value="2" {{ old('deptid', $ticket->deptid) == '2' ? 'selected' : '' }}>الدعم الفني</option>
-                                        <option value="3" {{ old('deptid', $ticket->deptid) == '3' ? 'selected' : '' }}>الفوترة</option>
-                                        <option value="4" {{ old('deptid', $ticket->deptid) == '4' ? 'selected' : '' }}>آخر</option>
+                        <div class="card-body">
+                            <div class="row g-3">
+                                <div class="col-md-6">
+                                    <label for="deptid" class="form-label">القسم <span class="text-danger">*</span></label>
+                                    <select class="form-select @error('deptid') is-invalid @enderror" id="deptid" name="deptid" required>
+                                        <option value="1" data-department="المبيعات" @selected(old('deptid', $ticket->deptid) == 1)>المبيعات</option>
+                                        <option value="2" data-department="الدعم الفني" @selected(old('deptid', $ticket->deptid) == 2)>الدعم الفني</option>
+                                        <option value="3" data-department="الفوترة" @selected(old('deptid', $ticket->deptid) == 3)>الفوترة</option>
+                                        <option value="4" data-department="أخرى" @selected(old('deptid', $ticket->deptid) == 4)>أخرى</option>
                                     </select>
+                                    <input type="hidden" name="department" id="department" value="{{ old('department', $ticket->department) }}">
                                     @error('deptid')
-                                        <span class="invalid-feedback" role="alert">{{ $message }}</span>
+                                        <div class="invalid-feedback">{{ $message }}</div>
                                     @enderror
                                 </div>
-                            </div>
-                            <div class="col-md-6">
-                                <div class="form-group">
-                                    <label for="priority">الأولوية <span class="text-danger">*</span></label>
-                                    <select class="form-control @error('priority') is-invalid @enderror" id="priority" name="priority" required>
-                                        <option value="">-- اختر الأولوية --</option>
-                                        <option value="Low" {{ old('priority', $ticket->urgency) == 'Low' ? 'selected' : '' }}>منخفضة</option>
-                                        <option value="Medium" {{ old('priority', $ticket->urgency) == 'Medium' ? 'selected' : '' }}>متوسطة</option>
-                                        <option value="High" {{ old('priority', $ticket->urgency) == 'High' ? 'selected' : '' }}>عالية</option>
+
+                                <div class="col-md-6">
+                                    <label for="status" class="form-label">الحالة <span class="text-danger">*</span></label>
+                                    <select class="form-select @error('status') is-invalid @enderror" id="status" name="status" required>
+                                        @foreach (['Open' => 'مفتوحة', 'Answered' => 'تم الرد', 'Customer-Reply' => 'رد العميل', 'In Progress' => 'قيد المعالجة', 'Closed' => 'مغلقة'] as $val => $label)
+                                            <option value="{{ $val }}" @selected(old('status', $ticket->status) === $val)>{{ $label }}</option>
+                                        @endforeach
+                                    </select>
+                                    @error('status')
+                                        <div class="invalid-feedback">{{ $message }}</div>
+                                    @enderror
+                                </div>
+
+                                <div class="col-md-6">
+                                    <label for="priority" class="form-label">الأولوية <span class="text-danger">*</span></label>
+                                    <select class="form-select @error('priority') is-invalid @enderror" id="priority" name="priority" required>
+                                        @foreach (['Low', 'Medium', 'High', 'Urgent'] as $p)
+                                            <option value="{{ $p }}" @selected(old('priority', $ticket->priority) === $p)>{{ $p }}</option>
+                                        @endforeach
                                     </select>
                                     @error('priority')
-                                        <span class="invalid-feedback" role="alert">{{ $message }}</span>
+                                        <div class="invalid-feedback">{{ $message }}</div>
+                                    @enderror
+                                </div>
+
+                                <div class="col-md-6">
+                                    <label for="urgency" class="form-label">الاستعجال <span class="text-danger">*</span></label>
+                                    <select class="form-select @error('urgency') is-invalid @enderror" id="urgency" name="urgency" required>
+                                        @foreach (['Low', 'Medium', 'High', 'Urgent'] as $u)
+                                            <option value="{{ $u }}" @selected(old('urgency', $ticket->urgency ?? $ticket->priority) === $u)>{{ $u }}</option>
+                                        @endforeach
+                                    </select>
+                                    @error('urgency')
+                                        <div class="invalid-feedback">{{ $message }}</div>
+                                    @enderror
+                                </div>
+
+                                <div class="col-12">
+                                    <label for="subject" class="form-label">الموضوع <span class="text-danger">*</span></label>
+                                    <input type="text" class="form-control @error('subject') is-invalid @enderror" id="subject" name="subject"
+                                           value="{{ old('subject', $ticket->subject) }}" required maxlength="255">
+                                    @error('subject')
+                                        <div class="invalid-feedback">{{ $message }}</div>
                                     @enderror
                                 </div>
                             </div>
                         </div>
-                        
-                        <div class="form-group">
-                            <label for="subject">الموضوع <span class="text-danger">*</span></label>
-                            <input type="text" class="form-control @error('subject') is-invalid @enderror" id="subject" name="subject" value="{{ old('subject', $ticket->title) }}" required>
-                            @error('subject')
-                                <span class="invalid-feedback" role="alert">{{ $message }}</span>
-                            @enderror
+                        <div class="card-footer d-flex flex-wrap gap-2">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fe fe-save"></i> حفظ التعديلات
+                            </button>
+                            <a href="{{ route('admin.tickets.show', $ticket->id) }}" class="btn btn-light">إلغاء</a>
                         </div>
                     </div>
-                    <div class="card-footer">
-                        <button type="submit" class="btn btn-primary">تحديث التذكرة</button>
-                        <a href="{{ route('admin.tickets.show', $ticket->id) }}" class="btn btn-default">إلغاء</a>
+                </div>
+
+                <div class="col-xl-4">
+                    <div class="card custom-card">
+                        <div class="card-header">
+                            <div class="card-title">معلومات التذكرة</div>
+                        </div>
+                        <div class="card-body">
+                            <p class="mb-2"><strong>رقم التذكرة:</strong> {{ $ticket->tid }}</p>
+                            <p class="mb-2"><strong>العميل:</strong>
+                                @if($ticket->customer)
+                                    {{ $ticket->customer->fullname }}
+                                @else
+                                    {{ $ticket->name }}
+                                @endif
+                            </p>
+                            <p class="mb-2"><strong>تاريخ الإنشاء:</strong> {{ $ticket->date?->format('Y-m-d H:i') ?? '—' }}</p>
+                            <p class="mb-0"><strong>رقم النظام:</strong> #{{ $ticket->id }}</p>
+                        </div>
                     </div>
-                </form>
-            </div>
-        </div>
-        
-        <div class="col-md-4">
-            <div class="card card-info">
-                <div class="card-header">
-                    <h3 class="card-title">معلومات التذكرة</h3>
-                </div>
-                <div class="card-body">
-                    <p><strong>رقم التذكرة:</strong> {{ $ticket->tid }}</p>
-                    <p><strong>الحالة:</strong>
-                        @if ($ticket->status == 'Open')
-                            <span class="badge badge-success">مفتوحة</span>
-                        @elseif ($ticket->status == 'Answered')
-                            <span class="badge badge-info">تم الرد عليها</span>
-                        @elseif ($ticket->status == 'Customer-Reply')
-                            <span class="badge badge-primary">رد العميل</span>
-                        @elseif ($ticket->status == 'Closed')
-                            <span class="badge badge-secondary">مغلقة</span>
-                        @else
-                            <span class="badge badge-info">{{ $ticket->status }}</span>
-                        @endif
-                    </p>
-                    <p><strong>تاريخ الإنشاء:</strong> {{ $ticket->date }}</p>
-                    <p><strong>آخر تحديث:</strong> {{ $ticket->lastreply }}</p>
-                    <p><strong>معرف WHMCS:</strong> {{ $ticket->whmcs_id }}</p>
-                </div>
-            </div>
-            
-            <div class="card card-warning">
-                <div class="card-header">
-                    <h3 class="card-title">ملاحظات</h3>
-                </div>
-                <div class="card-body">
-                    <p>سيتم تحديث بيانات التذكرة في نظام WHMCS وفي قاعدة البيانات المحلية.</p>
-                    <div class="alert alert-warning">
-                        <h5><i class="icon fas fa-exclamation-triangle"></i> تحذير</h5>
-                        الحقول المطلوبة يجب ملؤها قبل تحديث التذكرة.
+
+                    <div class="card custom-card">
+                        <div class="card-header">
+                            <div class="card-title">نص التذكرة الأصلي</div>
+                        </div>
+                        <div class="card-body">
+                            <div class="bg-light rounded p-3 small" style="max-height: 200px; overflow-y: auto;">
+                                {!! nl2br(e($ticket->message)) !!}
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
-            
-            <div class="card card-primary">
-                <div class="card-header">
-                    <h3 class="card-title">محتوى التذكرة</h3>
-                </div>
-                <div class="card-body">
-                    <div class="bg-light p-3 rounded">
-                        <p>{{ $ticket->message }}</p>
-                    </div>
-                </div>
-            </div>
-        </div>
+        </form>
     </div>
 </div>
+@endsection
+
+@section('scripts')
+<script>
+document.getElementById('deptid')?.addEventListener('change', function () {
+    var opt = this.options[this.selectedIndex];
+    var input = document.getElementById('department');
+    if (input && opt?.dataset.department) {
+        input.value = opt.dataset.department;
+    }
+});
+</script>
 @endsection

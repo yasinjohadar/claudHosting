@@ -355,6 +355,20 @@
                                         </div>
 
                                         <div class="col-md-12 mb-3">
+                                            <div class="form-check form-switch">
+                                                <input class="form-check-input" type="checkbox"
+                                                       name="send_payment_notifications"
+                                                       id="send_payment_notifications"
+                                                       value="1"
+                                                       {{ ($settings['send_payment_notifications'] ?? true) ? 'checked' : '' }}>
+                                                <label class="form-check-label" for="send_payment_notifications">
+                                                    <strong>إرسال إشعار واتساب عند تسجيل دفعة عميل</strong>
+                                                </label>
+                                            </div>
+                                            <small class="text-muted">يؤثر هذا الخيار على إشعارات دفعات العملاء فقط.</small>
+                                        </div>
+
+                                        <div class="col-md-12 mb-3">
                                             <label class="form-label">رسالة الرد التلقائي</label>
                                             <textarea class="form-control" 
                                                       name="auto_reply_message" 

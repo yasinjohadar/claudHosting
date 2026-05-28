@@ -12,16 +12,15 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
+use App\Services\BlogPostSeoService;
 use App\Services\Storage\StorageHelperService;
 
 class BlogPostController extends Controller
 {
-    protected StorageHelperService $storageHelper;
-
-    public function __construct(StorageHelperService $storageHelper)
-    {
-        $this->storageHelper = $storageHelper;
-    }
+    public function __construct(
+        protected StorageHelperService $storageHelper,
+        protected BlogPostSeoService $blogSeo
+    ) {}
     /**
      * Display a listing of blog posts.
      */
@@ -77,7 +76,7 @@ class BlogPostController extends Controller
      */
     public function store(Request $request)
     {
-        $validated = $request->validate([
+        $validated = $request->validate(array_merge([
             'title' => 'required|string|max:255',
             'slug' => ['required', 'string', 'max:255', 'regex:/^[\p{Arabic}a-zA-Z0-9\s-]+$/u', 'unique:blog_posts,slug'],
             'excerpt' => 'nullable|string',
@@ -87,26 +86,12 @@ class BlogPostController extends Controller
             'featured_image' => 'nullable|image|max:2048',
             'featured_image_alt' => 'nullable|string|max:255',
             'published_at' => 'nullable|date',
-
-            // SEO Fields
-            'meta_title' => 'nullable|string|max:255',
-            'meta_description' => 'nullable|string',
-            'meta_keywords' => 'nullable|string',
-            'focus_keyword' => 'nullable|string|max:255',
-
-            // Schema.org
-            'schema_type' => 'nullable|string|max:50',
-
-            // Flags
             'is_featured' => 'boolean',
-            'allow_comments' => 'boolean',
             'is_indexable' => 'boolean',
             'is_followable' => 'boolean',
-
-            // Tags
             'tags' => 'nullable|array',
             'tags.*' => 'exists:blog_tags,id',
-        ]);
+        ], $this->blogSeo->seoValidationRules()));
 
         DB::beginTransaction();
 
@@ -158,15 +143,7 @@ class BlogPostController extends Controller
                 }
             }
 
-            // Set default schema type
-            if (!isset($validated['schema_type'])) {
-                $validated['schema_type'] = 'Article';
-            }
-
-            // Set is_indexable to true by default if not set
-            if (!isset($validated['is_indexable'])) {
-                $validated['is_indexable'] = true;
-            }
+            $validated = $this->prepareSeoPayload($request, $validated);
 
             // Extract tags before creating post
             $tags = $validated['tags'] ?? [];
@@ -256,7 +233,7 @@ class BlogPostController extends Controller
         ]);
 
         // Validate the request
-        $validated = $request->validate([
+        $validated = $request->validate(array_merge([
             'title' => 'required|string|max:255',
             'slug' => ['required', 'string', 'max:255', 'regex:/^[\p{Arabic}a-zA-Z0-9\s-]+$/u', 'unique:blog_posts,slug,' . $post->id],
             'excerpt' => 'nullable|string',
@@ -266,26 +243,12 @@ class BlogPostController extends Controller
             'featured_image' => 'nullable|image|max:2048',
             'featured_image_alt' => 'nullable|string|max:255',
             'published_at' => 'nullable|date',
-
-            // SEO Fields
-            'meta_title' => 'nullable|string|max:255',
-            'meta_description' => 'nullable|string',
-            'meta_keywords' => 'nullable|string',
-            'focus_keyword' => 'nullable|string|max:255',
-
-            // Schema.org
-            'schema_type' => 'nullable|string|max:50',
-
-            // Flags
             'is_featured' => 'boolean',
-            'allow_comments' => 'boolean',
             'is_indexable' => 'boolean',
             'is_followable' => 'boolean',
-
-            // Tags
             'tags' => 'nullable|array',
             'tags.*' => 'exists:blog_tags,id',
-        ]);
+        ], $this->blogSeo->seoValidationRules()));
 
         DB::beginTransaction();
 
@@ -351,10 +314,7 @@ class BlogPostController extends Controller
                 $validated['published_at'] = now();
             }
 
-            // Set is_indexable to true by default if not set
-            if (!isset($validated['is_indexable'])) {
-                $validated['is_indexable'] = true;
-            }
+            $validated = $this->prepareSeoPayload($request, $validated, $post);
 
             // Map category_id to blog_category_id
             if (isset($validated['category_id'])) {
@@ -518,5 +478,34 @@ class BlogPostController extends Controller
         }
 
         return back()->with('error', 'لا توجد صورة لحذفها');
+    }
+
+    /**
+     * @param  array<string, mixed>  $validated
+     * @return array<string, mixed>
+     */
+    protected function prepareSeoPayload(Request $request, array $validated, ?BlogPost $post = null): array
+    {
+        $validated['is_featured'] = $request->boolean('is_featured');
+        $validated['is_indexable'] = $request->boolean('is_indexable', true);
+        $validated['is_followable'] = $request->boolean('is_followable', true);
+
+        foreach (['og_image', 'twitter_image', 'schema_image'] as $imageField) {
+            if ($request->hasFile($imageField)) {
+                if ($post && $post->{$imageField} && $this->storageHelper->fileExists('public', $post->{$imageField})) {
+                    $this->storageHelper->deleteFile('public', $post->{$imageField});
+                }
+                $validated[$imageField] = $this->storageHelper->storeUploadedFile(
+                    'public',
+                    'blog/seo',
+                    $request->file($imageField),
+                    'image'
+                );
+            } else {
+                unset($validated[$imageField]);
+            }
+        }
+
+        return $this->blogSeo->applyDefaultsOnSave($validated, $post);
     }
 }

@@ -7,19 +7,23 @@ use App\Support\GeneratesInvoiceNumbers;
 use App\Models\Customer;
 use App\Models\Invoice;
 use App\Models\InvoiceItem;
-use App\Models\Payment;
+use App\Models\CustomerService;
+use App\Models\OfferedService;
 use App\Models\Product;
+use App\Services\Billing\InvoicePaymentService;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
+use InvalidArgumentException;
 
 class InvoiceController extends Controller
 {
     use GeneratesInvoiceNumbers;
 
-    public function __construct()
-    {
+    public function __construct(
+        protected InvoicePaymentService $paymentService
+    ) {
         $this->middleware('auth');
     }
 
@@ -48,8 +52,14 @@ class InvoiceController extends Controller
     {
         $customers = Customer::orderBy('email')->get();
         $products = Product::orderBy('name')->get();
+        $offeredServices = OfferedService::with('serviceType')->active()->ordered()->get();
+        $customerServices = CustomerService::with(['customer', 'offeredService'])
+            ->whereNull('invoice_id')
+            ->orderByDesc('id')
+            ->limit(50)
+            ->get();
 
-        return view('admin.invoices.create', compact('customers', 'products'));
+        return view('admin.invoices.create', compact('customers', 'products', 'offeredServices', 'customerServices'));
     }
 
     public function store(Request $request)
@@ -110,8 +120,16 @@ class InvoiceController extends Controller
         $invoice = Invoice::with('items')->findOrFail($id);
         $customers = Customer::orderBy('email')->get();
         $products = Product::orderBy('name')->get();
+        $offeredServices = OfferedService::with('serviceType')->ordered()->get();
+        $customerServices = CustomerService::with(['customer', 'offeredService'])
+            ->where(function ($q) use ($invoice) {
+                $q->whereNull('invoice_id')->orWhere('invoice_id', $invoice->id);
+            })
+            ->orderByDesc('id')
+            ->limit(50)
+            ->get();
 
-        return view('admin.invoices.edit', compact('invoice', 'customers', 'products'));
+        return view('admin.invoices.edit', compact('invoice', 'customers', 'products', 'offeredServices', 'customerServices'));
     }
 
     public function update(Request $request, $id)
@@ -194,39 +212,14 @@ class InvoiceController extends Controller
                 ->with('info', 'الفاتورة مدفوعة مسبقاً.');
         }
 
-        DB::beginTransaction();
-
         try {
-            $balance = $invoice->balance;
-
-            if ($balance > 0) {
-                Payment::create([
-                    'invoice_id' => $invoice->id,
-                    'whmcs_invoice_id' => $invoice->whmcs_id,
-                    'whmcs_client_id' => $invoice->whmcs_client_id,
-                    'date' => Carbon::now(),
-                    'amount' => $balance,
-                    'fees' => 0,
-                    'paymentmethod' => $invoice->paymentmethod ?? 'manual',
-                    'transid' => 'MANUAL-' . $invoice->id . '-' . time(),
-                    'status' => 'Completed',
-                ]);
-            }
-
-            $invoice->update([
-                'status' => 'Paid',
-                'datepaid' => Carbon::now(),
-            ]);
-
-            DB::commit();
+            $this->paymentService->markInvoiceFullyPaid($invoice, auth()->user());
 
             return redirect()->route('admin.invoices.index')
                 ->with('success', 'تم تحديث حالة الفاتورة إلى مدفوعة بنجاح');
         } catch (\Exception $e) {
-            DB::rollBack();
-
             return redirect()->back()
-                ->with('error', 'حدث خطأ أثناء تحديث حالة الفاتورة: ' . $e->getMessage());
+                ->with('error', 'حدث خطأ أثناء تحديث حالة الفاتورة: '.$e->getMessage());
         }
     }
 
@@ -245,42 +238,22 @@ class InvoiceController extends Controller
             return redirect()->back()->withErrors($validator)->withInput();
         }
 
-        $amount = (float) $request->amount;
-        $balance = $invoice->balance;
-
-        if ($amount > $balance) {
-            return redirect()->back()->with('error', 'المبلغ أكبر من المتبقي للفاتورة.');
-        }
-
-        DB::beginTransaction();
-
         try {
-            $transId = $request->transid ?: 'PAY-' . $invoice->id . '-' . time();
-
-            Payment::create([
-                'invoice_id' => $invoice->id,
-                'whmcs_invoice_id' => $invoice->whmcs_id,
-                'whmcs_client_id' => $invoice->whmcs_client_id,
-                'date' => Carbon::now(),
-                'amount' => $amount,
-                'fees' => 0,
+            $this->paymentService->applyPayment($invoice, [
+                'amount' => (float) $request->amount,
                 'paymentmethod' => $request->paymentmethod,
-                'transid' => $transId,
-                'status' => 'Completed',
+                'transid' => $request->transid,
+                'notes' => $request->notes,
+                'recorded_by_user_id' => auth()->id(),
+                'initiated_by' => InvoicePaymentService::INITIATED_ADMIN,
             ]);
-
-            if ($balance - $amount <= 0) {
-                $invoice->update(['status' => 'Paid', 'datepaid' => Carbon::now()]);
-            }
-
-            DB::commit();
 
             return redirect()->route('admin.invoices.show', $id)
                 ->with('success', 'تم تسجيل الدفعة بنجاح.');
+        } catch (InvalidArgumentException $e) {
+            return redirect()->back()->with('error', $e->getMessage());
         } catch (\Exception $e) {
-            DB::rollBack();
-
-            return redirect()->back()->with('error', 'حدث خطأ: ' . $e->getMessage());
+            return redirect()->back()->with('error', 'حدث خطأ: '.$e->getMessage());
         }
     }
 
@@ -294,6 +267,8 @@ class InvoiceController extends Controller
             'items' => 'required|array|min:1',
             'items.*.description' => 'required|string|max:255',
             'items.*.amount' => 'required|numeric|min:0',
+            'items.*.offered_service_id' => 'nullable|exists:offered_services,id',
+            'items.*.customer_service_id' => 'nullable|exists:customer_services,id',
             'tax' => 'nullable|numeric|min:0',
             'notes' => 'nullable|string|max:1000',
         ]);
@@ -315,12 +290,24 @@ class InvoiceController extends Controller
     private function syncInvoiceItems(Invoice $invoice, array $items): void
     {
         foreach ($items as $item) {
+            $offeredServiceId = ! empty($item['offered_service_id']) ? (int) $item['offered_service_id'] : null;
+            $customerServiceId = ! empty($item['customer_service_id']) ? (int) $item['customer_service_id'] : null;
+
             InvoiceItem::create([
                 'invoice_id' => $invoice->id,
+                'offered_service_id' => $offeredServiceId,
+                'customer_service_id' => $customerServiceId,
                 'description' => $item['description'],
                 'amount' => $item['amount'],
-                'taxed' => !empty($item['taxed']),
+                'taxed' => ! empty($item['taxed']),
             ]);
+
+            if ($customerServiceId) {
+                CustomerService::where('id', $customerServiceId)->update([
+                    'invoice_id' => $invoice->id,
+                    'amount_due' => $item['amount'],
+                ]);
+            }
         }
     }
 

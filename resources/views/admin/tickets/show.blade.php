@@ -1,244 +1,205 @@
 @extends('admin.layouts.master')
 
-@section('title', 'تفاصيل التذكرة: ' . $ticket->title)
+@section('page-title')
+تفاصيل التذكرة
+@stop
 
 @section('content')
-<div class="container-fluid">
-    <div class="row">
-        <div class="col-md-3">
-            <!-- معلومات التذكرة الأساسية -->
-            <div class="card card-primary">
-                <div class="card-header">
-                    <h3 class="card-title">معلومات التذكرة</h3>
-                </div>
-                <div class="card-body">
-                    <p><strong>رقم التذكرة:</strong> {{ $ticket->tid }}</p>
-                    <p><strong>الموضوع:</strong> {{ $ticket->title }}</p>
-                    <p><strong>القسم:</strong> {{ $ticket->department }}</p>
-                    <p><strong>الأولوية:</strong>
-                        @if ($ticket->urgency == 'High')
-                            <span class="badge badge-danger">عالية</span>
-                        @elseif ($ticket->urgency == 'Medium')
-                            <span class="badge badge-warning">متوسطة</span>
-                        @else
-                            <span class="badge badge-info">منخفضة</span>
-                        @endif
-                    </p>
-                    <p><strong>الحالة:</strong>
-                        @if ($ticket->status == 'Open')
-                            <span class="badge badge-success">مفتوحة</span>
-                        @elseif ($ticket->status == 'Answered')
-                            <span class="badge badge-info">تم الرد عليها</span>
-                        @elseif ($ticket->status == 'Customer-Reply')
-                            <span class="badge badge-primary">رد العميل</span>
-                        @elseif ($ticket->status == 'Closed')
-                            <span class="badge badge-secondary">مغلقة</span>
-                        @else
-                            <span class="badge badge-info">{{ $ticket->status }}</span>
-                        @endif
-                    </p>
-                    <p><strong>تاريخ الإنشاء:</strong> {{ $ticket->date }}</p>
-                    <p><strong>آخر تحديث:</strong> {{ $ticket->lastreply }}</p>
-                    <p><strong>معرف WHMCS:</strong> {{ $ticket->whmcs_id }}</p>
-                </div>
+<div class="main-content app-content">
+    <div class="container-fluid">
+
+        <div class="d-md-flex d-block align-items-center justify-content-between my-4 page-header-breadcrumb">
+            <div>
+                <h4 class="mb-0">{{ $ticket->subject }}</h4>
+                <p class="mb-0 text-muted">رقم التذكرة: {{ $ticket->tid }}</p>
+                <nav class="mt-1">
+                    <ol class="breadcrumb mb-0">
+                        <li class="breadcrumb-item"><a href="{{ route('admin.dashboard') }}">الرئيسية</a></li>
+                        <li class="breadcrumb-item"><a href="{{ route('admin.tickets.index') }}">التذاكر</a></li>
+                        <li class="breadcrumb-item active" aria-current="page">تفاصيل</li>
+                    </ol>
+                </nav>
+            </div>
+            <div class="ms-auto pageheader-btn d-flex flex-wrap gap-2">
+                <a href="{{ route('admin.tickets.edit', $ticket->id) }}" class="btn btn-warning">
+                    <i class="fe fe-edit"></i> تعديل
+                </a>
+                @if ($ticket->status !== 'Closed')
+                    <form action="{{ route('admin.tickets.close', $ticket->id) }}" method="POST" class="d-inline" onsubmit="return confirm('إغلاق هذه التذكرة؟');">
+                        @csrf
+                        <button type="submit" class="btn btn-danger">
+                            <i class="fe fe-x"></i> إغلاق
+                        </button>
+                    </form>
+                @else
+                    <form action="{{ route('admin.tickets.reopen', $ticket->id) }}" method="POST" class="d-inline">
+                        @csrf
+                        <button type="submit" class="btn btn-success">
+                            <i class="fe fe-refresh-cw"></i> إعادة فتح
+                        </button>
+                    </form>
+                @endif
+                <a href="{{ route('admin.tickets.index') }}" class="btn btn-light">
+                    <i class="fe fe-arrow-right"></i> القائمة
+                </a>
             </div>
         </div>
-        
-        <div class="col-md-9">
-            <!-- أزرار التحكم -->
-            <div class="card">
-                <div class="card-header">
-                    <h3 class="card-title">التحكم بالتذكرة</h3>
-                    <div class="card-tools">
-                        <a href="{{ route('admin.tickets.edit', $ticket->id) }}" class="btn btn-warning btn-sm">
-                            <i class="fas fa-edit"></i> تعديل
+
+        @if(session('success'))
+            <div class="alert alert-success alert-dismissible fade show" role="alert">
+                {{ session('success') }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+        @endif
+        @if(session('error'))
+            <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                {{ session('error') }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+        @endif
+
+        <div class="row g-4">
+            <div class="col-xl-4">
+                <div class="card custom-card">
+                    <div class="card-header">
+                        <div class="card-title">معلومات التذكرة</div>
+                    </div>
+                    <div class="card-body">
+                        <p class="mb-2"><strong>القسم:</strong> {{ $ticket->department ?? $ticket->department_name }}</p>
+                        <p class="mb-2"><strong>الأولوية:</strong>
+                            <span class="badge bg-{{ $ticket->priority_color }}-transparent">{{ $ticket->priority_name }}</span>
+                        </p>
+                        <p class="mb-2"><strong>الحالة:</strong>
+                            <span class="badge bg-{{ $ticket->status_color }}-transparent">{{ $ticket->status_name }}</span>
+                        </p>
+                        <p class="mb-2"><strong>تاريخ الإنشاء:</strong> {{ $ticket->date?->format('Y-m-d H:i') ?? '—' }}</p>
+                        <p class="mb-0"><strong>آخر رد:</strong> {{ $ticket->lastreply?->format('Y-m-d H:i') ?? '—' }}</p>
+                    </div>
+                </div>
+
+                @if($ticket->customer)
+                <div class="card custom-card">
+                    <div class="card-header">
+                        <div class="card-title">العميل</div>
+                    </div>
+                    <div class="card-body">
+                        <p class="mb-2"><strong>الاسم:</strong> {{ $ticket->customer->fullname }}</p>
+                        <p class="mb-2"><strong>البريد:</strong> {{ $ticket->customer->email }}</p>
+                        <p class="mb-3"><strong>الهاتف:</strong> {{ $ticket->customer->phonenumber ?? '—' }}</p>
+                        <a href="{{ route('admin.customers.show', $ticket->customer->id) }}" class="btn btn-sm btn-info-light w-100">
+                            <i class="fe fe-user"></i> ملف العميل
                         </a>
-                        @if ($ticket->status != 'Closed')
-                            <form action="{{ route('admin.tickets.close', $ticket->id) }}" method="POST" style="display: inline-block;">
-                                @csrf
-                                <button type="submit" class="btn btn-danger btn-sm" onclick="return confirm('هل أنت متأكد من رغبتك في إغلاق هذه التذكرة؟')">
-                                    <i class="fas fa-times"></i> إغلاق
+                    </div>
+                </div>
+                @endif
+            </div>
+
+            <div class="col-xl-8">
+                <div class="card custom-card">
+                    <div class="card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
+                        <div class="card-title mb-0">محتوى التذكرة</div>
+                        @if ($ticket->status !== 'Closed')
+                            <div class="d-flex gap-2">
+                                <button type="button" class="btn btn-sm btn-primary" data-bs-toggle="modal" data-bs-target="#addReplyModal">
+                                    <i class="fe fe-message-square"></i> إضافة رد
                                 </button>
-                            </form>
-                        @else
-                            <form action="{{ route('admin.tickets.reopen', $ticket->id) }}" method="POST" style="display: inline-block;">
-                                @csrf
-                                <button type="submit" class="btn btn-success btn-sm">
-                                    <i class="fas fa-check"></i> إعادة فتح
+                                <button type="button" class="btn btn-sm btn-secondary" data-bs-toggle="modal" data-bs-target="#addNoteModal">
+                                    <i class="fe fe-file-text"></i> ملاحظة داخلية
                                 </button>
-                            </form>
+                            </div>
                         @endif
-                        <form action="{{ route('admin.tickets.sync', $ticket->id) }}" method="POST" style="display: inline-block;">
-                            @csrf
-                            <button type="submit" class="btn btn-primary btn-sm">
-                                <i class="fas fa-sync"></i> مزامنة من WHMCS
-                            </button>
-                        </form>
-                        <a href="{{ route('admin.tickets.index') }}" class="btn btn-default btn-sm">
-                            <i class="fas fa-arrow-left"></i> العودة
-                        </a>
                     </div>
-                </div>
-            </div>
-            
-            <!-- معلومات العميل -->
-            <div class="card">
-                <div class="card-header">
-                    <h3 class="card-title">معلومات العميل</h3>
-                </div>
-                <div class="card-body">
-                    <p><strong>الاسم:</strong> {{ $ticket->customer->firstname }} {{ $ticket->customer->lastname }}</p>
-                    <p><strong>البريد الإلكتروني:</strong> {{ $ticket->customer->email }}</p>
-                    <p><strong>الشركة:</strong> {{ $ticket->customer->companyname ?? '-' }}</p>
-                    <p><strong>رقم الهاتف:</strong> {{ $ticket->customer->phonenumber ?? '-' }}</p>
-                    <div class="btn-group mt-2">
-                        <a href="{{ route('admin.customers.show', $ticket->customer->id) }}" class="btn btn-info btn-sm">
-                            <i class="fas fa-user"></i> عرض العميل
-                        </a>
-                    </div>
-                </div>
-            </div>
-            
-            <!-- محتوى التذكرة -->
-            <div class="card">
-                <div class="card-header">
-                    <h3 class="card-title">محتوى التذكرة</h3>
-                </div>
-                <div class="card-body">
-                    <div class="bg-light p-3 rounded">
-                        <p>{{ $ticket->message }}</p>
-                    </div>
-                </div>
-            </div>
-            
-            <!-- الردود -->
-            <div class="card">
-                <div class="card-header">
-                    <h3 class="card-title">الردود</h3>
-                    @if ($ticket->status != 'Closed')
-                        <div class="card-tools">
-                            <button type="button" class="btn btn-primary btn-sm" data-toggle="modal" data-target="#addReplyModal">
-                                <i class="fas fa-reply"></i> إضافة رد
-                            </button>
-                            <button type="button" class="btn btn-info btn-sm" data-toggle="modal" data-target="#addNoteModal">
-                                <i class="fas fa-sticky-note"></i> إضافة ملاحظة
-                            </button>
+                    <div class="card-body">
+                        <div class="bg-light rounded p-3 mb-4">
+                            {!! nl2br(e($ticket->message)) !!}
                         </div>
-                    @endif
-                </div>
-                <div class="card-body">
-                    @forelse ($ticket->replies as $reply)
-                        <div class="card mb-3">
-                            <div class="card-header">
-                                <div class="d-flex justify-content-between">
+
+                        <h6 class="fw-semibold mb-3">الردود ({{ $ticket->replies->count() }})</h6>
+                        @forelse ($ticket->replies as $reply)
+                            <div class="border rounded p-3 mb-3">
+                                <div class="d-flex justify-content-between align-items-start mb-2">
                                     <div>
                                         <strong>{{ $reply->name }}</strong>
                                         @if ($reply->admin)
-                                            <span class="badge badge-primary">مدير</span>
+                                            <span class="badge bg-primary-transparent ms-1">فريق الدعم</span>
                                         @else
-                                            <span class="badge badge-info">عميل</span>
+                                            <span class="badge bg-info-transparent ms-1">عميل</span>
                                         @endif
                                     </div>
-                                    <small>{{ $reply->date }}</small>
+                                    <small class="text-muted">{{ $reply->date?->format('Y-m-d H:i') }}</small>
                                 </div>
+                                <div class="text-muted">{!! nl2br(e($reply->message)) !!}</div>
                             </div>
-                            <div class="card-body">
-                                <p>{{ $reply->message }}</p>
-                            </div>
-                        </div>
-                    @empty
-                        <p>لا توجد ردود على هذه التذكرة.</p>
-                    @endforelse
-                </div>
-            </div>
-            
-            <!-- الملاحظات -->
-            <div class="card">
-                <div class="card-header">
-                    <h3 class="card-title">الملاحظات</h3>
-                </div>
-                <div class="card-body">
-                    @forelse ($ticket->notes as $note)
-                        <div class="card mb-3">
-                            <div class="card-header">
-                                <div class="d-flex justify-content-between">
-                                    <div>
-                                        <strong>{{ $note->admin->name }}</strong>
-                                        <span class="badge badge-primary">مدير</span>
+                        @empty
+                            <p class="text-muted mb-0">لا توجد ردود بعد.</p>
+                        @endforelse
+
+                        @if($ticket->notes->count() > 0)
+                            <hr>
+                            <h6 class="fw-semibold mb-3">ملاحظات داخلية</h6>
+                            @foreach ($ticket->notes as $note)
+                                <div class="border border-warning rounded p-3 mb-3 bg-warning-transparent">
+                                    <div class="d-flex justify-content-between mb-2">
+                                        <strong>{{ $note->admin_name }}</strong>
+                                        <small class="text-muted">{{ $note->date?->format('Y-m-d H:i') }}</small>
                                     </div>
-                                    <small>{{ $note->date }}</small>
+                                    <div>{!! nl2br(e($note->note)) !!}</div>
                                 </div>
-                            </div>
-                            <div class="card-body">
-                                <p>{{ $note->message }}</p>
-                            </div>
-                        </div>
-                    @empty
-                        <p>لا توجد ملاحظات على هذه التذكرة.</p>
-                    @endforelse
+                            @endforeach
+                        @endif
+                    </div>
                 </div>
             </div>
         </div>
     </div>
 </div>
 
-<!-- Modal إضافة رد -->
-<div class="modal fade" id="addReplyModal" tabindex="-1" role="dialog" aria-labelledby="addReplyModalLabel" aria-hidden="true">
-    <div class="modal-dialog" role="document">
+@if ($ticket->status !== 'Closed')
+<div class="modal fade" id="addReplyModal" tabindex="-1" aria-labelledby="addReplyModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title" id="addReplyModalLabel">إضافة رد جديد</h5>
-                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                    <span aria-hidden="true">&times;</span>
-                </button>
+                <h5 class="modal-title" id="addReplyModalLabel">إضافة رد</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
-            <form action="{{ route('admin.tickets.add-reply', $ticket->id) }}" method="POST">
+            <form action="{{ route('admin.tickets.addReply', $ticket->id) }}" method="POST">
                 @csrf
                 <div class="modal-body">
-                    <div class="form-group">
-                        <label for="message">الرد <span class="text-danger">*</span></label>
-                        <textarea class="form-control @error('message') is-invalid @enderror" id="message" name="message" rows="5" required></textarea>
-                        @error('message')
-                            <span class="invalid-feedback" role="alert">{{ $message }}</span>
-                        @enderror
-                    </div>
+                    <label for="reply_message" class="form-label">الرد <span class="text-danger">*</span></label>
+                    <textarea class="form-control @error('message') is-invalid @enderror" id="reply_message" name="message" rows="5" required></textarea>
+                    @error('message')
+                        <div class="invalid-feedback">{{ $message }}</div>
+                    @enderror
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-dismiss="modal">إلغاء</button>
-                    <button type="submit" class="btn btn-primary">إضافة الرد</button>
+                    <button type="button" class="btn btn-light" data-bs-dismiss="modal">إلغاء</button>
+                    <button type="submit" class="btn btn-primary">إرسال الرد</button>
                 </div>
             </form>
         </div>
     </div>
 </div>
 
-<!-- Modal إضافة ملاحظة -->
-<div class="modal fade" id="addNoteModal" tabindex="-1" role="dialog" aria-labelledby="addNoteModalLabel" aria-hidden="true">
-    <div class="modal-dialog" role="document">
+<div class="modal fade" id="addNoteModal" tabindex="-1" aria-labelledby="addNoteModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title" id="addNoteModalLabel">إضافة ملاحظة جديدة</h5>
-                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                    <span aria-hidden="true">&times;</span>
-                </button>
+                <h5 class="modal-title" id="addNoteModalLabel">ملاحظة داخلية</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
-            <form action="{{ route('admin.tickets.add-note', $ticket->id) }}" method="POST">
+            <form action="{{ route('admin.tickets.addNote', $ticket->id) }}" method="POST">
                 @csrf
                 <div class="modal-body">
-                    <div class="form-group">
-                        <label for="note">الملاحظة <span class="text-danger">*</span></label>
-                        <textarea class="form-control @error('message') is-invalid @enderror" id="note" name="message" rows="5" required></textarea>
-                        @error('message')
-                            <span class="invalid-feedback" role="alert">{{ $message }}</span>
-                        @enderror
-                    </div>
+                    <label for="note_message" class="form-label">الملاحظة <span class="text-danger">*</span></label>
+                    <textarea class="form-control" id="note_message" name="message" rows="4" required></textarea>
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-dismiss="modal">إلغاء</button>
-                    <button type="submit" class="btn btn-primary">إضافة الملاحظة</button>
+                    <button type="button" class="btn btn-light" data-bs-dismiss="modal">إلغاء</button>
+                    <button type="submit" class="btn btn-primary">حفظ</button>
                 </div>
             </form>
         </div>
     </div>
 </div>
+@endif
 @endsection

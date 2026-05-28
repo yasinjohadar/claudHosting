@@ -39,16 +39,22 @@ use App\Http\Controllers\Admin\Coolify\CoolifySystemController;
 use App\Http\Controllers\Admin\Coolify\CoolifyTeamController;
 use App\Http\Controllers\Admin\Coolify\CoolifyWordpressSiteController;
 use App\Http\Controllers\Admin\Coolify\CoolifyWordpressSiteFilesController;
+use App\Http\Controllers\Admin\CustomerServiceController;
 use App\Http\Controllers\Admin\CustomerController;
 use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\Domain\DomainHubController;
 use App\Http\Controllers\Admin\Domain\DomainSearchController;
 use App\Http\Controllers\Admin\Domain\DomainSettingsController;
 use App\Http\Controllers\Admin\InvoiceController;
+use App\Http\Controllers\Admin\MailSettingsController;
+use App\Http\Controllers\Admin\MailTemplateController;
 use App\Http\Controllers\Admin\Namecom\NamecomDomainController;
 use App\Http\Controllers\Admin\Namecom\NamecomSettingsController;
+use App\Http\Controllers\Admin\PaymentController;
 use App\Http\Controllers\Admin\PackageOrderRequestController;
+use App\Http\Controllers\Admin\OfferedServiceController;
 use App\Http\Controllers\Admin\ProductController;
+use App\Http\Controllers\Admin\ServiceTypeController;
 use App\Http\Controllers\Admin\RoleController;
 use App\Http\Controllers\Admin\SettingController;
 use App\Http\Controllers\Admin\StorageDiskMappingController;
@@ -75,6 +81,8 @@ use Illuminate\Support\Facades\Route;
 | contains the "web" middleware group. Now create something great!
 |
 */
+
+Route::get('/robots.txt', \App\Http\Controllers\Frontend\RobotsController::class);
 
 // الصفحة الرئيسية — عرض الفرونت اند
 Route::get('/', function () {
@@ -126,6 +134,9 @@ Route::middleware(['auth'])->group(function () {
         Route::get('/services', [\App\Http\Controllers\Client\ClientPortalController::class, 'services'])->name('services');
         Route::get('/invoices', [\App\Http\Controllers\Client\ClientPortalController::class, 'invoices'])->name('invoices.index');
         Route::get('/invoices/{invoice}', [\App\Http\Controllers\Client\ClientPortalController::class, 'invoiceShow'])->name('invoices.show');
+        Route::get('/invoices/{invoice}/pay', [\App\Http\Controllers\Client\ClientPaymentController::class, 'payForm'])->name('invoices.pay');
+        Route::post('/invoices/{invoice}/pay', [\App\Http\Controllers\Client\ClientPaymentController::class, 'payStore'])->name('invoices.pay.store');
+        Route::get('/payments', [\App\Http\Controllers\Client\ClientPaymentController::class, 'index'])->name('payments.index');
         Route::prefix('coolify/projects')->name('coolify.projects.')->group(function () {
             Route::get('/{uuid}', [\App\Http\Controllers\Client\ClientCoolifyProjectController::class, 'show'])->name('show');
             Route::post('/{uuid}/applications/{appUuid}/deploy', [\App\Http\Controllers\Client\ClientCoolifyProjectController::class, 'deployApplication'])->name('applications.deploy');
@@ -195,6 +206,16 @@ Route::middleware(['auth', 'admin.panel'])->group(function () {
             Route::post('/{id}/products/{serviceId}/terminate', [CustomerController::class, 'productTerminate'])->name('productTerminate');
         });
 
+        // كتالوج الخدمات (غير باقات الاستضافة)
+        Route::resource('service-types', ServiceTypeController::class)->except(['show']);
+        Route::resource('offered-services', OfferedServiceController::class)
+            ->parameters(['offered-services' => 'service']);
+
+        Route::resource('customer-services', CustomerServiceController::class)
+            ->parameters(['customer-services' => 'customerService']);
+        Route::post('customer-services/{customerService}/create-invoice', [CustomerServiceController::class, 'createInvoice'])
+            ->name('customer-services.create-invoice');
+
         // إدارة المنتجات
         Route::prefix('products')->name('products.')->group(function () {
             Route::get('/', [ProductController::class, 'index'])->name('index');
@@ -219,10 +240,19 @@ Route::middleware(['auth', 'admin.panel'])->group(function () {
         // إعدادات الموقع (تواصل، سوشيال، عام)
         Route::get('/settings', [SettingController::class, 'index'])->name('settings.index');
         Route::put('/settings', [SettingController::class, 'update'])->name('settings.update');
+        Route::prefix('mail-settings')->name('mail-settings.')->group(function () {
+            Route::get('/', [MailSettingsController::class, 'index'])->name('index');
+            Route::post('/', [MailSettingsController::class, 'update'])->name('update');
+            Route::post('/test', [MailSettingsController::class, 'testConnection'])->name('test');
+        });
+        Route::resource('mail-templates', MailTemplateController::class)->except(['show']);
 
         Route::prefix('homepage')->name('homepage.')->group(function () {
             Route::get('/hero', [\App\Http\Controllers\Admin\HeroSettingsController::class, 'index'])->name('hero.index');
             Route::put('/hero', [\App\Http\Controllers\Admin\HeroSettingsController::class, 'update'])->name('hero.update');
+            Route::get('/seo', [\App\Http\Controllers\Admin\PageSeoSettingsController::class, 'index'])->name('seo.index');
+            Route::put('/seo', [\App\Http\Controllers\Admin\PageSeoSettingsController::class, 'update'])->name('seo.update');
+            Route::post('/seo/reset', [\App\Http\Controllers\Admin\PageSeoSettingsController::class, 'reset'])->name('seo.reset');
         });
 
         Route::prefix('system-database')->name('system-database.')->group(function () {
@@ -244,6 +274,15 @@ Route::middleware(['auth', 'admin.panel'])->group(function () {
             Route::delete('/{id}', [InvoiceController::class, 'destroy'])->name('destroy');
             Route::post('/{id}/mark-paid', [InvoiceController::class, 'markPaid'])->name('markPaid');
             Route::post('/{id}/add-payment', [InvoiceController::class, 'addPayment'])->name('addPayment');
+        });
+
+        // إدارة المدفوعات
+        Route::prefix('payments')->name('payments.')->group(function () {
+            Route::get('/', [PaymentController::class, 'index'])->name('index');
+            Route::get('/{payment}', [PaymentController::class, 'show'])->name('show');
+            Route::post('/{payment}/confirm', [PaymentController::class, 'confirm'])->name('confirm');
+            Route::post('/{payment}/reject', [PaymentController::class, 'reject'])->name('reject');
+            Route::get('/{payment}/proof', [PaymentController::class, 'proof'])->name('proof');
         });
 
         // إدارة التذاكر

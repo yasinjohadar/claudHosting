@@ -1,10 +1,52 @@
 @extends('admin.layouts.master')
 
-@section('title', 'تفاصيل الفاتورة: ' . $invoice->invoicenum)
+@section('page-title')
+تفاصيل الفاتورة: {{ $invoice->invoice_number }}
+@stop
 
 @section('content')
-<div class="container-fluid">
-    <div class="row">
+<div class="main-content app-content">
+    <div class="container-fluid">
+        <div class="d-md-flex d-block align-items-center justify-content-between my-4 page-header-breadcrumb">
+            <div>
+                <h4 class="mb-0">فاتورة {{ $invoice->invoice_number }}</h4>
+                <nav>
+                    <ol class="breadcrumb mb-0">
+                        <li class="breadcrumb-item"><a href="{{ route('admin.dashboard') }}">الرئيسية</a></li>
+                        <li class="breadcrumb-item"><a href="{{ route('admin.invoices.index') }}">الفواتير</a></li>
+                        <li class="breadcrumb-item active" aria-current="page">{{ $invoice->invoice_number }}</li>
+                    </ol>
+                </nav>
+            </div>
+            <div class="ms-auto pageheader-btn d-flex flex-wrap gap-2">
+                <a href="{{ route('admin.invoices.edit', $invoice->id) }}" class="btn btn-warning">
+                    <i class="fe fe-edit"></i> تعديل
+                </a>
+                @if ($invoice->status != 'Paid' && $invoice->status != 'Cancelled')
+                    <form action="{{ route('admin.invoices.markPaid', $invoice->id) }}" method="POST" class="d-inline">
+                        @csrf
+                        <button type="submit" class="btn btn-success" onclick="return confirm('هل أنت متأكد من تعليم هذه الفاتورة كمدفوعة؟')">
+                            <i class="fe fe-check"></i> تعليم كمدفوعة
+                        </button>
+                    </form>
+                @endif
+                <a href="{{ route('admin.invoices.index') }}" class="btn btn-light">
+                    <i class="fe fe-arrow-right"></i> العودة
+                </a>
+            </div>
+        </div>
+
+        @if(session('success'))
+            <div class="alert alert-success alert-dismissible fade show">{{ session('success') }}<button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>
+        @endif
+        @if(session('error'))
+            <div class="alert alert-danger alert-dismissible fade show">{{ session('error') }}<button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>
+        @endif
+        @if(session('info'))
+            <div class="alert alert-info alert-dismissible fade show">{{ session('info') }}<button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>
+        @endif
+
+        <div class="row">
         <div class="col-md-3">
             <!-- معلومات الفاتورة الأساسية -->
             <div class="card card-primary">
@@ -51,29 +93,6 @@
         </div>
         
         <div class="col-md-9">
-            <!-- أزرار التحكم -->
-            <div class="card">
-                <div class="card-header">
-                    <h3 class="card-title">التحكم بالفاتورة</h3>
-                    <div class="card-tools">
-                        <a href="{{ route('admin.invoices.edit', $invoice->id) }}" class="btn btn-warning btn-sm">
-                            <i class="fas fa-edit"></i> تعديل
-                        </a>
-                        @if ($invoice->status != 'Paid' && $invoice->status != 'Cancelled')
-                            <form action="{{ route('admin.invoices.markPaid', $invoice->id) }}" method="POST" style="display: inline-block;">
-                                @csrf
-                                <button type="submit" class="btn btn-success btn-sm" onclick="return confirm('هل أنت متأكد من رغبتك في تعليم هذه الفاتورة كمدفوعة؟')">
-                                    <i class="fas fa-check"></i> تعليم كمدفوعة
-                                </button>
-                            </form>
-                        @endif
-                        <a href="{{ route('admin.invoices.index') }}" class="btn btn-default btn-sm">
-                            <i class="fas fa-arrow-left"></i> العودة
-                        </a>
-                    </div>
-                </div>
-            </div>
-            
             <!-- معلومات العميل -->
             <div class="card">
                 <div class="card-header">
@@ -152,8 +171,10 @@
                                 <th>التاريخ</th>
                                 <th>المبلغ</th>
                                 <th>طريقة الدفع</th>
+                                <th>الحالة</th>
                                 <th>رقم المعاملة</th>
                                 <th>ملاحظات</th>
+                                <th></th>
                             </tr>
                         </thead>
                         <tbody>
@@ -161,13 +182,15 @@
                                 <tr>
                                     <td>{{ $payment->date }}</td>
                                     <td>{{ $payment->amount }} {{ $invoice->currency }}</td>
-                                    <td>{{ $payment->gateway }}</td>
+                                    <td>{{ $payment->payment_method_name }}</td>
+                                    <td><span class="badge bg-{{ $payment->status_color }}-transparent">{{ $payment->status_name }}</span></td>
                                     <td>{{ $payment->transid ?? '-' }}</td>
                                     <td>{{ $payment->notes ?? '-' }}</td>
+                                    <td><a href="{{ route('admin.payments.show', $payment) }}" class="btn btn-xs btn-info">عرض</a></td>
                                 </tr>
                             @empty
                                 <tr>
-                                    <td colspan="5" class="text-center">لا توجد مدفوعات لهذه الفاتورة</td>
+                                    <td colspan="7" class="text-center">لا توجد مدفوعات لهذه الفاتورة</td>
                                 </tr>
                             @endforelse
                         </tbody>
@@ -190,7 +213,7 @@
             </div>
         </div>
     </div>
-</div>
+    </div>
 
 <!-- Modal إضافة دفعة -->
 <div class="modal fade" id="addPaymentModal" tabindex="-1" role="dialog" aria-labelledby="addPaymentModalLabel" aria-hidden="true">
@@ -252,5 +275,6 @@
             </form>
         </div>
     </div>
+</div>
 </div>
 @endsection

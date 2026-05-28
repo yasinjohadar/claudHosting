@@ -9,6 +9,8 @@
         </button>
     </td>
     <td style="min-width:12rem;width:35%">
+        <input type="hidden" name="items[{{ $index }}][offered_service_id]" class="item-offered-service-id" value="{{ old('items.'.$index.'.offered_service_id', $item->offered_service_id ?? '') }}">
+        <input type="hidden" name="items[{{ $index }}][customer_service_id]" class="item-customer-service-id" value="{{ old('items.'.$index.'.customer_service_id', $item->customer_service_id ?? '') }}">
         <input type="text" class="form-control form-control-sm item-description" name="items[{{ $index }}][description]"
             value="{{ old('items.'.$index.'.description', $item->description ?? '') }}" placeholder="وصف البند" required>
     </td>

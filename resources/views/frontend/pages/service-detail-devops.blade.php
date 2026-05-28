@@ -1,13 +1,5 @@
 @extends('frontend.layouts.master')
 
-@section('page-title')
-DevOps وتشغيل المنصات | استضافة كلاودسوفت
-@endsection
-
-@section('meta-description')
-DevOps وتشغيل المنصات — CI/CD، حاويات Docker و Kubernetes، بنية كود IaC (Terraform، Ansible)، سحابة AWS/Azure/GCP، ومراقبة Prometheus و Grafana.
-@endsection
-
 @push('styles')
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/devicon@2.15.1/devicon.min.css" crossorigin="anonymous">
 @endpush

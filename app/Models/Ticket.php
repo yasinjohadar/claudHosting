@@ -16,6 +16,7 @@ class Ticket extends Model
      * @var array
      */
     protected $fillable = [
+        'customer_id',
         'whmcs_id',
         'whmcs_client_id',
         'tid',
@@ -27,6 +28,8 @@ class Ticket extends Model
         'message',
         'status',
         'priority',
+        'urgency',
+        'department',
         'admin',
         'lastreply',
         'lastadminreply',
@@ -56,7 +59,12 @@ class Ticket extends Model
      */
     public function customer()
     {
-        return $this->belongsTo(Customer::class, 'whmcs_client_id', 'whmcs_id');
+        return $this->belongsTo(Customer::class, 'customer_id');
+    }
+
+    public function getTicketNumberAttribute(): string
+    {
+        return $this->tid ?: (string) $this->id;
     }
 
     /**

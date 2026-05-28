@@ -1,13 +1,5 @@
 @extends('frontend.layouts.master')
 
-@section('page-title')
-إدارة السيرفرات | استضافة كلاودسوفت
-@endsection
-
-@section('meta-description')
-إدارة السيرفرات — إعداد وإدارة خوادم Linux، Nginx أو Apache، قواعد البيانات، SSL والنسخ الاحتياطي. استضافة سحابية و VPS مع مراقبة وصيانة دورية.
-@endsection
-
 @push('styles')
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/devicon@2.15.1/devicon.min.css" crossorigin="anonymous">
 @endpush

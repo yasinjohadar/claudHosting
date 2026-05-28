@@ -4,14 +4,6 @@
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/devicon@2.15.1/devicon.min.css" crossorigin="anonymous">
 @endpush
 
-@section('page-title')
-استضافة كلاودسوفت | CloudSoft Hosting
-@endsection
-
-@section('meta-description')
-استضافة كلاودسوفت تمنحك بنية سحابية مستقرة وسريعة وآمنة لموقعك أو متجرك. باقات مرنة من المواقع الشخصية حتى الشركات، لوحة تحكم سهلة ودعم فني مستمر. ابدأ خلال دقائق.
-@endsection
-
 @section('content')
     @include('frontend.partials.hero-section', ['hero' => $hero ?? null])
 

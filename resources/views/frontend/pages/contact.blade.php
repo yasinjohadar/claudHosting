@@ -1,13 +1,5 @@
 @extends('frontend.layouts.master')
 
-@section('page-title')
-تواصل معنا | استضافة كلاودسوفت
-@endsection
-
-@section('meta-description')
-تواصل مع فريق استضافة كلاودسوفت — للاستفسارات، التسجيل في الباقات، أو طلب استشارة تقنية. نحن هنا لمساعدتك على اختيار الحل المناسب لمشروعك.
-@endsection
-
 @section('content')
     <section class="page-banner page-banner-about">
         <div class="page-banner-overlay"></div>

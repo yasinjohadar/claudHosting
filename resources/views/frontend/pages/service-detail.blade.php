@@ -1,13 +1,5 @@
 @extends('frontend.layouts.master')
 
-@section('page-title')
-تطوير تطبيقات الويب | استضافة كلاودسوفت
-@endsection
-
-@section('meta-description')
-تطوير تطبيقات الويب — تصميم وتطوير مواقع وتطبيقات ويب حديثة ومتجاوبة بأحدث التقنيات: React، Laravel، Node.js و TypeScript. واجهات احترافية، أداء عالٍ، ودعم SEO وأمان.
-@endsection
-
 @push('styles')
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/devicon@2.15.1/devicon.min.css" crossorigin="anonymous">
 @endpush

@@ -150,6 +150,51 @@
                     </div>
                 </div>
 
+                @if(($offeredServices ?? collect())->isNotEmpty())
+                <div class="card custom-card">
+                    <div class="card-header"><div class="card-title">إضافة من كتالوج الخدمات</div></div>
+                    <div class="card-body p-0" style="max-height:220px;overflow-y:auto">
+                        <div class="list-group list-group-flush">
+                            @foreach ($offeredServices as $svc)
+                                <button type="button" class="list-group-item list-group-item-action add-offered-service-item text-start"
+                                    data-service-id="{{ $svc->id }}"
+                                    data-service-name="{{ $svc->name }}"
+                                    data-service-price="{{ $svc->price }}">
+                                    <div class="d-flex justify-content-between">
+                                        <span class="fw-medium">{{ $svc->name }}</span>
+                                        <span class="badge bg-success-transparent">{{ $svc->formatted_price }}</span>
+                                    </div>
+                                </button>
+                            @endforeach
+                        </div>
+                    </div>
+                </div>
+                @endif
+
+                @if(($customerServices ?? collect())->isNotEmpty())
+                <div class="card custom-card">
+                    <div class="card-header"><div class="card-title">خدمات عملاء (بدون فاتورة)</div></div>
+                    <div class="card-body p-0" style="max-height:220px;overflow-y:auto">
+                        <div class="list-group list-group-flush">
+                            @foreach ($customerServices as $cs)
+                                <button type="button" class="list-group-item list-group-item-action add-customer-service-item text-start"
+                                    data-customer-service-id="{{ $cs->id }}"
+                                    data-customer-id="{{ $cs->customer_id }}"
+                                    data-service-name="{{ $cs->name }}"
+                                    data-service-price="{{ $cs->amount_due > 0 ? $cs->amount_due : $cs->price }}"
+                                    data-offered-service-id="{{ $cs->offered_service_id }}">
+                                    <div class="d-flex justify-content-between">
+                                        <span class="fw-medium">{{ $cs->name }}</span>
+                                        <span class="badge bg-warning-transparent">{{ number_format($cs->amount_due > 0 ? $cs->amount_due : $cs->price, 2) }} ر.س</span>
+                                    </div>
+                                    <small class="text-muted">{{ $cs->customer?->fullname }}</small>
+                                </button>
+                            @endforeach
+                        </div>
+                    </div>
+                </div>
+                @endif
+
                 @if(($products ?? collect())->isNotEmpty())
                 <div class="card custom-card">
                     <div class="card-header">

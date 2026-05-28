@@ -1,13 +1,5 @@
 @extends('frontend.layouts.master')
 
-@section('page-title')
-المشاريع | استضافة كلاودسوفت
-@endsection
-
-@section('meta-description')
-مشاريع استضافة كلاودسوفت — تعرف على أبرز الأعمال في الاستضافة، تطوير المواقع، وإدارة الخوادم. مشاريع حقيقية نفتخر بها.
-@endsection
-
 @section('content')
     <!-- ============ PAGE BANNER (نفس About) ============ -->
     <section class="page-banner page-banner-about">

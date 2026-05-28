@@ -13,9 +13,41 @@ use Illuminate\Support\Facades\Log;
  * 
  * @see https://manus.im
  */
-class ManusProviderService extends AIProviderService
+class ManusProviderService
 {
+    protected ?string $lastError = null;
+
+    public function __construct(
+        protected AIModel $model
+    ) {
+    }
+
     private const BASE_URL = 'https://api.manus.ai/v1';
+
+    public function getLastError(): ?string
+    {
+        return $this->lastError;
+    }
+
+    protected function setLastError(string $error): void
+    {
+        $this->lastError = $error;
+    }
+
+    protected function getApiKey(): ?string
+    {
+        return $this->model->getDecryptedApiKey();
+    }
+
+    protected function getBaseUrl(): ?string
+    {
+        return $this->model->base_url;
+    }
+
+    protected function getApiEndpoint(): ?string
+    {
+        return $this->model->api_endpoint;
+    }
 
     /**
      * إرسال رسالة في محادثة

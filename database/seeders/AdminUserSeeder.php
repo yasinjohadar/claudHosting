@@ -21,8 +21,14 @@ class AdminUserSeeder extends Seeder
             'customers.view', 'customers.create', 'customers.edit', 'customers.delete', 'customers.sync',
             // صلاحيات المنتجات
             'products.view', 'products.create', 'products.edit', 'products.delete', 'products.sync',
+            // كتالوج الخدمات
+            'service-types.view', 'service-types.create', 'service-types.edit', 'service-types.delete',
+            'offered-services.view', 'offered-services.create', 'offered-services.edit', 'offered-services.delete',
+            'customer-services.view', 'customer-services.create', 'customer-services.edit', 'customer-services.delete',
             // صلاحيات الفواتير
             'invoices.view', 'invoices.create', 'invoices.edit', 'invoices.delete', 'invoices.sync',
+            'payments.view', 'payments.manage', 'payments.confirm',
+            'mail-settings.manage', 'mail-templates.manage',
             // صلاحيات التذاكر
             'tickets.view', 'tickets.create', 'tickets.edit', 'tickets.delete', 'tickets.sync',
             // صلاحيات التقارير

@@ -1,13 +1,5 @@
 @extends('frontend.layouts.master')
 
-@section('page-title')
-الشركات والعملاء | استضافة كلاودسوفت
-@endsection
-
-@section('meta-description')
-الشركات والعملاء الذين وثقوا باستضافة كلاودسوفت — شركات وعملاء كرام نقدم لهم الاستضافة والدعم الفني. تعرف على شريحة عملائنا.
-@endsection
-
 @section('content')
     <section class="page-banner page-banner-about">
         <div class="page-banner-overlay"></div>

@@ -105,7 +105,7 @@
                                     </span>
                                 </div>
                                 <div class="info-box-footer">
-                                    <a href="{{ route('admin.reports.payments') }}" class="small-box-footer">عرض التقرير <i class="fas fa-arrow-circle-left"></i></a>
+                                    <a href="{{ route('admin.payments.index') }}" class="small-box-footer">عرض المدفوعات <i class="fas fa-arrow-circle-left"></i></a>
                                 </div>
                             </div>
                         </div>

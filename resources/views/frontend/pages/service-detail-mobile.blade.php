@@ -1,13 +1,5 @@
 @extends('frontend.layouts.master')
 
-@section('page-title')
-تطبيقات الجوال | Dart & Flutter | استضافة كلاودسوفت
-@endsection
-
-@section('meta-description')
-تطوير تطبيقات الجوال — بناء تطبيقات أندرويد و iOS بـ Dart و Flutter. كود واحد لمنصتين، واجهات Material و Cupertino، أداء قريب من الأصلي، ونشر على المتاجر.
-@endsection
-
 @push('styles')
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/devicon@2.15.1/devicon.min.css" crossorigin="anonymous">
 @endpush

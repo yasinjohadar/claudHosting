@@ -22,9 +22,16 @@
                     </ol>
                 </nav>
             </div>
-            <a href="{{ route('client.invoices.index') }}" class="btn btn-light btn-sm rounded-pill">
-                <i class="fe fe-arrow-right me-1"></i>العودة للقائمة
-            </a>
+            <div class="d-flex flex-wrap gap-2">
+                @if($invoice->balance > 0 && !in_array($invoice->status, ['Paid', 'Cancelled']))
+                    <a href="{{ route('client.invoices.pay', $invoice) }}" class="btn btn-success btn-sm rounded-pill">
+                        <i class="fe fe-credit-card me-1"></i>سداد الفاتورة
+                    </a>
+                @endif
+                <a href="{{ route('client.invoices.index') }}" class="btn btn-light btn-sm rounded-pill">
+                    <i class="fe fe-arrow-right me-1"></i>العودة للقائمة
+                </a>
+            </div>
         </div>
 
         <div class="row g-4">
@@ -134,6 +141,7 @@
                                         <th>التاريخ</th>
                                         <th>المبلغ</th>
                                         <th>طريقة الدفع</th>
+                                        <th>الحالة</th>
                                         <th>رقم المعاملة</th>
                                     </tr>
                                 </thead>
@@ -143,11 +151,12 @@
                                             <td>{{ $payment->date?->format('Y-m-d H:i') ?? '—' }}</td>
                                             <td>{{ number_format($payment->amount, 2) }} {{ $invoice->currency }}</td>
                                             <td>{{ $payment->payment_method_name ?? $payment->gateway }}</td>
+                                            <td><span class="badge bg-{{ $payment->status_color }}-transparent">{{ $payment->status_name }}</span></td>
                                             <td dir="ltr" class="small">{{ $payment->transid ?? '—' }}</td>
                                         </tr>
                                     @empty
                                         <tr>
-                                            <td colspan="4" class="text-center text-muted py-3">لا توجد مدفوعات مسجّلة.</td>
+                                            <td colspan="5" class="text-center text-muted py-3">لا توجد مدفوعات مسجّلة.</td>
                                         </tr>
                                     @endforelse
                                 </tbody>

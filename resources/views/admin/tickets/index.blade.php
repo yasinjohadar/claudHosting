@@ -23,9 +23,6 @@
                 <a href="{{ route('admin.tickets.create') }}" class="btn btn-primary">
                     <i class="fe fe-plus"></i> إنشاء تذكرة
                 </a>
-                <button type="button" class="btn btn-success" id="syncAllTickets">
-                    <i class="fe fe-refresh-cw"></i> مزامنة من WHMCS
-                </button>
             </div>
         </div>
         <!-- End Page Header -->
@@ -188,29 +185,6 @@
             }
         });
 
-        // Sync All Tickets
-        $('#syncAllTickets').click(function() {
-            var btn = $(this);
-            btn.prop('disabled', true).html('<i class="fe fe-loader fa-spin"></i> جاري المزامنة...');
-            
-            $.ajax({
-                url: '{{ route("admin.tickets.syncAll") }}',
-                type: 'POST',
-                data: {
-                    _token: '{{ csrf_token() }}'
-                },
-                success: function(response) {
-                    alert('تم مزامنة التذاكر بنجاح');
-                    location.reload();
-                },
-                error: function() {
-                    alert('حدث خطأ أثناء المزامنة');
-                },
-                complete: function() {
-                    btn.prop('disabled', false).html('<i class="fe fe-refresh-cw"></i> مزامنة من WHMCS');
-                }
-            });
-        });
     });
 </script>
 @endsection

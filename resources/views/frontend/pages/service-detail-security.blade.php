@@ -4,14 +4,6 @@
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/devicon@2.15.1/devicon.min.css" crossorigin="anonymous">
 @endpush
 
-@section('page-title')
-أمن المعلومات والسايبر سيكيورتي | استضافة كلاودسوفت
-@endsection
-
-@section('meta-description')
-أمن المعلومات والسايبر سيكيورتي — WAF، SSL، فحص ثغرات، مراقبة، حماية API، وأمان حاويات. أدوات احترافية نعمل بها في استضافة كلاودسوفت لحماية مواقعك وبياناتك.
-@endsection
-
 @section('content')
     <section class="page-banner page-banner-about page-banner-service">
         <div class="page-banner-overlay"></div>

@@ -92,7 +92,7 @@
 
                             <div class="mb-3">
                                 <label class="form-label">المقتطف</label>
-                                <textarea name="excerpt" rows="3" class="form-control">{{ old('excerpt', $post->excerpt) }}</textarea>
+                                <textarea name="excerpt" id="excerpt" rows="3" class="form-control">{{ old('excerpt', $post->excerpt) }}</textarea>
                             </div>
 
                             <div class="mb-3">
@@ -102,35 +102,7 @@
                         </div>
                     </div>
 
-                    <div class="card custom-card mb-4">
-                        <div class="card-header">
-                            <div class="card-title">إعدادات SEO</div>
-                        </div>
-                        <div class="card-body">
-                            <div class="mb-3">
-                                <label class="form-label">عنوان SEO</label>
-                                <input type="text" name="meta_title" class="form-control"
-                                       value="{{ old('meta_title', $post->meta_title) }}">
-                            </div>
-
-                            <div class="mb-3">
-                                <label class="form-label">وصف SEO</label>
-                                <textarea name="meta_description" rows="2" class="form-control">{{ old('meta_description', $post->meta_description) }}</textarea>
-                            </div>
-
-                            <div class="mb-3">
-                                <label class="form-label">الكلمات المفتاحية</label>
-                                <input type="text" name="meta_keywords" class="form-control"
-                                       value="{{ old('meta_keywords', $post->meta_keywords) }}">
-                            </div>
-
-                            <div class="mb-3">
-                                <label class="form-label">الكلمة المفتاحية الرئيسية</label>
-                                <input type="text" name="focus_keyword" class="form-control"
-                                       value="{{ old('focus_keyword', $post->focus_keyword) }}">
-                            </div>
-                        </div>
-                    </div>
+                    @include('admin.blog.posts.partials.seo-panel', ['post' => $post])
 
                     <div class="card custom-card mb-4">
                         <div class="card-header">

@@ -1,13 +1,5 @@
 @extends('frontend.layouts.master')
 
-@section('page-title')
-آراء العملاء | استضافة كلاودسوفت
-@endsection
-
-@section('meta-description')
-آراء عملاء استضافة كلاودسوفت — تجارب حقيقية وتقييمات من أصحاب مواقع ومتاجر اختاروا خدماتنا. اقرأ آراءهم واختر الباقة المناسبة.
-@endsection
-
 @section('content')
     <section class="page-banner page-banner-about">
         <div class="page-banner-overlay"></div>

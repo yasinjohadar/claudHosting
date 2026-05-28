@@ -3,16 +3,18 @@
 namespace App\Services\Backup;
 
 use App\Models\Backup;
+use App\Services\Mail\MailTemplateResolver;
+use App\Services\Mail\TemplateRendererService;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Http;
 
 class BackupNotificationService
 {
-    public function __construct()
-    {
-        //
-    }
+    public function __construct(
+        protected MailTemplateResolver $templateResolver,
+        protected TemplateRendererService $renderer
+    ) {}
 
     /**
      * إشعار اكتمال النسخ
@@ -45,19 +47,16 @@ class BackupNotificationService
             return;
         }
 
-        $subject = $type === 'completed' 
-            ? 'اكتملت عملية النسخ الاحتياطي بنجاح'
-            : 'فشلت عملية النسخ الاحتياطي';
-
-        $message = $type === 'completed'
-            ? "تم إنشاء نسخة احتياطية بنجاح:\n\n"
-              . "الاسم: {$backup->name}\n"
-              . "النوع: {$backup->backup_type}\n"
-              . "الحجم: {$backup->getFileSize()}\n"
-              . "التاريخ: {$backup->completed_at->format('Y-m-d H:i:s')}"
-            : "فشلت عملية النسخ الاحتياطي:\n\n"
-              . "الاسم: {$backup->name}\n"
-              . "الخطأ: {$backup->error_message}";
+        $template = $this->templateResolver->resolve($type === 'completed' ? 'backup.completed' : 'backup.failed');
+        $context = [
+            'backup_name' => $backup->name,
+            'backup_type' => $backup->backup_type,
+            'backup_size' => $backup->getFileSize(),
+            'completed_at' => optional($backup->completed_at)->format('Y-m-d H:i:s') ?: now()->format('Y-m-d H:i:s'),
+            'error_message' => $backup->error_message ?? '—',
+        ];
+        $subject = $this->renderer->render($template['subject'], $context);
+        $message = $this->renderer->render($template['body_text'], $context);
 
         try {
             Mail::raw($message, function ($mail) use ($admin, $subject) {
