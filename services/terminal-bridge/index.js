@@ -1,23 +1,44 @@
 /**
  * ClaudHosting Terminal Bridge
- * WebSocket → SSH → docker exec -it CONTAINER shell
+ * WebSocket → SSH → container shell (/session) or host shell (/host-session)
  *
- * Env: TERMINAL_BRIDGE_PORT, TERMINAL_BRIDGE_SECRET, SSH_PRIVATE_KEY_PATH, SSH_USER, SSH_PORT
+ * Config: storage/app/terminal-bridge/runtime.json (synced from Laravel admin)
+ * Fallback env only for local dev without runtime file.
  */
 require('dotenv').config({ path: require('path').join(__dirname, '../../.env') });
 
 const http = require('http');
 const crypto = require('crypto');
 const fs = require('fs');
+const path = require('path');
 const express = require('express');
 const { WebSocketServer } = require('ws');
 const { Client } = require('ssh2');
 
-const PORT = parseInt(process.env.TERMINAL_BRIDGE_PORT || '3099', 10);
-const SECRET = process.env.TERMINAL_BRIDGE_SECRET || process.env.APP_KEY || '';
-const SSH_KEY_PATH = process.env.SSH_PRIVATE_KEY_PATH || process.env.COOLIFY_SSH_KEY_PATH || '';
-const SSH_USER = process.env.SSH_USER || process.env.COOLIFY_SSH_USER || 'root';
-const SSH_PORT = parseInt(process.env.SSH_PORT || '22', 10);
+const RUNTIME_PATH = path.join(__dirname, '../../storage/app/terminal-bridge/runtime.json');
+
+function loadRuntime() {
+  try {
+    if (fs.existsSync(RUNTIME_PATH)) {
+      return JSON.parse(fs.readFileSync(RUNTIME_PATH, 'utf8'));
+    }
+  } catch (_) {}
+  return {};
+}
+
+function getBridgeConfig() {
+  const rt = loadRuntime();
+  return {
+    PORT: parseInt(rt.port || process.env.TERMINAL_BRIDGE_PORT || '3099', 10),
+    SECRET: rt.secret || process.env.TERMINAL_BRIDGE_SECRET || process.env.APP_KEY || '',
+    SSH_KEY_PATH: rt.ssh_private_key_path || process.env.SSH_PRIVATE_KEY_PATH || process.env.COOLIFY_SSH_KEY_PATH || '',
+    SSH_USER: rt.ssh_user || process.env.SSH_USER || process.env.COOLIFY_SSH_USER || 'root',
+    SSH_PORT: parseInt(rt.ssh_port || process.env.SSH_PORT || '22', 10),
+  };
+}
+
+let bridgeConfig = getBridgeConfig();
+setInterval(() => { bridgeConfig = getBridgeConfig(); }, 15000);
 
 const BLOCKED = [
   /\brm\s+-rf\s+\/\s*$/i,
@@ -25,8 +46,12 @@ const BLOCKED = [
   /\bmkfs\b/i,
   /\bshutdown\b/i,
   /\breboot\b/i,
+  /\bpoweroff\b/i,
+  /\bhalt\b/i,
   /\bdd\s+if=/i,
   /:\(\)\s*\{\s*:\|\s*:\s*&\s*\}\s*;/,
+  /\bchmod\s+-R\s+777\s+\//i,
+  /\bdocker\s+system\s+prune\s+-a\b/i,
 ];
 
 function base64UrlDecode(str) {
@@ -36,6 +61,7 @@ function base64UrlDecode(str) {
 }
 
 function verifyToken(token) {
+  const SECRET = bridgeConfig.SECRET;
   if (!SECRET || !token) return null;
   const parts = token.split('.');
   if (parts.length !== 3) return null;
@@ -58,68 +84,34 @@ function verifyToken(token) {
 }
 
 function isBlockedInput(data) {
-  const line = String(data).trim();
-  return BLOCKED.some((re) => re.test(line));
+  const lines = String(data).split(/\r?\n/);
+  return lines.some((line) => {
+    const trimmed = line.trim();
+    if (trimmed === '') return false;
+    return BLOCKED.some((re) => re.test(trimmed));
+  });
 }
 
-function openShell(payload, onData, onClose, onError) {
+function readSshKey() {
+  const SSH_KEY_PATH = bridgeConfig.SSH_KEY_PATH;
   if (!SSH_KEY_PATH || !fs.existsSync(SSH_KEY_PATH)) {
-    onError('SSH key not found: ' + SSH_KEY_PATH);
     return null;
   }
+  return fs.readFileSync(SSH_KEY_PATH);
+}
 
-  const conn = new Client();
-  const containerId = payload.container_id;
-  const cmd = `docker exec -it ${containerId} sh -c "command -v bash >/dev/null && exec bash || exec sh"`;
-
-  conn
-    .on('ready', () => {
-      conn.exec(cmd, { pty: true }, (err, stream) => {
-        if (err) {
-          onError(err.message);
-          conn.end();
-          return;
-        }
-        stream.on('data', (d) => onData(d.toString('utf8')));
-        stream.stderr.on('data', (d) => onData(d.toString('utf8')));
-        stream.on('close', () => {
-          conn.end();
-          onClose();
-        });
-      });
-    })
-    .on('error', (err) => onError(err.message))
-    .connect({
-      host: payload.host,
-      port: payload.ssh_port || SSH_PORT,
-      username: payload.ssh_user || SSH_USER,
-      privateKey: fs.readFileSync(SSH_KEY_PATH),
-    });
-
+function connectPayload(payload) {
   return {
-    write: (data) => {
-      if (isBlockedInput(data)) {
-        onData('\r\n\x1b[31m[blocked: dangerous command]\x1b[0m\r\n');
-        return;
-      }
-      conn.exec ? null : null;
-    },
-    conn,
+    host: payload.host,
+    port: payload.ssh_port || bridgeConfig.SSH_PORT,
+    username: payload.ssh_user || bridgeConfig.SSH_USER,
+    privateKey: readSshKey(),
   };
 }
 
-const app = express();
-app.get('/health', (_, res) => res.json({ ok: true }));
-
-const server = http.createServer(app);
-const wss = new WebSocketServer({ server, path: '/session' });
-
-wss.on('connection', (ws, req) => {
-  const url = new URL(req.url, 'http://localhost');
-  const token = url.searchParams.get('token');
-  const payload = verifyToken(token);
-  if (!payload) {
-    ws.send(JSON.stringify({ type: 'error', data: 'Invalid or expired token' }));
+function attachWsSession(ws, payload, openStream) {
+  if (!readSshKey()) {
+    ws.send(JSON.stringify({ type: 'error', data: 'SSH key not found — configure SSH in admin panel and save' }));
     ws.close();
     return;
   }
@@ -129,10 +121,7 @@ wss.on('connection', (ws, req) => {
 
   conn
     .on('ready', () => {
-      const containerId = payload.container_id;
-      const inner = 'export TERM=xterm-256color; command -v bash >/dev/null 2>&1 && exec bash || exec sh';
-      const cmd = `docker exec -it ${containerId} sh -c ${JSON.stringify(inner)}`;
-      conn.exec(cmd, { pty: true }, (err, sshStream) => {
+      openStream(conn, (err, sshStream) => {
         if (err) {
           ws.send(JSON.stringify({ type: 'error', data: err.message }));
           ws.close();
@@ -152,12 +141,7 @@ wss.on('connection', (ws, req) => {
       ws.send(JSON.stringify({ type: 'error', data: err.message }));
       ws.close();
     })
-    .connect({
-      host: payload.host,
-      port: payload.ssh_port || SSH_PORT,
-      username: payload.ssh_user || SSH_USER,
-      privateKey: fs.readFileSync(SSH_KEY_PATH),
-    });
+    .connect(connectPayload(payload));
 
   ws.on('message', (raw) => {
     if (!stream) return;
@@ -165,9 +149,13 @@ wss.on('connection', (ws, req) => {
     try {
       const msg = JSON.parse(raw);
       if (msg.type === 'input') data = msg.data;
+      if (msg.type === 'resize' && msg.cols && msg.rows && stream.setWindow) {
+        stream.setWindow(msg.rows, msg.cols, 0, 0);
+        return;
+      }
     } catch (_) {}
     if (isBlockedInput(data)) {
-      ws.send(JSON.stringify({ type: 'output', data: '\r\n[blocked]\r\n' }));
+      ws.send(JSON.stringify({ type: 'output', data: '\r\n\x1b[31m[blocked: dangerous command]\x1b[0m\r\n' }));
       return;
     }
     stream.write(data);
@@ -179,8 +167,69 @@ wss.on('connection', (ws, req) => {
       conn.end();
     } catch (_) {}
   });
+}
+
+function handleContainerSession(ws, payload) {
+  if (!payload.container_id) {
+    ws.send(JSON.stringify({ type: 'error', data: 'Missing container_id' }));
+    ws.close();
+    return;
+  }
+  attachWsSession(ws, payload, (conn, cb) => {
+    const inner = 'export TERM=xterm-256color; command -v bash >/dev/null 2>&1 && exec bash || exec sh';
+    const cmd = `docker exec -it ${payload.container_id} sh -c ${JSON.stringify(inner)}`;
+    conn.exec(cmd, { pty: true }, cb);
+  });
+}
+
+function handleHostSession(ws, payload) {
+  attachWsSession(ws, payload, (conn, cb) => {
+    conn.shell({ term: 'xterm-256color', cols: 120, rows: 32 }, cb);
+  });
+}
+
+function handleConnection(ws, req, mode) {
+  const url = new URL(req.url, 'http://localhost');
+  const token = url.searchParams.get('token');
+  const payload = verifyToken(token);
+  if (!payload) {
+    ws.send(JSON.stringify({ type: 'error', data: 'Invalid or expired token' }));
+    ws.close();
+    return;
+  }
+  if (mode === 'host' || payload.mode === 'host') {
+    handleHostSession(ws, payload);
+  } else {
+    handleContainerSession(ws, payload);
+  }
+}
+
+const app = express();
+app.get('/health', (_, res) => res.json({ ok: true, paths: ['/session', '/host-session'] }));
+
+const server = http.createServer(app);
+const wssContainer = new WebSocketServer({ noServer: true });
+const wssHost = new WebSocketServer({ noServer: true });
+
+wssContainer.on('connection', (ws, req) => handleConnection(ws, req, 'container'));
+wssHost.on('connection', (ws, req) => handleConnection(ws, req, 'host'));
+
+server.on('upgrade', (req, socket, head) => {
+  const url = new URL(req.url, 'http://localhost');
+  if (url.pathname === '/session') {
+    wssContainer.handleUpgrade(req, socket, head, (ws) => {
+      wssContainer.emit('connection', ws, req);
+    });
+  } else if (url.pathname === '/host-session') {
+    wssHost.handleUpgrade(req, socket, head, (ws) => {
+      wssHost.emit('connection', ws, req);
+    });
+  } else {
+    socket.destroy();
+  }
 });
 
-server.listen(PORT, () => {
-  console.log('Terminal bridge listening on port', PORT);
+server.listen(bridgeConfig.PORT, () => {
+  console.log('Terminal bridge listening on port', bridgeConfig.PORT, '(/session, /host-session)');
+  console.log('Runtime config:', fs.existsSync(RUNTIME_PATH) ? RUNTIME_PATH : 'env fallback');
 });

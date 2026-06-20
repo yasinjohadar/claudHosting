@@ -1,4 +1,4 @@
-<div class="tab-pane fade" id="tabWpMgmt" role="tabpanel">
+<div class="coolify-settings-fields">
     <p class="small text-muted">إعدادات WP-CLI وDocker لمواقع WordPress. إدارة المواقع تتطلب SSH (تبويب SSH).</p>
     <p class="small text-muted mb-3">إعدادات <strong>FileBrowser</strong> نُقلت إلى تبويب <a href="#" data-bs-toggle="tab" data-bs-target="#tabWordpress" role="tab">WordPress</a>.</p>
     <div class="row g-3 mb-3">

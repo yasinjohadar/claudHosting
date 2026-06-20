@@ -17,6 +17,13 @@
                     'stopRoute' => route('admin.coolify.applications.stop', $uuid),
                     'restartRoute' => route('admin.coolify.applications.restart', $uuid),
                 ])
+                @include('admin.coolify.backups.partials.resource-snapshot-button', [
+                    'resourceUuid' => $uuid,
+                    'resourceType' => 'application',
+                    'resourceName' => $application['name'] ?? $uuid,
+                    'projectUuid' => $application['project_uuid'] ?? ($application['environment']['project_uuid'] ?? null),
+                    'serverUuid' => $application['server_uuid'] ?? ($application['destination']['server']['uuid'] ?? null),
+                ])
                 <a href="{{ route('admin.coolify.applications.logs', $uuid) }}" class="btn btn-sm btn-outline-dark">السجلات</a>
                 <a href="{{ route('admin.coolify.applications.edit', $uuid) }}" class="btn btn-sm btn-outline-primary">تعديل</a>
                 @include('admin.coolify.partials.delete-form', ['action' => route('admin.coolify.applications.destroy', $uuid)])

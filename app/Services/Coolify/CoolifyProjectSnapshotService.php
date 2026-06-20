@@ -16,7 +16,8 @@ class CoolifyProjectSnapshotService
         protected CoolifyBackupService $backupService,
         protected CoolifySshExecutor $ssh,
         protected CoolifySnapshotStorageService $storage,
-        protected CoolifySettingsService $settings
+        protected CoolifySettingsService $settings,
+        protected CoolifyDatabaseBackupRestoreService $databaseRestore
     ) {}
 
     /**
@@ -141,6 +142,26 @@ class CoolifyProjectSnapshotService
                 's3_storage_uuid' => $s3Uuid,
             ],
         ]);
+
+        if ($configUuid !== '') {
+            $waitSeconds = (int) config('coolify.snapshot_db_backup_wait_seconds', 180);
+            try {
+                $execution = $this->databaseRestore->waitForSuccessfulExecution(
+                    $item->resource_uuid,
+                    $configUuid,
+                    max(60, $waitSeconds)
+                );
+                $this->databaseRestore->attachExecutionToItemMetadata($item->fresh(), $execution);
+            } catch (\Throwable $e) {
+                $meta = $item->fresh()->metadata ?? [];
+                $item->update([
+                    'metadata' => array_merge($meta, [
+                        'execution_pending' => true,
+                        'execution_wait_note' => $e->getMessage(),
+                    ]),
+                ]);
+            }
+        }
     }
 
     protected function backupVolumeItem(CoolifyProjectSnapshotItem $item, CoolifyProjectSnapshot $snapshot): void

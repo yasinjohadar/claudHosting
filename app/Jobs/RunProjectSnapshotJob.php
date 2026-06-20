@@ -3,49 +3,38 @@
 namespace App\Jobs;
 
 use App\Models\CoolifyProjectSnapshot;
-use App\Services\Coolify\CoolifyProjectSnapshotService;
 use App\Services\Coolify\CoolifySettingsService;
+use App\Services\Coolify\CoolifySnapshotCancellationService;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Queue\Queueable;
-use Illuminate\Support\Facades\Log;
 
 class RunProjectSnapshotJob implements ShouldQueue
 {
     use Queueable;
 
-    public int $timeout = 7200;
+    public int $timeout = 120;
 
     public function __construct(public int $snapshotId)
     {
         $this->onQueue(app(CoolifySettingsService::class)->getBackupQueue());
     }
 
-    public function handle(CoolifyProjectSnapshotService $service): void
+    public function handle(CoolifySnapshotCancellationService $cancellation): void
     {
         $snapshot = CoolifyProjectSnapshot::with('items')->find($this->snapshotId);
 
-        if (! $snapshot) {
+        if (! $snapshot || $cancellation->isCancelled($snapshot)) {
             return;
         }
 
         $snapshot->update(['status' => 'running', 'started_at' => now()]);
 
         foreach ($snapshot->items as $item) {
-            if ($item->status !== 'pending') {
+            if ($item->status === 'completed') {
                 continue;
             }
 
-            try {
-                $service->processItem($item, $snapshot);
-            } catch (\Throwable $e) {
-                Log::error('Snapshot item failed', [
-                    'snapshot_id' => $snapshot->id,
-                    'item_id' => $item->id,
-                    'message' => $e->getMessage(),
-                ]);
-            }
+            RunProjectSnapshotItemJob::dispatch($snapshot->id, $item->id);
         }
-
-        $snapshot->refreshStatusFromItems();
     }
 }

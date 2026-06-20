@@ -19,15 +19,59 @@ class PackageOrderRequestController extends Controller
 
     public function index(Request $request)
     {
+        $orderRequests = $this->paginateOrderRequests($request);
+        $stats = $this->orderRequestStats();
+
+        if ($request->ajax() || $request->boolean('ajax')) {
+            return response()->json([
+                'html' => view('admin.order-requests.partials.list-results', compact('orderRequests'))->render(),
+                'total' => $orderRequests->total(),
+            ]);
+        }
+
+        return view('admin.order-requests.index', compact('orderRequests', 'stats'));
+    }
+
+    /**
+     * @return array<string, int>
+     */
+    protected function orderRequestStats(): array
+    {
+        return [
+            'total' => PackageOrderRequest::count(),
+            'pending' => PackageOrderRequest::where('status', PackageOrderRequest::STATUS_PENDING)->count(),
+            'contacted' => PackageOrderRequest::where('status', PackageOrderRequest::STATUS_CONTACTED)->count(),
+            'converted' => PackageOrderRequest::where('status', PackageOrderRequest::STATUS_CONVERTED)->count(),
+        ];
+    }
+
+    protected function paginateOrderRequests(Request $request): \Illuminate\Contracts\Pagination\LengthAwarePaginator
+    {
+        return $this->buildOrderRequestsQuery($request)->paginate(15)->withQueryString();
+    }
+
+    protected function buildOrderRequestsQuery(Request $request): \Illuminate\Database\Eloquent\Builder
+    {
         $query = PackageOrderRequest::with(['product', 'user'])->latest();
 
-        if ($request->filled('status')) {
+        if ($request->filled('q')) {
+            $term = '%'.trim((string) $request->q).'%';
+            $query->where(function ($qb) use ($term) {
+                $qb->where('name', 'like', $term)
+                    ->orWhere('email', 'like', $term)
+                    ->orWhere('phone', 'like', $term);
+            });
+        }
+
+        if ($request->filled('status') && array_key_exists($request->status, PackageOrderRequest::statuses())) {
             $query->where('status', $request->status);
         }
 
-        $orderRequests = $query->paginate(15)->withQueryString();
+        if ($request->filled('billing_cycle') && array_key_exists($request->billing_cycle, PackageOrderRequest::billingCycles())) {
+            $query->where('billing_cycle', $request->billing_cycle);
+        }
 
-        return view('admin.order-requests.index', compact('orderRequests'));
+        return $query;
     }
 
     public function show($id)

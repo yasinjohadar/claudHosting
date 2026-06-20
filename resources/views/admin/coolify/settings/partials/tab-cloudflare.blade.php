@@ -1,4 +1,4 @@
-<div class="tab-pane fade" id="tabCloudflare" role="tabpanel">
+<div class="coolify-settings-fields">
     <p class="small text-muted">حماية DDoS وتسريع عبر Cloudflare عند إنشاء مواقع WordPress جديدة.</p>
     <div class="mb-3">
         <label class="form-check">

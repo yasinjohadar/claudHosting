@@ -5,20 +5,13 @@
 @stop
 
 @section('content')
-@include('admin.coolify.partials.overview-styles')
 <div class="main-content app-content">
     <div class="container-fluid">
-        <div class="coolify-dash-hero mb-4">
-            <div class="d-md-flex align-items-center justify-content-between gap-3">
-                <div>
-                    <h4 class="mb-1 fw-bold">لوحة التحكم</h4>
-                    <p class="text-muted mb-0">اختصار سريع لأقسام النظام — انقر على أي بطاقة للانتقال</p>
-                </div>
-                <div class="text-muted small">
-                    {{ now()->translatedFormat('l، j F Y') }}
-                </div>
-            </div>
-        </div>
+        @include('admin.partials.dashboard-welcome')
+
+        @include('admin.partials.dashboard-kpi-row')
+
+        @include('admin.partials.dashboard-insights')
 
         @php
             $whmMeta = (isset($whmConnected) && $whmConnected)
@@ -71,13 +64,15 @@
         @endphp
 
         @foreach($sections as $sectionTitle => $cards)
-            <h6 class="text-muted text-uppercase small fw-bold mb-3 mt-1">{{ $sectionTitle }}</h6>
-            <div class="row g-3 mb-4" role="list">
-                @foreach($cards as $card)
-                    <div class="col-xl-3 col-lg-4 col-md-6" role="listitem">
-                        @include('admin.partials.stat-widget', $card)
-                    </div>
-                @endforeach
+            <div class="admin-dash-section">
+                <h6 class="admin-section-title">{{ $sectionTitle }}</h6>
+                <div class="admin-dash-grid" role="list">
+                    @foreach($cards as $card)
+                        <div role="listitem">
+                            @include('admin.partials.stat-widget', $card)
+                        </div>
+                    @endforeach
+                </div>
             </div>
         @endforeach
     </div>

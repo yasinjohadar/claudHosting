@@ -34,6 +34,8 @@
 <link rel="stylesheet" href="{{ asset('assets/libs/jsvectormap/css/jsvectormap.min.css') }}">
 
 <!-- Custom Css -->
-<link rel="stylesheet" href="{{ asset('assets/css/custom.css') }}">
+<link rel="stylesheet" href="{{ asset('assets/css/custom.css') }}?v={{ @filemtime(public_path('assets/css/custom.css')) ?: '1' }}">
+<link rel="stylesheet" href="{{ asset('assets/css/admin-sidebar.css') }}?v={{ @filemtime(public_path('assets/css/admin-sidebar.css')) ?: '1' }}">
+<link rel="stylesheet" href="{{ asset('assets/css/admin-dashboard.css') }}?v={{ @filemtime(public_path('assets/css/admin-dashboard.css')) ?: '1' }}">
 
 @stack('styles')

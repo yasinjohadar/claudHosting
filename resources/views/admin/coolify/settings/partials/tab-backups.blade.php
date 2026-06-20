@@ -1,4 +1,4 @@
-<div class="tab-pane fade" id="tabBackups" role="tabpanel">
+<div class="coolify-settings-fields">
     <div class="mb-3">
         <label class="form-label">طابور Queue للنسخ والاستعادة</label>
         <input type="text" name="backup_queue" class="form-control @error('backup_queue') is-invalid @enderror"

@@ -41,6 +41,18 @@ class ClientCoolifyProjectController extends Controller
         $services = array_values(array_filter($resources, fn ($r) => ($r['type'] ?? '') === 'service'));
         $databases = array_values(array_filter($resources, fn ($r) => ($r['type'] ?? '') === 'database'));
 
+        $deploymentsByApp = [];
+        if (config('coolify.client_portal.actions.view_deployments', true)) {
+            foreach ($applications as $app) {
+                $appUuid = (string) ($app['uuid'] ?? '');
+                if ($appUuid === '') {
+                    continue;
+                }
+                $depRes = $api->listDeploymentsByApplication($appUuid);
+                $deploymentsByApp[$appUuid] = array_slice($api->normalizeList($depRes['data'] ?? []), 0, 5);
+            }
+        }
+
         $actions = config('coolify.client_portal.actions', []);
 
         return view('client.pages.coolify-project', compact(
@@ -49,7 +61,8 @@ class ClientCoolifyProjectController extends Controller
             'applications',
             'services',
             'databases',
-            'actions'
+            'actions',
+            'deploymentsByApp'
         ));
     }
 
@@ -59,13 +72,7 @@ class ClientCoolifyProjectController extends Controller
             abort(403);
         }
 
-        $user = auth()->user();
-        $access = $this->assertAccess($user->id, $uuid);
-        if (! $access['success']) {
-            abort(403, $access['message']);
-        }
-
-        $api = $this->teamService->apiForUser($user->id) ?? $this->coolify;
+        $api = $this->apiForProject($uuid);
         $response = $api->deploy($appUuid);
 
         return back()->with(
@@ -80,13 +87,7 @@ class ClientCoolifyProjectController extends Controller
             abort(403);
         }
 
-        $user = auth()->user();
-        $access = $this->assertAccess($user->id, $uuid);
-        if (! $access['success']) {
-            abort(403, $access['message']);
-        }
-
-        $api = $this->teamService->apiForUser($user->id) ?? $this->coolify;
+        $api = $this->apiForProject($uuid);
         $response = $api->restartApplication($appUuid);
 
         return back()->with(
@@ -101,16 +102,97 @@ class ClientCoolifyProjectController extends Controller
             abort(403);
         }
 
-        $user = auth()->user();
-        $access = $this->assertAccess($user->id, $uuid);
-        if (! $access['success']) {
-            return response()->json(['success' => false, 'message' => $access['message']], 403);
-        }
-
-        $api = $this->teamService->apiForUser($user->id) ?? $this->coolify;
+        $api = $this->apiForProject($uuid);
         $response = $api->applicationLogs($appUuid, (int) request('lines', 150));
 
         return response()->json($response);
+    }
+
+    public function applicationDeployments(string $uuid, string $appUuid): JsonResponse
+    {
+        if (! config('coolify.client_portal.actions.view_deployments', true)) {
+            abort(403);
+        }
+
+        $api = $this->apiForProject($uuid);
+        $response = $api->listDeploymentsByApplication($appUuid);
+
+        return response()->json($response);
+    }
+
+    public function serviceLifecycle(string $uuid, string $serviceUuid, string $action): RedirectResponse
+    {
+        if (! config('coolify.client_portal.actions.service_lifecycle', true)) {
+            abort(403);
+        }
+
+        if (! in_array($action, ['start', 'stop', 'restart'], true)) {
+            abort(404);
+        }
+
+        $api = $this->apiForProject($uuid);
+        $response = match ($action) {
+            'start' => $api->startService($serviceUuid),
+            'stop' => $api->stopService($serviceUuid),
+            default => $api->restartService($serviceUuid),
+        };
+
+        return back()->with(
+            ($response['success'] ?? false) ? 'success' : 'error',
+            ($response['success'] ?? false) ? 'تم تنفيذ الإجراء على الخدمة' : ($response['message'] ?? 'فشل الإجراء')
+        );
+    }
+
+    public function serviceLogs(string $uuid, string $serviceUuid): JsonResponse
+    {
+        if (! config('coolify.client_portal.actions.service_logs', true)) {
+            abort(403);
+        }
+
+        $api = $this->apiForProject($uuid);
+        $response = $api->getService($serviceUuid);
+        $service = is_array($response['data'] ?? null) ? $response['data'] : null;
+        if (! $service) {
+            return response()->json(['success' => false, 'message' => 'الخدمة غير موجودة'], 404);
+        }
+
+        $logs = $api->fetchServiceApplicationLogs($service, (int) request('lines', 120));
+
+        return response()->json(['success' => true, 'data' => $logs]);
+    }
+
+    public function databaseLifecycle(string $uuid, string $databaseUuid, string $action): RedirectResponse
+    {
+        if (! config('coolify.client_portal.actions.database_lifecycle', true)) {
+            abort(403);
+        }
+
+        if (! in_array($action, ['start', 'stop', 'restart'], true)) {
+            abort(404);
+        }
+
+        $api = $this->apiForProject($uuid);
+        $response = match ($action) {
+            'start' => $api->startDatabase($databaseUuid),
+            'stop' => $api->stopDatabase($databaseUuid),
+            default => $api->restartDatabase($databaseUuid),
+        };
+
+        return back()->with(
+            ($response['success'] ?? false) ? 'success' : 'error',
+            ($response['success'] ?? false) ? 'تم تنفيذ الإجراء على قاعدة البيانات' : ($response['message'] ?? 'فشل الإجراء')
+        );
+    }
+
+    protected function apiForProject(string $projectUuid): CoolifyApiService
+    {
+        $user = auth()->user();
+        $access = $this->assertAccess($user->id, $projectUuid);
+        if (! $access['success']) {
+            abort(403, $access['message']);
+        }
+
+        return $this->teamService->apiForUser($user->id) ?? $this->coolify;
     }
 
     /**

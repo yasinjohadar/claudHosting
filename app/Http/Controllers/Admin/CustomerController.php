@@ -19,17 +19,61 @@ class CustomerController extends Controller
      */
     public function index(Request $request)
     {
+        $clients = $this->paginateClients($request);
+        $configured = app(\App\Services\Whm\WhmApiService::class)->isConfigured();
+        $stats = $this->clientStats();
+
+        if ($request->ajax() || $request->boolean('ajax')) {
+            return response()->json([
+                'html' => view('admin.customers.partials.list-results', compact('clients'))->render(),
+                'total' => $clients->total(),
+            ]);
+        }
+
+        return view('admin.customers.index', compact('clients', 'configured', 'stats'));
+    }
+
+    /**
+     * @return array<string, int>
+     */
+    protected function clientStats(): array
+    {
+        return [
+            'total' => User::count(),
+            'with_whm' => User::whereHas('whmAccounts')->count(),
+            'without_whm' => User::whereDoesntHave('whmAccounts')->count(),
+            'active' => User::where('is_active', true)->where('status', 'active')->count(),
+            'inactive' => User::where(function ($q) {
+                $q->where('is_active', false)
+                    ->orWhereIn('status', ['inactive', 'banned']);
+            })->count(),
+        ];
+    }
+
+    protected function paginateClients(Request $request): \Illuminate\Contracts\Pagination\LengthAwarePaginator
+    {
+        $query = $this->buildClientsQuery($request);
+
+        return $query->paginate(15)->withQueryString();
+    }
+
+    protected function buildClientsQuery(Request $request): \Illuminate\Database\Eloquent\Builder
+    {
         $query = User::query()
-            ->withCount('whmAccounts')
-            ->with(['whmAccounts' => fn ($q) => $q->orderByDesc('joined_at')->limit(5)])
-            ->orderBy('name');
+            ->withCount([
+                'whmAccounts',
+                'clientDomains',
+                'whmAccounts as whm_active_accounts_count' => fn ($q) => $q->where('status', '!=', 'terminated'),
+            ])
+            ->with(['whmAccounts' => fn ($q) => $q->orderByDesc('joined_at')->limit(3)]);
 
         if ($request->filled('q')) {
             $term = '%'.trim((string) $request->q).'%';
             $query->where(function ($qb) use ($term) {
                 $qb->where('name', 'like', $term)
                     ->orWhere('email', 'like', $term)
-                    ->orWhere('phone', 'like', $term);
+                    ->orWhere('phone', 'like', $term)
+                    ->orWhere('username', 'like', $term);
             });
         }
 
@@ -37,10 +81,25 @@ class CustomerController extends Controller
             $query->whereHas('whmAccounts');
         }
 
-        $clients = $query->paginate(15)->withQueryString();
-        $configured = app(\App\Services\Whm\WhmApiService::class)->isConfigured();
+        if ($request->filled('status') && in_array($request->status, ['active', 'inactive', 'banned'], true)) {
+            $query->where('status', $request->status);
+        }
 
-        return view('admin.customers.index', compact('clients', 'configured'));
+        if ($request->filled('is_active')) {
+            $query->where('is_active', $request->boolean('is_active'));
+        }
+
+        $sort = (string) $request->query('sort', 'name');
+        $dir = strtolower((string) $request->query('dir', 'asc')) === 'desc' ? 'desc' : 'asc';
+        if ($sort === 'created') {
+            $query->orderBy('created_at', $dir);
+        } elseif ($sort === 'whm') {
+            $query->orderBy('whm_accounts_count', $dir);
+        } else {
+            $query->orderBy('name', $dir);
+        }
+
+        return $query;
     }
 
     public function create()
@@ -93,13 +152,20 @@ class CustomerController extends Controller
     public function destroy($id)
     {
         $user = User::findOrFail($id);
+
+        if ((int) $user->id === (int) auth()->id()) {
+            return back()->with('error', 'لا يمكنك حذف حسابك.');
+        }
+
         if ($user->whmAccounts()->where('status', '!=', 'terminated')->exists()) {
             return back()->with('error', 'لا يمكن حذف مستخدم مرتبط بحسابات استضافة نشطة — ألغِ الربط من WHM أولاً.');
         }
 
+        $user->delete();
+
         return redirect()
-            ->route('users.index')
-            ->with('error', 'حذف العملاء يتم من صفحة المستخدمين.');
+            ->route('admin.customers.index')
+            ->with('success', 'تم حذف العميل بنجاح.');
     }
 
     public function productSuspend(Request $request, string $id, int $serviceId)

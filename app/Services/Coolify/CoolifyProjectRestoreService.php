@@ -5,6 +5,7 @@ namespace App\Services\Coolify;
 use App\Models\CoolifyProjectSnapshot;
 use App\Models\CoolifyProjectSnapshotItem;
 use App\Services\CoolifyApiService;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Str;
 
 class CoolifyProjectRestoreService
@@ -12,18 +13,17 @@ class CoolifyProjectRestoreService
     public function __construct(
         protected CoolifyApiService $coolify,
         protected CoolifySshExecutor $ssh,
-        protected CoolifySnapshotStorageService $storage
+        protected CoolifySnapshotStorageService $storage,
+        protected CoolifyDatabaseBackupRestoreService $databaseRestore,
+        protected CoolifyBackupAuditService $audit
     ) {}
 
     /**
      * @param  array<int>|null  $itemIds
+     * @return \Illuminate\Support\Collection<int, CoolifyProjectSnapshotItem>
      */
-    public function restore(CoolifyProjectSnapshot $snapshot, ?array $itemIds = null, array $options = []): void
+    public function resolveItemsForRestore(CoolifyProjectSnapshot $snapshot, ?array $itemIds = null, array $options = []): \Illuminate\Support\Collection
     {
-        if (! $this->storage->isConfigured()) {
-            throw new \RuntimeException('تخزين S3 غير مضبوط في إعدادات Coolify');
-        }
-
         $query = $snapshot->items()->where('status', 'completed');
 
         if ($itemIds !== null && $itemIds !== []) {
@@ -32,26 +32,50 @@ class CoolifyProjectRestoreService
             $query->where('project_uuid', $snapshot->project_uuid);
         }
 
-        $items = $query->get();
-        $stopBefore = (bool) ($options['stop_before_restore'] ?? true);
+        return $query->get();
+    }
 
-        foreach ($items as $item) {
-            $this->restoreItem($item, $stopBefore, $options);
-        }
+    public function beginRestore(CoolifyProjectSnapshot $snapshot, ?array $itemIds = null): void
+    {
+        $snapshot->resetRestoreStateForItems($itemIds);
+
+        $snapshot->update([
+            'restore_status' => 'running',
+            'restore_started_at' => now(),
+            'restore_completed_at' => null,
+        ]);
     }
 
     /**
      * @param  array<string, mixed>  $options
      */
-    protected function restoreItem(CoolifyProjectSnapshotItem $item, bool $stopBefore, array $options = []): void
+    public function processRestoreItem(CoolifyProjectSnapshotItem $item, array $options = []): void
     {
-        $item->update(['status' => 'running', 'started_at' => now()]);
+        if (! $this->storage->isConfigured()) {
+            throw new \RuntimeException('تخزين S3 غير مضبوط في إعدادات Coolify');
+        }
+
+        $stopBefore = (bool) ($options['stop_before_restore'] ?? true);
+
+        $item->update([
+            'restore_status' => 'running',
+            'restore_error' => null,
+        ]);
 
         try {
+            if ($item->strategy === 'manifest_only') {
+                $item->update([
+                    'restore_status' => 'skipped',
+                    'restore_error' => 'بيانات وصفية فقط — لا يوجد محتوى لاستعادته',
+                ]);
+
+                return;
+            }
+
             match ($item->strategy) {
                 'ssh_volume' => $this->restoreVolumes($item, $stopBefore),
-                'coolify_api' => $this->restoreDatabaseHint($item),
-                default => true,
+                'coolify_api' => $this->databaseRestore->restoreSnapshotItem($item, $stopBefore),
+                default => null,
             };
 
             if (($options['redeploy'] ?? false) && in_array($item->resource_type, ['application', 'service'], true)) {
@@ -62,14 +86,51 @@ class CoolifyProjectRestoreService
                 }
             }
 
-            $item->update(['status' => 'completed', 'completed_at' => now()]);
+            $item->update(['restore_status' => 'completed', 'restore_error' => null]);
         } catch (\Throwable $e) {
             $item->update([
-                'status' => 'failed',
-                'error_message' => $e->getMessage(),
-                'completed_at' => now(),
+                'restore_status' => 'failed',
+                'restore_error' => $e->getMessage(),
             ]);
+
+            $this->audit->log(
+                'snapshot_restore_item_failed',
+                'snapshot_item',
+                (string) $item->id,
+                $item->resource_type,
+                $item->resource_uuid,
+                'failed',
+                $e->getMessage()
+            );
         }
+    }
+
+    public function finalizeRestoreIfDone(CoolifyProjectSnapshot $snapshot): void
+    {
+        $snapshot->refreshRestoreStatusFromItems();
+
+        if (! $snapshot->isRestoreFinished()) {
+            return;
+        }
+
+        $lockKey = 'coolify.snapshot.restore_audit.'.$snapshot->id;
+        if (! Cache::add($lockKey, 1, now()->addHour())) {
+            return;
+        }
+
+        $items = $snapshot->items()->whereNotNull('restore_status')->get();
+        $failed = $items->where('restore_status', 'failed')->count();
+
+        $this->audit->log(
+            'snapshot_restore',
+            'project_snapshot',
+            $snapshot->uuid,
+            null,
+            null,
+            $failed > 0 ? 'partial' : 'completed',
+            'استعادة لقطة: '.$items->where('restore_status', 'completed')->count().' ناجح، '.$failed.' فاشل',
+            ['restore_status' => $snapshot->restore_status]
+        );
     }
 
     protected function restoreVolumes(CoolifyProjectSnapshotItem $item, bool $stopBefore): void
@@ -116,15 +177,5 @@ class CoolifyProjectRestoreService
                 }
             }
         }
-    }
-
-    protected function restoreDatabaseHint(CoolifyProjectSnapshotItem $item): void
-    {
-        $meta = $item->metadata ?? [];
-        $item->update([
-            'metadata' => array_merge($meta, [
-                'restore_note' => 'استعادة DB: الملف على S3 في Coolify (save_s3). استخدم تنفيذ النسخ من لوحة Coolify أو pg_restore/mysql من نسخة S3.',
-            ]),
-        ]);
     }
 }

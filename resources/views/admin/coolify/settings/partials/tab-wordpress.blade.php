@@ -1,4 +1,4 @@
-<div class="tab-pane fade" id="tabWordpress" role="tabpanel">
+<div class="coolify-settings-fields">
     <p class="small text-muted">لإنشاء مواقع بروابط فرعية تلقائية (<code>mysite.{{ $form['wordpress_base_domain'] ?: 'sites.example.com' }}</code>) يجب ضبط <strong>Wildcard DNS</strong> (*.{base_domain}) على السيرفر/النطاق.</p>
     @if(!($wordpressReadiness['ready'] ?? false))
         <div class="alert alert-warning py-2 small">لتفعيل معالج WordPress: اضبط النطاق الأساسي والسيرفر الافتراضي.</div>

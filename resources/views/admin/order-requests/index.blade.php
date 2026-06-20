@@ -4,114 +4,128 @@
 طلبات الباقات
 @stop
 
+@push('styles')
+@include('admin.partials.domain-ui-styles')
+@endpush
+
 @section('content')
-<!-- Start::app-content -->
 <div class="main-content app-content">
     <div class="container-fluid">
-        <!-- Page Header -->
-        <div class="d-md-flex d-block align-items-center justify-content-between my-4 page-header-breadcrumb">
-            <div>
-                <h4 class="mb-0">طلبات الباقات</h4>
-                <nav>
-                    <ol class="breadcrumb mb-0">
-                        <li class="breadcrumb-item"><a href="{{ route('admin.dashboard') }}">الرئيسية</a></li>
-                        <li class="breadcrumb-item active" aria-current="page">طلبات الباقات</li>
-                    </ol>
-                </nav>
+        <div class="domain-page-hero">
+            <div class="d-md-flex justify-content-between align-items-start flex-wrap gap-3">
+                <div>
+                    <nav class="domain-page-hero__breadcrumb mb-2">
+                        <a href="{{ route('admin.dashboard') }}">لوحة التحكم</a>
+                        <span class="text-muted mx-1">/</span>
+                        <span>طلبات الباقات</span>
+                    </nav>
+                    <h1 class="domain-page-hero__title">طلبات الباقات</h1>
+                    <p class="text-muted small mb-0">طلبات الاشتراك في باقات الاستضافة — متابعة الحالة والتزويد.</p>
+                </div>
+                <div class="d-flex flex-wrap gap-2">
+                    <a href="{{ route('admin.products.index') }}" class="btn btn-light btn-sm">
+                        <i class="fe fe-package me-1"></i> المنتجات
+                    </a>
+                </div>
             </div>
         </div>
-        <!-- End Page Header -->
 
-        @if(session('success'))
-            <div class="alert alert-success alert-dismissible fade show" role="alert">
-                {{ session('success') }}
-                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-            </div>
-        @endif
-        @if(session('error'))
-            <div class="alert alert-danger alert-dismissible fade show" role="alert">
-                {{ session('error') }}
-                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-            </div>
-        @endif
-        @if(session('info'))
-            <div class="alert alert-info alert-dismissible fade show" role="alert">
-                {{ session('info') }}
-                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-            </div>
-        @endif
+        @if(session('success'))<div class="alert alert-success py-2">{{ session('success') }}</div>@endif
+        @if(session('error'))<div class="alert alert-danger py-2">{{ session('error') }}</div>@endif
+        @if(session('info'))<div class="alert alert-info py-2">{{ session('info') }}</div>@endif
 
-        <div class="row">
-            <div class="col-12">
-                <div class="card custom-card">
-                    <div class="card-header d-flex flex-wrap gap-2 align-items-center">
-                        <div class="card-title">قائمة الطلبات</div>
-                        <form method="get" class="d-flex gap-2">
-                            <select name="status" class="form-select form-select-sm" style="width:auto;" onchange="this.form.submit()">
-                                <option value="">جميع الحالات</option>
-                                @foreach(\App\Models\PackageOrderRequest::statuses() as $key => $label)
-                                    <option value="{{ $key }}" {{ request('status') == $key ? 'selected' : '' }}>{{ $label }}</option>
-                                @endforeach
-                            </select>
-                        </form>
-                    </div>
-                    <div class="card-body">
-                        <div class="table-responsive">
-                            <table class="table table-bordered text-nowrap">
-                                <thead>
-                                    <tr>
-                                        <th>#</th>
-                                        <th>الاسم</th>
-                                        <th>البريد</th>
-                                        <th>الباقة</th>
-                                        <th>دورة الفوترة</th>
-                                        <th>الحالة</th>
-                                        <th>التاريخ</th>
-                                        <th>الإجراءات</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    @forelse($orderRequests as $req)
-                                    <tr>
-                                        <td>{{ $req->id }}</td>
-                                        <td>{{ $req->name }}</td>
-                                        <td>{{ $req->email }}</td>
-                                        <td>{{ $req->product?->name ?? '-' }}</td>
-                                        <td>{{ $req->billing_cycle_label }}</td>
-                                        <td>
-                                            @if($req->status == 'pending')
-                                                <span class="badge bg-warning-transparent">قيد الانتظار</span>
-                                            @elseif($req->status == 'contacted')
-                                                <span class="badge bg-info-transparent">تم التواصل</span>
-                                            @elseif($req->status == 'converted')
-                                                <span class="badge bg-success-transparent">تم التحويل</span>
-                                            @elseif($req->status == 'cancelled')
-                                                <span class="badge bg-danger-transparent">ملغي</span>
-                                            @else
-                                                <span class="badge bg-secondary-transparent">{{ $req->status }}</span>
-                                            @endif
-                                        </td>
-                                        <td>{{ $req->created_at->format('Y-m-d H:i') }}</td>
-                                        <td>
-                                            <a href="{{ route('admin.order-requests.show', $req->id) }}" class="btn btn-icon btn-sm btn-info-transparent" title="عرض"><i class="ri-eye-line"></i></a>
-                                        </td>
-                                    </tr>
-                                    @empty
-                                    <tr>
-                                        <td colspan="8" class="text-center text-muted py-4">لا توجد طلبات</td>
-                                    </tr>
-                                    @endforelse
-                                </tbody>
-                            </table>
-                        </div>
-                        <div class="d-flex justify-content-center mt-3">
-                            {{ $orderRequests->links() }}
-                        </div>
-                    </div>
+        <div class="domain-kpi-grid">
+            <div class="domain-kpi domain-kpi--primary">
+                <span class="domain-kpi__icon"><i class="fe fe-inbox"></i></span>
+                <div>
+                    <div class="domain-kpi__label">إجمالي الطلبات</div>
+                    <div class="domain-kpi__value">{{ $stats['total'] ?? 0 }}</div>
                 </div>
+            </div>
+            <div class="domain-kpi domain-kpi--warning">
+                <span class="domain-kpi__icon"><i class="fe fe-clock"></i></span>
+                <div>
+                    <div class="domain-kpi__label">قيد الانتظار</div>
+                    <div class="domain-kpi__value">{{ $stats['pending'] ?? 0 }}</div>
+                </div>
+            </div>
+            <div class="domain-kpi domain-kpi--info">
+                <span class="domain-kpi__icon"><i class="fe fe-phone"></i></span>
+                <div>
+                    <div class="domain-kpi__label">تم التواصل</div>
+                    <div class="domain-kpi__value">{{ $stats['contacted'] ?? 0 }}</div>
+                </div>
+            </div>
+            <div class="domain-kpi domain-kpi--success">
+                <span class="domain-kpi__icon"><i class="fe fe-check-circle"></i></span>
+                <div>
+                    <div class="domain-kpi__label">تم التنفيذ</div>
+                    <div class="domain-kpi__value">{{ $stats['converted'] ?? 0 }}</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="domain-panel domain-search-panel mb-3">
+            <div class="domain-panel__head">
+                <span class="domain-panel__head-icon"><i class="fe fe-filter"></i></span>
+                <h2 class="domain-panel__title">بحث وتصفية</h2>
+            </div>
+            <div class="domain-panel__body py-2">
+                <form method="GET" id="order-requests-filter-form" class="domain-filter-row">
+                    <div class="domain-filter-field domain-filter-field--search">
+                        <label class="domain-filter-field__label" for="order-q">بحث</label>
+                        <div class="input-group input-group-sm">
+                            <span class="input-group-text"><i class="fe fe-search"></i></span>
+                            <input type="search" id="order-q" name="q" class="form-control"
+                                value="{{ request('q') }}" placeholder="اسم، بريد، هاتف" autocomplete="off">
+                        </div>
+                    </div>
+                    <div class="domain-filter-field domain-filter-field--compact">
+                        <label class="domain-filter-field__label">الحالة</label>
+                        <select name="status" class="form-select form-select-sm">
+                            <option value="">الكل</option>
+                            @foreach(\App\Models\PackageOrderRequest::statuses() as $key => $label)
+                            <option value="{{ $key }}" @selected(request('status') === $key)>{{ $label }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+                    <div class="domain-filter-field domain-filter-field--compact">
+                        <label class="domain-filter-field__label">الفوترة</label>
+                        <select name="billing_cycle" class="form-select form-select-sm">
+                            <option value="">الكل</option>
+                            @foreach(\App\Models\PackageOrderRequest::billingCycles() as $key => $label)
+                            <option value="{{ $key }}" @selected(request('billing_cycle') === $key)>{{ $label }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+                    <div class="domain-filter-field domain-filter-field--actions">
+                        <label class="domain-filter-field__label d-none d-xl-block">&nbsp;</label>
+                        <div class="domain-filter-inline-actions">
+                            <button type="submit" class="btn btn-primary btn-sm">تطبيق</button>
+                            <button type="button" id="order-requests-filter-reset" class="btn btn-light btn-sm">مسح</button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <div class="domain-dns-panel customers-list-panel">
+            <div class="domain-dns-panel__head">
+                <h2 class="domain-dns-panel__title">
+                    <i class="fe fe-list text-primary"></i> قائمة الطلبات
+                </h2>
+                <span class="domain-dns-count" id="order-requests-count">{{ $orderRequests->total() }} طلب</span>
+            </div>
+            <div id="order-requests-list-loading" class="customers-list-loading" aria-hidden="true">
+                <span class="spinner-border spinner-border-sm text-primary" role="status"></span>
+                <span>جاري التحميل…</span>
+            </div>
+            <div id="order-requests-list-body">
+                @include('admin.order-requests.partials.list-results')
             </div>
         </div>
     </div>
 </div>
-<!-- End::app-content -->
+
+@include('admin.order-requests.partials.ajax-filters-script')
 @endsection

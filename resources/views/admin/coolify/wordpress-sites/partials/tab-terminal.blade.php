@@ -9,7 +9,7 @@
         @elseif(!$bridgeEnabled)
         <div class="alert alert-info py-3">
             <strong>Terminal Bridge غير مفعّل.</strong>
-            فعّله من <a href="{{ route('admin.coolify.settings.index', ['tab' => 'terminal']) }}">إعدادات Coolify → Terminal</a>
+            فعّله من <a href="{{ route('admin.coolify.settings.section', 'terminal') }}">إعدادات Coolify → Terminal Bridge</a>
             ثم شغّل <code>services/terminal-bridge</code> على السيرفر (راجع README).
         </div>
         @else

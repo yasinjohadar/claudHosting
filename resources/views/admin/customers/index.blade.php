@@ -4,108 +4,170 @@
 عملاء الاستضافة
 @stop
 
+@push('styles')
+@include('admin.partials.domain-ui-styles')
+@endpush
+
 @section('content')
+@php
+    $statusLabels = [
+        'active' => 'فعال',
+        'inactive' => 'غير نشط',
+        'banned' => 'محظور',
+    ];
+@endphp
 <div class="main-content app-content">
     <div class="container-fluid">
-        <div class="d-md-flex d-block align-items-center justify-content-between my-4 page-header-breadcrumb">
-            <div>
-                <h4 class="mb-0">عملاء الاستضافة</h4>
-                <p class="text-muted small mb-0">مستخدمو النظام المسؤولون عن حسابات cPanel — الربط من <a href="{{ route('admin.whm.accounts.index') }}">حسابات WHM</a>.</p>
-            </div>
-            <div class="ms-auto d-flex gap-2">
-                <a href="{{ route('users.create') }}" class="btn btn-primary btn-sm">
-                    <i class="fe fe-user-plus me-1"></i> مستخدم جديد
-                </a>
-                <a href="{{ route('admin.whm.accounts.index') }}" class="btn btn-outline-primary btn-sm">حسابات WHM</a>
+        <div class="domain-page-hero">
+            <div class="d-md-flex justify-content-between align-items-start flex-wrap gap-3">
+                <div>
+                    <nav class="domain-page-hero__breadcrumb mb-2">
+                        <a href="{{ route('admin.dashboard') }}">لوحة التحكم</a>
+                        <span class="text-muted mx-1">/</span>
+                        <span>عملاء الاستضافة</span>
+                    </nav>
+                    <h1 class="domain-page-hero__title">عملاء الاستضافة</h1>
+                    <p class="text-muted small mb-0">مستخدمي النظام المسؤولون عن حسابات cPanel — الربط من <a href="{{ route('admin.whm.accounts.index') }}">حسابات WHM</a>.</p>
+                </div>
+                <div class="d-flex flex-wrap gap-2">
+                    <a href="{{ route('users.create') }}" class="btn btn-primary btn-sm">
+                        <i class="fe fe-user-plus me-1"></i> مستخدم جديد
+                    </a>
+                    <a href="{{ route('admin.whm.accounts.index') }}" class="btn btn-light btn-sm">
+                        <i class="fe fe-server me-1"></i> حسابات WHM
+                    </a>
+                    <a href="{{ route('users.index') }}" class="btn btn-outline-secondary btn-sm">كل المستخدمين</a>
+                </div>
             </div>
         </div>
 
-        @if(session('success'))<div class="alert alert-success">{{ session('success') }}</div>@endif
-        @if(session('error'))<div class="alert alert-danger">{{ session('error') }}</div>@endif
+        @if(session('success'))<div class="alert alert-success py-2">{{ session('success') }}</div>@endif
+        @if(session('error'))<div class="alert alert-danger py-2">{{ session('error') }}</div>@endif
 
-        <div class="card custom-card mb-3">
-            <div class="card-body">
-                <form method="GET" class="row g-2 align-items-end">
-                    <div class="col-md-5">
-                        <label class="form-label">بحث</label>
-                        <input type="search" name="q" class="form-control" value="{{ request('q') }}" placeholder="اسم، بريد، هاتف">
+        <div class="domain-kpi-grid">
+            <div class="domain-kpi domain-kpi--primary">
+                <span class="domain-kpi__icon"><i class="fe fe-users"></i></span>
+                <div>
+                    <div class="domain-kpi__label">إجمالي العملاء</div>
+                    <div class="domain-kpi__value">{{ $stats['total'] ?? 0 }}</div>
+                </div>
+            </div>
+            <div class="domain-kpi domain-kpi--success">
+                <span class="domain-kpi__icon"><i class="fe fe-server"></i></span>
+                <div>
+                    <div class="domain-kpi__label">لديهم cPanel</div>
+                    <div class="domain-kpi__value">{{ $stats['with_whm'] ?? 0 }}</div>
+                </div>
+            </div>
+            <div class="domain-kpi domain-kpi--info">
+                <span class="domain-kpi__icon"><i class="fe fe-user"></i></span>
+                <div>
+                    <div class="domain-kpi__label">بدون استضافة</div>
+                    <div class="domain-kpi__value">{{ $stats['without_whm'] ?? 0 }}</div>
+                </div>
+            </div>
+            <div class="domain-kpi domain-kpi--purple">
+                <span class="domain-kpi__icon"><i class="fe fe-check-circle"></i></span>
+                <div>
+                    <div class="domain-kpi__label">نشطون</div>
+                    <div class="domain-kpi__value">{{ $stats['active'] ?? 0 }}</div>
+                </div>
+            </div>
+        </div>
+
+        @if(!($configured ?? false))
+        <div class="domain-connection-bar">
+            <span class="domain-connection-badge domain-connection-badge--warn">WHM غير مضبوط — <a href="{{ route('admin.whm.settings.index') }}" class="text-decoration-none">الإعدادات</a></span>
+        </div>
+        @else
+        <div class="domain-connection-bar">
+            <span class="domain-connection-badge domain-connection-badge--ok"><i class="fe fe-check"></i> WHM متصل</span>
+        </div>
+        @endif
+
+        <div class="domain-panel domain-search-panel mb-3">
+            <div class="domain-panel__head">
+                <span class="domain-panel__head-icon"><i class="fe fe-filter"></i></span>
+                <h2 class="domain-panel__title">بحث وتصفية</h2>
+            </div>
+            <div class="domain-panel__body py-2">
+                <form method="GET" id="customers-filter-form" class="domain-filter-row">
+                    <div class="domain-filter-field domain-filter-field--search">
+                        <label class="domain-filter-field__label" for="client-q">بحث</label>
+                        <div class="input-group input-group-sm">
+                            <span class="input-group-text"><i class="fe fe-search"></i></span>
+                            <input type="search" id="client-q" name="q" class="form-control"
+                                value="{{ request('q') }}" placeholder="اسم، بريد، هاتف" autocomplete="off">
+                        </div>
                     </div>
-                    <div class="col-md-4">
-                        <label class="form-label">فلتر</label>
-                        <select name="has_whm" class="form-select">
-                            <option value="">كل المستخدمين</option>
-                            <option value="1" @selected(request('has_whm'))>لديه حسابات استضافة فقط</option>
+                    <div class="domain-filter-field domain-filter-field--compact">
+                        <label class="domain-filter-field__label">الاستضافة</label>
+                        <select name="has_whm" class="form-select form-select-sm">
+                            <option value="">الكل</option>
+                            <option value="1" @selected(request()->boolean('has_whm'))>cPanel</option>
                         </select>
                     </div>
-                    <div class="col-md-3 d-flex gap-2">
-                        <button type="submit" class="btn btn-primary flex-grow-1">بحث</button>
-                        <a href="{{ route('admin.customers.index') }}" class="btn btn-light">مسح</a>
+                    <div class="domain-filter-field domain-filter-field--compact">
+                        <label class="domain-filter-field__label">الحالة</label>
+                        <select name="status" class="form-select form-select-sm">
+                            <option value="">الكل</option>
+                            @foreach($statusLabels as $key => $label)
+                            <option value="{{ $key }}" @selected(request('status') === $key)>{{ $label }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+                    <div class="domain-filter-field domain-filter-field--compact">
+                        <label class="domain-filter-field__label">التفعيل</label>
+                        <select name="is_active" class="form-select form-select-sm">
+                            <option value="">الكل</option>
+                            <option value="1" @selected(request('is_active') === '1')>مفعّل</option>
+                            <option value="0" @selected(request('is_active') === '0')>غير مفعّل</option>
+                        </select>
+                    </div>
+                    <div class="domain-filter-field domain-filter-field--compact">
+                        <label class="domain-filter-field__label">ترتيب</label>
+                        <select name="sort" class="form-select form-select-sm">
+                            <option value="name" @selected(request('sort', 'name') === 'name')>الاسم</option>
+                            <option value="created" @selected(request('sort') === 'created')>الإنشاء</option>
+                            <option value="whm" @selected(request('sort') === 'whm')>cPanel</option>
+                        </select>
+                    </div>
+                    <div class="domain-filter-field domain-filter-field--compact">
+                        <label class="domain-filter-field__label">الاتجاه</label>
+                        <select name="dir" class="form-select form-select-sm">
+                            <option value="asc" @selected(request('dir', 'asc') === 'asc')>↑</option>
+                            <option value="desc" @selected(request('dir') === 'desc')>↓</option>
+                        </select>
+                    </div>
+                    <div class="domain-filter-field domain-filter-field--actions">
+                        <label class="domain-filter-field__label d-none d-xl-block">&nbsp;</label>
+                        <div class="domain-filter-inline-actions">
+                            <button type="submit" class="btn btn-primary btn-sm">تطبيق</button>
+                            <button type="button" id="customers-filter-reset" class="btn btn-light btn-sm">مسح</button>
+                        </div>
                     </div>
                 </form>
             </div>
         </div>
 
-        <div class="card custom-card">
-            <div class="table-responsive">
-                <table class="table table-hover mb-0">
-                    <thead class="table-light">
-                        <tr>
-                            <th>العميل</th>
-                            <th>البريد</th>
-                            <th class="text-center">حسابات cPanel</th>
-                            <th>أحدث الحسابات</th>
-                            <th class="text-center">إجراء</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        @forelse($clients as $client)
-                            <tr>
-                                <td class="fw-semibold">{{ $client->name }}</td>
-                                <td dir="ltr" class="small">{{ $client->email }}</td>
-                                <td class="text-center">
-                                    @if($client->whm_accounts_count > 0)
-                                        <span class="badge bg-primary-transparent text-primary">{{ $client->whm_accounts_count }}</span>
-                                    @else
-                                        <span class="text-muted">0</span>
-                                    @endif
-                                </td>
-                                <td class="small">
-                                    @forelse($client->whmAccounts as $acc)
-                                        <span class="d-inline-block me-2" dir="ltr">{{ $acc->domain }}</span>
-                                    @empty
-                                        <span class="text-muted">—</span>
-                                    @endforelse
-                                </td>
-                                <td class="text-center text-nowrap">
-                                    <a href="{{ route('admin.customers.show', $client->id) }}" class="btn btn-sm btn-primary-light">ملف العميل</a>
-                                    @if(auth()->user()?->isAdminPanelUser() && ! $client->isAdminPanelUser())
-                                        <button type="button"
-                                            class="btn btn-sm btn-warning-transparent js-impersonate-client"
-                                            data-url="{{ route('admin.users.impersonation-token', $client) }}"
-                                            data-name="{{ $client->name }}"
-                                            title="رابط دخول كعميل">
-                                            <i class="fe fe-log-in"></i>
-                                        </button>
-                                    @endif
-                                    @if($client->whm_accounts_count > 0)
-                                        <a href="{{ route('admin.whm.accounts.index', ['user_id' => $client->id]) }}" class="btn btn-sm btn-outline-secondary">WHM</a>
-                                    @endif
-                                </td>
-                            </tr>
-                        @empty
-                            <tr>
-                                <td colspan="5" class="text-center text-muted py-4">لا يوجد مستخدمون — أنشئ مستخدماً ثم اربطه من حسابات WHM.</td>
-                            </tr>
-                        @endforelse
-                    </tbody>
-                </table>
+        <div class="domain-dns-panel customers-list-panel">
+            <div class="domain-dns-panel__head">
+                <h2 class="domain-dns-panel__title">
+                    <i class="fe fe-users text-primary"></i> قائمة العملاء
+                </h2>
+                <span class="domain-dns-count" id="customers-count">{{ $clients->total() }} عميل</span>
             </div>
-            @if($clients->hasPages())
-                <div class="card-footer">{{ $clients->links() }}</div>
-            @endif
+            <div id="customers-list-loading" class="customers-list-loading" aria-hidden="true">
+                <span class="spinner-border spinner-border-sm text-primary" role="status"></span>
+                <span>جاري التحميل…</span>
+            </div>
+            <div id="customers-list-body">
+                @include('admin.customers.partials.list-results')
+            </div>
         </div>
     </div>
 </div>
 
 @include('admin.partials.impersonate-client-modal')
+@include('admin.customers.partials.ajax-filters-script')
 @endsection

@@ -49,7 +49,7 @@
                     <a href="{{ route('admin.coolify.backups.projects.wizard') }}" class="btn btn-primary btn-sm">
                         <i class="fe fe-zap"></i> لقطة سريعة
                     </a>
-                    <a href="{{ route('admin.coolify.settings.index', ['tab' => 'backups']) }}" class="btn btn-light btn-sm">
+                    <a href="{{ route('admin.coolify.settings.section', 'backups') }}" class="btn btn-light btn-sm">
                         <i class="fe fe-settings"></i> إعدادات النسخ
                     </a>
                 </div>
@@ -58,6 +58,17 @@
 
         @include('admin.coolify.partials.alerts')
         @include('admin.coolify.backups.partials.tabs-nav', ['tab' => 'hub'])
+
+        @if(($configured ?? false) && !($readiness['ready_with_db'] ?? false))
+            <div class="alert alert-danger border-0 shadow-sm mb-4">
+                <strong><i class="fe fe-alert-triangle me-1"></i> نسخ قواعد البيانات غير مفعّل فعلياً</strong>
+                <p class="small mb-2 mt-2">
+                    بدون <code>coolify_s3_storage_uuid</code> في الإعدادات، عناصر قواعد البيانات في اللقطات تُسجَّل كـ
+                    <strong>manifest_only</strong> فقط — بدون ملفات على S3. أضف UUID تخزين S3 من Coolify قبل «لقطة سريعة» التي تتضمن DB.
+                </p>
+                <a href="{{ route('admin.coolify.settings.section', 'backups') }}" class="btn btn-sm btn-danger">إعداد S3 Coolify</a>
+            </div>
+        @endif
 
         @if(empty($configured ?? true))
             <div class="alert alert-warning border-0 shadow-sm">
@@ -195,7 +206,7 @@
                 </a>
             </div>
             <div class="col-lg-4 col-md-12">
-                <a href="{{ route('admin.coolify.settings.index', ['tab' => 'backups']) }}" class="coolify-widget-link">
+                <a href="{{ route('admin.coolify.settings.section', 'backups') }}" class="coolify-widget-link">
                     <div class="coolify-widget coolify-accent-info">
                         <div class="coolify-widget-accent"></div>
                         <div class="coolify-widget-body coolify-panel-widget">
@@ -223,6 +234,50 @@
                 </a>
             </div>
         </div>
+
+        @if(isset($linkedVpsServers) && $linkedVpsServers->isNotEmpty())
+        <div class="card custom-card mt-4">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <div class="card-title mb-0">لقطات مزوّد VPS (بنية تحتية)</div>
+                <a href="{{ route('admin.infrastructure.servers.index') }}" class="btn btn-sm btn-outline-secondary">كل السيرفرات</a>
+            </div>
+            <div class="card-body p-0">
+                <table class="table table-hover mb-0">
+                    <thead><tr><th>الاسم</th><th>المزوّد</th><th>Coolify UUID</th><th></th></tr></thead>
+                    <tbody>
+                    @foreach($linkedVpsServers as $vps)
+                        <tr>
+                            <td>{{ $vps->displayName() }}</td>
+                            <td>{{ \App\Models\VpsServer::PROVIDERS[$vps->provider] ?? $vps->provider }}</td>
+                            <td><code class="small">{{ Str::limit($vps->coolify_server_uuid, 20) }}</code></td>
+                            <td class="text-end">
+                                <a href="{{ route('admin.infrastructure.servers.show', $vps->uuid) }}" class="btn btn-sm btn-outline-primary">إدارة + لقطة مزوّد</a>
+                                <a href="{{ route('admin.coolify.backups.projects.wizard', ['server_uuid' => $vps->coolify_server_uuid]) }}" class="btn btn-sm btn-outline-success">لقطة سيرفر</a>
+                            </td>
+                        </tr>
+                    @endforeach
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        @endif
+
+        @if(isset($recentAudit) && $recentAudit->isNotEmpty())
+        <div class="card custom-card mt-4">
+            <div class="card-header"><div class="card-title mb-0">سجل تدقيق النسخ والاستعادة</div></div>
+            <ul class="list-group list-group-flush">
+                @foreach($recentAudit as $log)
+                <li class="list-group-item d-flex justify-content-between align-items-start small">
+                    <span>
+                        <strong>{{ $log->action }}</strong>
+                        @if($log->message) — {{ Str::limit($log->message, 80) }} @endif
+                    </span>
+                    <span class="text-muted">{{ $log->created_at?->diffForHumans() }}</span>
+                </li>
+                @endforeach
+            </ul>
+        </div>
+        @endif
     </div>
 </div>
 @endsection

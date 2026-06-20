@@ -1,38 +1,30 @@
 # Terminal Bridge
 
-WebSocket service for interactive shell inside WordPress Docker containers.
+WebSocket service for interactive shell sessions over SSH.
 
-## Setup
+## Paths
 
-```bash
-cd services/terminal-bridge
-npm install
-```
+| Path | Purpose |
+|------|---------|
+| `/session` | WordPress — SSH to VPS then `docker exec` into container |
+| `/host-session` | VPS — direct SSH shell on the server |
 
-## Environment (`.env` in project root)
+## Configuration (no .env required)
 
-```env
-TERMINAL_BRIDGE_ENABLED=true
-TERMINAL_BRIDGE_URL=http://127.0.0.1:3099
-TERMINAL_BRIDGE_SECRET=your-long-random-secret
-TERMINAL_BRIDGE_PORT=3099
-SSH_PRIVATE_KEY_PATH=/path/to/server.pem
-SSH_USER=root
-SSH_PORT=22
-```
+All settings are managed from the admin panel:
 
-`TERMINAL_BRIDGE_SECRET` must match Laravel `TERMINAL_BRIDGE_SECRET` (or use a dedicated random string in both places).
+**Coolify → مركز الإعدادات → Terminal Bridge**
+
+On save, Laravel writes `storage/app/terminal-bridge/runtime.json` with JWT secret, bridge port, and SSH credentials path.
+
+The Node service reloads this file every 15 seconds. `.env` is only a dev fallback.
 
 ## Run
 
 ```bash
+cd services/terminal-bridge
+npm install
 npm start
-# or with PM2:
-# pm2 start index.js --name claud-terminal-bridge
 ```
 
 Health check: `GET http://127.0.0.1:3099/health`
-
-## Architecture
-
-Laravel issues a signed JWT → browser opens WebSocket to this service → SSH to VPS → `docker exec -it` into the WordPress container.

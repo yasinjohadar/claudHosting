@@ -64,8 +64,9 @@
         openBtn.removeAttribute('href');
     }
 
-    document.querySelectorAll('.js-impersonate-client').forEach(function (btn) {
-        btn.addEventListener('click', function () {
+    document.addEventListener('click', function (e) {
+        const btn = e.target.closest('.js-impersonate-client');
+        if (!btn) return;
             const url = btn.getAttribute('data-url');
             const name = btn.getAttribute('data-name') || '—';
             if (!url) return;
@@ -111,7 +112,6 @@
                     errorEl.textContent = 'حدث خطأ في الاتصال.';
                     errorEl.classList.remove('d-none');
                 });
-        });
     });
 
     copyBtn?.addEventListener('click', function () {

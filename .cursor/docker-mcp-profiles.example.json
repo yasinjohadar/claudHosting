@@ -1,0 +1,11 @@
+{
+  "default": {
+    "host": "unix:///var/run/docker.sock",
+    "description": "Docker Desktop local (default)"
+  },
+  "coolify-production": {
+    "host": "ssh://root@YOUR-SERVER-IP",
+    "description": "Coolify VPS — استبدل IP بعنوان سيرفر الاستضافة (مثال: 194.163.144.165)",
+    "sshKeyPath": "${userHome}/.ssh/id_rsa"
+  }
+}

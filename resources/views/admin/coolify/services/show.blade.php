@@ -22,6 +22,13 @@
                     'stopRoute' => route('admin.coolify.services.stop', $uuid),
                     'restartRoute' => route('admin.coolify.services.restart', $uuid),
                 ])
+                @include('admin.coolify.backups.partials.resource-snapshot-button', [
+                    'resourceUuid' => $uuid,
+                    'resourceType' => 'service',
+                    'resourceName' => $service['name'] ?? $uuid,
+                    'projectUuid' => $service['project_uuid'] ?? ($service['environment']['project_uuid'] ?? null),
+                    'serverUuid' => $service['server_uuid'] ?? ($service['destination']['server']['uuid'] ?? null),
+                ])
                 <a href="{{ route('admin.coolify.services.logs', $uuid) }}" class="btn btn-sm btn-outline-secondary">سجلات</a>
                 <form action="{{ route('admin.coolify.services.redeploy', $uuid) }}" method="POST" class="d-inline" onsubmit="return confirm('إعادة نشر compose؟');">@csrf<button type="submit" class="btn btn-sm btn-outline-primary">إعادة نشر</button></form>
                 <a href="{{ route('admin.coolify.services.edit', $uuid) }}" class="btn btn-sm btn-outline-primary">تعديل</a>
@@ -75,7 +82,7 @@
         <div class="alert alert-warning border-0 shadow-sm mb-3">
             <strong><i class="fe fe-info me-1"></i> مراقبة الموارد غير متاحة</strong>
             <p class="small mb-2 mt-2">Coolify لم يُرجع <code>server_uuid</code> لهذه الخدمة. المراقبة تعتمد على SSH إلى السيرفر الذي يشغّل الحاويات.</p>
-            <a href="{{ route('admin.coolify.settings.index', ['tab' => 'wordpress']) }}" class="btn btn-sm btn-warning">إعدادات السيرفر الافتراضي</a>
+            <a href="{{ route('admin.coolify.settings.section', 'wordpress') }}" class="btn btn-sm btn-warning">إعدادات السيرفر الافتراضي</a>
         </div>
         @else
         @include('admin.coolify.partials.metrics-widget', [

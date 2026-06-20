@@ -13,6 +13,7 @@ class CoolifyProjectSnapshot extends Model
         'all_projects' => 'كل المشاريع',
         'single_project' => 'مشروع واحد',
         'custom' => 'موارد مخصصة',
+        'server' => 'سيرفر كامل',
     ];
 
     public const STATUSES = [
@@ -21,6 +22,16 @@ class CoolifyProjectSnapshot extends Model
         'completed' => 'مكتمل',
         'failed' => 'فاشل',
         'partial' => 'جزئي',
+        'cancelled' => 'ملغاة',
+    ];
+
+    public const RESTORE_STATUSES = [
+        'idle' => 'لم تُستعد',
+        'running' => 'قيد الاستعادة',
+        'completed' => 'مكتملة',
+        'failed' => 'فاشلة',
+        'partial' => 'جزئية',
+        'cancelled' => 'ملغاة',
     ];
 
     protected $fillable = [
@@ -30,9 +41,12 @@ class CoolifyProjectSnapshot extends Model
         'project_name',
         'name',
         'status',
+        'restore_status',
         'options',
         'started_at',
         'completed_at',
+        'restore_started_at',
+        'restore_completed_at',
         'created_by',
     ];
 
@@ -42,6 +56,8 @@ class CoolifyProjectSnapshot extends Model
             'options' => 'array',
             'started_at' => 'datetime',
             'completed_at' => 'datetime',
+            'restore_started_at' => 'datetime',
+            'restore_completed_at' => 'datetime',
         ];
     }
 
@@ -64,8 +80,18 @@ class CoolifyProjectSnapshot extends Model
         return $this->belongsTo(User::class, 'created_by');
     }
 
+    public function isCancelled(): bool
+    {
+        return ! empty($this->options['cancelled_at'] ?? null)
+            || $this->status === 'cancelled';
+    }
+
     public function refreshStatusFromItems(): void
     {
+        if ($this->isCancelled()) {
+            return;
+        }
+
         $items = $this->items()->get();
         if ($items->isEmpty()) {
             return;
@@ -92,5 +118,56 @@ class CoolifyProjectSnapshot extends Model
         } else {
             $this->update(['status' => 'failed', 'completed_at' => now()]);
         }
+    }
+
+    public function isRestoreRunning(): bool
+    {
+        return $this->restore_status === 'running';
+    }
+
+    public function isRestoreFinished(): bool
+    {
+        return in_array($this->restore_status, ['completed', 'failed', 'partial', 'cancelled'], true);
+    }
+
+    public function refreshRestoreStatusFromItems(): void
+    {
+        $items = $this->items()->whereNotNull('restore_status')->get();
+        if ($items->isEmpty()) {
+            return;
+        }
+
+        $active = $items->whereIn('restore_status', ['pending', 'running'])->count();
+        $failed = $items->where('restore_status', 'failed')->count();
+        $completed = $items->where('restore_status', 'completed')->count();
+        $skipped = $items->where('restore_status', 'skipped')->count();
+
+        if ($active > 0) {
+            $this->update(['restore_status' => 'running']);
+
+            return;
+        }
+
+        $this->update([
+            'restore_completed_at' => now(),
+            'restore_status' => match (true) {
+                $failed > 0 && ($completed > 0 || $skipped > 0) => 'partial',
+                $failed > 0 && $completed === 0 && $skipped === 0 => 'failed',
+                default => 'completed',
+            },
+        ]);
+    }
+
+    public function resetRestoreStateForItems(?array $itemIds = null): void
+    {
+        $query = $this->items()->where('status', 'completed');
+        if ($itemIds !== null && $itemIds !== []) {
+            $query->whereIn('id', $itemIds);
+        }
+
+        $query->update([
+            'restore_status' => 'pending',
+            'restore_error' => null,
+        ]);
     }
 }

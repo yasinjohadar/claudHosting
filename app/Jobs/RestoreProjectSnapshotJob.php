@@ -3,6 +3,7 @@
 namespace App\Jobs;
 
 use App\Models\CoolifyProjectSnapshot;
+use App\Services\Coolify\CoolifyPreRestoreSnapshotService;
 use App\Services\Coolify\CoolifyProjectRestoreService;
 use App\Services\Coolify\CoolifySettingsService;
 use Illuminate\Contracts\Queue\ShouldQueue;
@@ -12,7 +13,7 @@ class RestoreProjectSnapshotJob implements ShouldQueue
 {
     use Queueable;
 
-    public int $timeout = 7200;
+    public int $timeout = 120;
 
     /**
      * @param  array<int>|null  $itemIds
@@ -26,18 +27,31 @@ class RestoreProjectSnapshotJob implements ShouldQueue
         $this->onQueue(app(CoolifySettingsService::class)->getBackupQueue());
     }
 
-    public function handle(CoolifyProjectRestoreService $restore): void
-    {
+    public function handle(
+        CoolifyProjectRestoreService $restore,
+        CoolifyPreRestoreSnapshotService $preRestore
+    ): void {
         $snapshot = CoolifyProjectSnapshot::find($this->snapshotId);
 
-        if (! $snapshot) {
+        if (! $snapshot || $snapshot->restore_status === 'cancelled') {
             return;
         }
 
-        $snapshot->update(['status' => 'running']);
+        if ($this->options['pre_restore_snapshot'] ?? true) {
+            $preRestore->createPreRestoreSnapshot($snapshot, $this->itemIds);
+        }
 
-        $restore->restore($snapshot, $this->itemIds, $this->options);
+        $items = $restore->resolveItemsForRestore($snapshot, $this->itemIds, $this->options);
 
-        $snapshot->update(['status' => 'completed', 'completed_at' => now()]);
+        foreach ($items as $item) {
+            RestoreProjectSnapshotItemJob::dispatch($snapshot->id, $item->id, $this->options);
+        }
+
+        if ($items->isEmpty()) {
+            $snapshot->update([
+                'restore_status' => 'failed',
+                'restore_completed_at' => now(),
+            ]);
+        }
     }
 }

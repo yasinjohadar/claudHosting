@@ -15,6 +15,7 @@ use App\Services\Coolify\CoolifyCatalogService;
 use App\Services\Coolify\CoolifySettingsService;
 use App\Services\Coolify\CoolifySnapshotStorageService;
 use App\Services\Coolify\CoolifySshExecutor;
+use App\Services\Coolify\TerminalBridgeRuntimeService;
 use App\Services\CoolifyApiService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -30,186 +31,184 @@ class CoolifySettingsController extends Controller
         protected CoolifySettingsService $settings,
         protected CoolifySshExecutor $ssh,
         protected CoolifySnapshotStorageService $snapshotStorage,
-        protected CoolifyCatalogService $catalog
+        protected CoolifyCatalogService $catalog,
+        protected TerminalBridgeRuntimeService $terminalRuntime
     ) {
         $this->middleware('auth');
     }
 
     public function index(Request $request)
     {
+        $tab = $request->string('tab')->toString();
+        $aliases = config('coolify_settings_sections.tab_aliases', []);
+        if ($tab !== '' && isset($aliases[$tab])) {
+            return redirect()->route('admin.coolify.settings.section', $aliases[$tab]);
+        }
+
         $this->settings->initializeDefaults();
+        $context = $this->buildSettingsContext();
+
+        return view('admin.coolify.settings.hub', $context);
+    }
+
+    public function section(Request $request, string $section)
+    {
+        $meta = $this->sectionMeta($section);
+        $this->settings->initializeDefaults();
+
         $configured = $this->coolify->isConfigured();
         $synced = [];
-
         if ($configured && $this->coolify->ping()) {
             $synced = $this->settings->syncSnapshotStorageFromCoolify($this->coolify);
         }
 
-        $form = $this->settings->getFormSettings();
-        $connected = $configured && $this->coolify->ping();
-        $version = $configured ? $this->coolify->getVersion() : null;
-        $health = $configured ? $this->coolify->getHealth() : null;
-        $readiness = $this->settings->getSnapshotReadiness();
+        $context = array_merge($this->buildSettingsContext(), [
+            'section' => $section,
+            'sectionMeta' => $meta,
+            'synced' => $synced,
+        ]);
 
-        $storageConfigs = AppStorageConfig::query()
-            ->where('is_active', true)
-            ->whereIn('driver', config('coolify.snapshot_storage_drivers', ['s3']))
-            ->orderBy('priority')
-            ->orderBy('name')
-            ->get(['id', 'name', 'driver']);
+        if ($section === 'wordpress' || $section === 'cloudflare') {
+            $form = $this->settings->getFormSettings();
+            $context['wordpressServers'] = ($context['configured'] ?? false)
+                ? $this->coolifyList($this->coolify->listServers()) : [];
+            $context['wordpressProjects'] = ($context['configured'] ?? false)
+                ? $this->coolifyList($this->coolify->listProjects()) : [];
+            $context['cloudflareZones'] = $this->cloudflare->isConfigured()
+                ? $this->cloudflare->listAllZones($form['wordpress_base_domain'] ?? null) : [];
+        }
 
-        $coolifyS3Storages = $configured ? $this->coolify->listS3Storages() : [];
-        $snapshotStorageReady = $this->snapshotStorage->isConfigured();
-        $wordpressReadiness = $this->settings->getWordpressReadiness();
-        $wordpressServers = $configured ? $this->coolifyList($this->coolify->listServers()) : [];
-        $wordpressProjects = $configured ? $this->coolifyList($this->coolify->listProjects()) : [];
-        $cloudflareZones = $this->cloudflare->isConfigured()
-            ? $this->cloudflare->listAllZones($form['wordpress_base_domain'] ?? null)
-            : [];
+        if ($section === 'backups') {
+            $context['storageConfigs'] = AppStorageConfig::query()
+                ->where('is_active', true)
+                ->whereIn('driver', config('coolify.snapshot_storage_drivers', ['s3']))
+                ->orderBy('priority')
+                ->orderBy('name')
+                ->get(['id', 'name', 'driver']);
+            $context['coolifyS3Storages'] = ($context['configured'] ?? false) ? $this->coolify->listS3Storages() : [];
+        }
 
-        return view('admin.coolify.settings.index', compact(
-            'form',
-            'configured',
-            'connected',
-            'version',
-            'health',
-            'storageConfigs',
-            'coolifyS3Storages',
-            'snapshotStorageReady',
-            'readiness',
-            'synced',
-            'wordpressReadiness',
-            'wordpressServers',
-            'wordpressProjects',
-            'cloudflareZones'
-        ));
+        return view('admin.coolify.settings.section', $context);
     }
 
-    public function update(Request $request)
+    public function updateSection(Request $request, string $section)
     {
-        $validated = $request->validate([
-            'api_url' => 'required|url|max:500',
-            'api_token' => 'nullable|string|max:2000',
-            'timeout' => 'nullable|integer|min:5|max:120',
-            'ssh_user' => 'nullable|string|max:64',
-            'ssh_private_key' => 'nullable|string|max:10000',
-            'ssh_private_key_path' => 'nullable|string|max:500',
-            'ssh_host_fallback' => 'nullable|string|max:255',
-            'ssh_port' => 'nullable|integer|min:1|max:65535',
-            'backup_queue' => 'nullable|string|max:64|regex:/^[a-zA-Z0-9_\-]+$/',
-            'snapshot_storage_config_id' => 'nullable|integer|min:1',
-            'coolify_s3_storage_uuid' => 'nullable|string|max:255',
-            's3_prefix' => 'nullable|string|max:255',
-            'wordpress_base_domain' => 'nullable|string|max:255',
-            'wordpress_default_server_uuid' => 'nullable|string|max:255',
-            'wordpress_shared_project_uuid' => 'nullable|string|max:255',
-            'wordpress_default_environment' => 'nullable|string|max:64',
-            'wordpress_instant_deploy' => 'nullable|boolean',
-            'wordpress_provision_queue' => 'nullable|string|max:64|regex:/^[a-zA-Z0-9_\-]+$/',
-            'wordpress_default_destination_uuid' => 'nullable|string|max:255',
-            'wordpress_service_type' => 'nullable|string|in:wordpress-with-mariadb,wordpress-with-mysql,wordpress-without-database',
-            'wordpress_cloudflare_zone_id' => 'nullable|string|max:64',
-            'wordpress_cloudflare_proxied' => 'nullable|boolean',
-            'wordpress_cloudflare_ssl_mode' => 'nullable|string|in:off,flexible,full,strict',
-            'wordpress_security_preset' => 'nullable|string|in:basic,performance,strict',
-            'wordpress_cloudflare_enabled' => 'nullable|boolean',
-            'wordpress_custom_domain_enabled' => 'nullable|boolean',
-            'wordpress_docker_tag' => 'nullable|string|max:128',
-            'wordpress_filebrowser_enabled' => 'nullable|boolean',
-            'wordpress_filebrowser_subdomain_prefix' => 'nullable|string|max:32|regex:/^[a-z0-9-]+$/',
-            'wordpress_filebrowser_subdomain_style' => 'nullable|string|in:flat,nested',
-            'wordpress_filebrowser_open_mode' => 'nullable|string|in:embed,new_tab',
-            'wordpress_filebrowser_admin_username' => 'nullable|string|max:32|regex:/^[a-z0-9_-]+$/',
-            'wordpress_filebrowser_password_length' => 'nullable|integer|min:12|max:64',
-            'wordpress_management_queue' => 'nullable|string|max:64|regex:/^[a-zA-Z0-9_\-]+$/',
-            'wordpress_redis_enabled' => 'nullable|boolean',
-            'wordpress_redis_host' => 'nullable|string|max:255',
-            'wordpress_redis_port' => 'nullable|integer|min:1|max:65535',
-            'terminal_bridge_enabled' => 'nullable|boolean',
-            'terminal_bridge_url' => 'nullable|url|max:500',
-            'terminal_bridge_secret' => 'nullable|string|max:2000',
-            'terminal_bridge_port' => 'nullable|integer|min:1|max:65535',
-            'terminal_bridge_token_ttl' => 'nullable|integer|min:60|max:86400',
-        ], [
+        $meta = $this->sectionMeta($section);
+        $rules = $meta['rules'] ?? [];
+        $validated = $request->validate($rules, [
             'api_url.required' => 'عنوان Coolify API مطلوب',
             'api_url.url' => 'عنوان API غير صالح',
             'backup_queue.regex' => 'اسم الطابور يجب أن يحتوي أحرفاً إنجليزية وأرقاماً و _ - فقط',
+            'ssh_host_fallback.required' => 'عنوان SSH للسيرفر مطلوب',
         ]);
 
-        $existing = $this->settings->getFormSettings();
-        if (empty($validated['api_token']) && ! $existing['has_token']) {
-            return back()->withInput()->with('error', 'رمز API مطلوب عند الإعداد لأول مرة');
+        if ($section === 'api') {
+            $existing = $this->settings->getFormSettings();
+            if (empty($validated['api_token']) && ! $existing['has_token']) {
+                return back()->withInput()->with('error', 'رمز API مطلوب عند الإعداد لأول مرة');
+            }
         }
 
-        $pathInput = trim((string) ($validated['ssh_private_key_path'] ?? ''));
-        if (str_contains($pathInput, '-----BEGIN') && str_contains($pathInput, 'PRIVATE KEY')
-            && empty($validated['ssh_private_key'])) {
-            return back()->withInput()->with('error', 'ضع المفتاح في «لصق المفتاح (PEM)» وليس في حقل المسار. أو احفظه في ملف .pem واكتب المسار فقط.');
+        $payload = $validated;
+        $sshKey = [];
+
+        if ($section === 'ssh') {
+            $pathInput = trim((string) ($validated['ssh_private_key_path'] ?? ''));
+            if (str_contains($pathInput, '-----BEGIN') && str_contains($pathInput, 'PRIVATE KEY')
+                && empty($validated['ssh_private_key'])) {
+                return back()->withInput()->with('error', 'ضع المفتاح في «لصق المفتاح (PEM)» وليس في حقل المسار.');
+            }
+            $sshKey = $this->ssh->resolveSettingsKeyForSave(
+                $validated['ssh_private_key_path'] ?? null,
+                $validated['ssh_private_key'] ?? null
+            );
+            $payload['ssh_private_key'] = $sshKey['ssh_private_key'];
+            $payload['ssh_private_key_path'] = $sshKey['ssh_private_key_path'];
         }
 
-        $sshKey = $this->ssh->resolveSettingsKeyForSave(
-            $validated['ssh_private_key_path'] ?? null,
-            $validated['ssh_private_key'] ?? null
-        );
+        if ($section === 'wordpress') {
+            $payload['wordpress_instant_deploy'] = $request->boolean('wordpress_instant_deploy', true);
+            $payload['wordpress_custom_domain_enabled'] = $request->boolean('wordpress_custom_domain_enabled', true);
+            $payload['wordpress_filebrowser_enabled'] = $request->boolean('wordpress_filebrowser_enabled', true);
+        }
 
-        $this->settings->updateSettings([
-            'api_url' => $validated['api_url'],
-            'api_token' => $validated['api_token'] ?? null,
-            'timeout' => $validated['timeout'] ?? 30,
-            'ssh_user' => $validated['ssh_user'] ?? null,
-            'ssh_private_key' => $sshKey['ssh_private_key'],
-            'ssh_private_key_path' => $sshKey['ssh_private_key_path'],
-            'ssh_host_fallback' => $validated['ssh_host_fallback'] ?? null,
-            'ssh_port' => $validated['ssh_port'] ?? null,
-            'backup_queue' => $validated['backup_queue'] ?? null,
-            'snapshot_storage_config_id' => $validated['snapshot_storage_config_id'] ?? null,
-            'coolify_s3_storage_uuid' => $validated['coolify_s3_storage_uuid'] ?? null,
-            's3_prefix' => $validated['s3_prefix'] ?? null,
-            'wordpress_base_domain' => $validated['wordpress_base_domain'] ?? null,
-            'wordpress_default_server_uuid' => $validated['wordpress_default_server_uuid'] ?? null,
-            'wordpress_shared_project_uuid' => $validated['wordpress_shared_project_uuid'] ?? null,
-            'wordpress_default_environment' => $validated['wordpress_default_environment'] ?? null,
-            'wordpress_instant_deploy' => $request->boolean('wordpress_instant_deploy', true),
-            'wordpress_provision_queue' => $validated['wordpress_provision_queue'] ?? null,
-            'wordpress_default_destination_uuid' => $validated['wordpress_default_destination_uuid'] ?? null,
-            'wordpress_service_type' => $validated['wordpress_service_type'] ?? null,
-            'wordpress_cloudflare_zone_id' => $validated['wordpress_cloudflare_zone_id'] ?? null,
-            'wordpress_cloudflare_proxied' => $request->boolean('wordpress_cloudflare_proxied', true),
-            'wordpress_cloudflare_ssl_mode' => $validated['wordpress_cloudflare_ssl_mode'] ?? null,
-            'wordpress_security_preset' => $validated['wordpress_security_preset'] ?? null,
-            'wordpress_cloudflare_enabled' => $request->boolean('wordpress_cloudflare_enabled', true),
-            'wordpress_custom_domain_enabled' => $request->boolean('wordpress_custom_domain_enabled', true),
-            'wordpress_docker_tag' => $validated['wordpress_docker_tag'] ?? null,
-            'wordpress_filebrowser_enabled' => $request->boolean('wordpress_filebrowser_enabled', true),
-            'wordpress_filebrowser_subdomain_prefix' => $validated['wordpress_filebrowser_subdomain_prefix'] ?? null,
-            'wordpress_filebrowser_subdomain_style' => $validated['wordpress_filebrowser_subdomain_style'] ?? null,
-            'wordpress_filebrowser_open_mode' => $validated['wordpress_filebrowser_open_mode'] ?? null,
-            'wordpress_filebrowser_admin_username' => $validated['wordpress_filebrowser_admin_username'] ?? null,
-            'wordpress_filebrowser_password_length' => $validated['wordpress_filebrowser_password_length'] ?? null,
-            'wordpress_management_queue' => $validated['wordpress_management_queue'] ?? null,
-            'wordpress_redis_enabled' => $request->boolean('wordpress_redis_enabled', false),
-            'wordpress_redis_host' => $validated['wordpress_redis_host'] ?? null,
-            'wordpress_redis_port' => $validated['wordpress_redis_port'] ?? null,
-            'terminal_bridge_enabled' => $request->boolean('terminal_bridge_enabled'),
-            'terminal_bridge_url' => $validated['terminal_bridge_url'] ?? null,
-            'terminal_bridge_secret' => $validated['terminal_bridge_secret'] ?? null,
-            'terminal_bridge_port' => $validated['terminal_bridge_port'] ?? null,
-            'terminal_bridge_token_ttl' => $validated['terminal_bridge_token_ttl'] ?? null,
-        ]);
+        if ($section === 'cloudflare') {
+            $payload['wordpress_cloudflare_enabled'] = $request->boolean('wordpress_cloudflare_enabled', true);
+            $payload['wordpress_cloudflare_proxied'] = $request->boolean('wordpress_cloudflare_proxied', true);
+        }
 
+        if ($section === 'wp-cli') {
+            $payload['wordpress_redis_enabled'] = $request->boolean('wordpress_redis_enabled', false);
+        }
+
+        if ($section === 'terminal') {
+            $payload['terminal_bridge_enabled'] = $request->boolean('terminal_bridge_enabled');
+        }
+
+        $this->settings->updateSettings($payload);
         $this->coolify->refreshConnection();
-        $synced = $this->settings->syncSnapshotStorageFromCoolify($this->coolify);
 
-        $message = 'تم حفظ إعدادات Coolify بنجاح';
+        if ($meta['sync_terminal_runtime'] ?? false) {
+            $this->terminalRuntime->sync();
+        }
+
+        $synced = $this->settings->syncSnapshotStorageFromCoolify($this->coolify);
+        $message = 'تم حفظ «'.$meta['label'].'» بنجاح';
         if ($synced !== []) {
             $message .= ' — تم ضبط تلقائياً: '.implode(', ', $synced);
         }
-        if (! empty($sshKey['notice'])) {
+        if ($section === 'ssh' && ! empty($sshKey['notice'] ?? '')) {
             $message .= ' — '.$sshKey['notice'];
         }
 
-        return redirect()->route('admin.coolify.settings.index')
+        return redirect()
+            ->route('admin.coolify.settings.section', $section)
             ->with('success', $message);
+    }
+
+    /** @deprecated استخدم updateSection — يُعاد التوجيه للمركز */
+    public function update(Request $request)
+    {
+        return redirect()
+            ->route('admin.coolify.settings.index')
+            ->with('info', 'احفظ كل قسم من صفحته المنفصلة — اختر القسم من مركز الإعدادات.');
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    protected function buildSettingsContext(): array
+    {
+        $configured = $this->coolify->isConfigured();
+        $form = $this->settings->getFormSettings();
+        $connected = $configured && $this->coolify->ping();
+
+        return [
+            'form' => $form,
+            'configured' => $configured,
+            'connected' => $connected,
+            'version' => $configured ? $this->coolify->getVersion() : null,
+            'health' => $configured ? $this->coolify->getHealth() : null,
+            'readiness' => $this->settings->getSnapshotReadiness(),
+            'snapshotStorageReady' => $this->snapshotStorage->isConfigured(),
+            'wordpressReadiness' => $this->settings->getWordpressReadiness(),
+            'sections' => collect(config('coolify_settings_sections'))
+                ->except(['tab_aliases'])
+                ->all(),
+        ];
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    protected function sectionMeta(string $section): array
+    {
+        $sections = config('coolify_settings_sections');
+        if (! isset($sections[$section]) || $section === 'tab_aliases') {
+            abort(404);
+        }
+
+        return $sections[$section];
     }
 
     public function overview(Request $request)

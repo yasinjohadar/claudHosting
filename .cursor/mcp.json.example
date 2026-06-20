@@ -1,5 +1,14 @@
 {
   "mcpServers": {
+    "docker": {
+      "command": "npx",
+      "args": ["-y", "@hypnosis/docker-mcp-server"],
+      "env": {
+        "DOCKER_MCP_AUTO_DISCOVER": "true",
+        "DOCKER_MCP_MASK_SECRETS": "true",
+        "DOCKER_MCP_PROFILES_FILE": "${workspaceFolder}/.cursor/docker-mcp-profiles.json"
+      }
+    },
     "wordpress-rest": {
       "command": "npx",
       "args": ["-y", "@automattic/mcp-wordpress-remote@latest"],

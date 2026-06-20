@@ -22,6 +22,11 @@
                         <label class="form-check"><input type="radio" name="scope" value="all_projects" class="form-check-input"> كل المشاريع</label>
                         <label class="form-check"><input type="radio" name="scope" value="single_project" class="form-check-input" checked> مشروع واحد</label>
                         <label class="form-check"><input type="radio" name="scope" value="custom" class="form-check-input"> موارد مخصصة (من مشروع)</label>
+                        <label class="form-check"><input type="radio" name="scope" value="server" class="form-check-input" @if(!empty($preselectedServer)) checked @endif> سيرفر كامل (كل موارد المشاريع على السيرفر)</label>
+                    </div>
+                    <div class="mb-3 d-none" id="serverUuidWrap">
+                        <label class="form-label">UUID سيرفر Coolify</label>
+                        <input type="text" id="serverUuid" class="form-control" value="{{ $preselectedServer ?? '' }}" placeholder="معرّف السيرفر من Coolify">
                     </div>
                     <div class="mb-3" id="projectSelectWrap">
                         <label class="form-label">المشروع</label>
@@ -87,6 +92,7 @@
                         @csrf
                         <input type="hidden" name="scope" id="formScope">
                         <input type="hidden" name="project_uuid" id="formProjectUuid">
+                        <input type="hidden" name="server_uuid" id="formServerUuid">
                         <input type="hidden" name="project_name" id="formProjectName">
                         <input type="hidden" name="name" id="formName">
                         <input type="hidden" name="frequency" id="formFrequency">
@@ -123,9 +129,11 @@
         document.getElementById('planEmpty').classList.add('d-none');
         const scope = document.querySelector('input[name="scope"]:checked').value;
         const projectEl = document.getElementById('projectUuid');
+        const serverEl = document.getElementById('serverUuid');
         const body = {
             scope,
-            project_uuid: scope === 'all_projects' ? null : projectEl.value,
+            project_uuid: (scope === 'all_projects' || scope === 'server') ? null : projectEl.value,
+            server_uuid: scope === 'server' ? (serverEl?.value || '') : null,
             include_databases: document.getElementById('includeDatabases').checked ? 1 : 0,
             include_applications: document.getElementById('includeApplications').checked ? 1 : 0,
             include_services: document.getElementById('includeServices').checked ? 1 : 0,
@@ -177,7 +185,8 @@
         const scope = document.querySelector('input[name="scope"]:checked').value;
         const projectEl = document.getElementById('projectUuid');
         document.getElementById('formScope').value = scope;
-        document.getElementById('formProjectUuid').value = scope === 'all_projects' ? '' : projectEl.value;
+        document.getElementById('formProjectUuid').value = (scope === 'all_projects' || scope === 'server') ? '' : projectEl.value;
+        document.getElementById('formServerUuid').value = scope === 'server' ? (document.getElementById('serverUuid')?.value || '') : '';
         document.getElementById('formProjectName').value = scope === 'all_projects' ? '' : (projectEl.selectedOptions[0]?.dataset?.name || '');
         document.getElementById('formName').value = document.getElementById('snapshotName').value;
         document.getElementById('formFrequency').value = document.getElementById('frequency').value;
@@ -216,9 +225,15 @@
     document.querySelectorAll('input[name="scope"]').forEach(el => {
         el.addEventListener('change', () => {
             const v = document.querySelector('input[name="scope"]:checked').value;
-            document.getElementById('projectSelectWrap').classList.toggle('d-none', v === 'all_projects');
+            document.getElementById('projectSelectWrap').classList.toggle('d-none', v === 'all_projects' || v === 'server');
+            document.getElementById('serverUuidWrap')?.classList.toggle('d-none', v !== 'server');
         });
     });
+    const initialScope = document.querySelector('input[name="scope"]:checked')?.value;
+    if (initialScope === 'server') {
+        document.getElementById('projectSelectWrap').classList.add('d-none');
+        document.getElementById('serverUuidWrap')?.classList.remove('d-none');
+    }
 })();
 </script>
 @endpush

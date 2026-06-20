@@ -13,6 +13,15 @@ class CoolifyProjectSnapshotItem extends Model
         'manifest_only' => 'بيانات وصفية فقط',
     ];
 
+    public const RESTORE_STATUSES = [
+        'pending' => 'في الانتظار',
+        'running' => 'قيد الاستعادة',
+        'completed' => 'مكتملة',
+        'failed' => 'فاشلة',
+        'skipped' => 'متخطاة',
+        'cancelled' => 'ملغاة',
+    ];
+
     protected $fillable = [
         'snapshot_id',
         'resource_type',
@@ -23,10 +32,12 @@ class CoolifyProjectSnapshotItem extends Model
         'server_host',
         'strategy',
         'status',
+        'restore_status',
         'backup_path',
         'coolify_backup_config_uuid',
         'metadata',
         'error_message',
+        'restore_error',
         'started_at',
         'completed_at',
     ];

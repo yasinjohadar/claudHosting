@@ -30,6 +30,7 @@ use App\Http\Controllers\Admin\Coolify\CoolifyOperationsController;
 use App\Http\Controllers\Admin\Coolify\CoolifyPrivateKeyController;
 use App\Http\Controllers\Admin\Coolify\CoolifyProjectController;
 use App\Http\Controllers\Admin\Coolify\CoolifyProjectSnapshotController;
+use App\Http\Controllers\Admin\Coolify\CoolifyResourceSnapshotController;
 use App\Http\Controllers\Admin\Coolify\CoolifyResourceController;
 use App\Http\Controllers\Admin\Coolify\CoolifyServerController;
 use App\Http\Controllers\Admin\Coolify\CoolifyServiceController;
@@ -142,6 +143,14 @@ Route::middleware(['auth'])->group(function () {
             Route::post('/{uuid}/applications/{appUuid}/deploy', [\App\Http\Controllers\Client\ClientCoolifyProjectController::class, 'deployApplication'])->name('applications.deploy');
             Route::post('/{uuid}/applications/{appUuid}/restart', [\App\Http\Controllers\Client\ClientCoolifyProjectController::class, 'restartApplication'])->name('applications.restart');
             Route::get('/{uuid}/applications/{appUuid}/logs', [\App\Http\Controllers\Client\ClientCoolifyProjectController::class, 'applicationLogs'])->name('applications.logs');
+            Route::get('/{uuid}/applications/{appUuid}/deployments', [\App\Http\Controllers\Client\ClientCoolifyProjectController::class, 'applicationDeployments'])->name('applications.deployments');
+            Route::post('/{uuid}/services/{serviceUuid}/{action}', [\App\Http\Controllers\Client\ClientCoolifyProjectController::class, 'serviceLifecycle'])
+                ->name('services.lifecycle')
+                ->where('action', 'start|stop|restart');
+            Route::get('/{uuid}/services/{serviceUuid}/logs', [\App\Http\Controllers\Client\ClientCoolifyProjectController::class, 'serviceLogs'])->name('services.logs');
+            Route::post('/{uuid}/databases/{databaseUuid}/{action}', [\App\Http\Controllers\Client\ClientCoolifyProjectController::class, 'databaseLifecycle'])
+                ->name('databases.lifecycle')
+                ->where('action', 'start|stop|restart');
         });
         Route::prefix('wordpress-sites')->name('wordpress-sites.')->group(function () {
             Route::get('/', [\App\Http\Controllers\Client\ClientWordpressSiteController::class, 'index'])->name('index');
@@ -159,6 +168,9 @@ Route::middleware(['auth'])->group(function () {
             Route::get('/{uuid}/files/download', [CoolifyWordpressSiteFilesController::class, 'download'])->name('files.download');
             Route::get('/{uuid}/docker/logs', [CoolifyWordpressSiteFilesController::class, 'dockerLogs'])->name('docker.logs');
             Route::get('/{uuid}/docker/inspect', [CoolifyWordpressSiteFilesController::class, 'dockerInspect'])->name('docker.inspect');
+            Route::get('/{uuid}/docker/stats', [\App\Http\Controllers\Client\ClientWordpressSiteDockerController::class, 'stats'])->name('docker.stats');
+            Route::get('/{uuid}/docker/health', [\App\Http\Controllers\Client\ClientWordpressSiteDockerController::class, 'health'])->name('docker.health');
+            Route::post('/{uuid}/docker/db-backup', [\App\Http\Controllers\Client\ClientWordpressSiteDockerController::class, 'dbBackup'])->name('docker.db-backup');
             Route::post('/{uuid}/terminal/session', [CoolifyWordpressSiteFilesController::class, 'terminalSession'])->name('terminal.session');
             Route::get('/terminal/commands', [CoolifyWordpressSiteFilesController::class, 'terminalCommands'])->name('terminal.commands');
             Route::get('/{uuid}/filebrowser', [\App\Http\Controllers\Admin\Coolify\CoolifyWordpressSiteFilebrowserController::class, 'show'])->name('filebrowser');
@@ -321,6 +333,30 @@ Route::middleware(['auth', 'admin.panel'])->group(function () {
             Route::get('/products', [ReportController::class, 'exportProducts'])->name('products');
         });
 
+        // ========== Infrastructure / VPS ==========
+        Route::prefix('infrastructure')->name('infrastructure.')->group(function () {
+            Route::get('/settings', [\App\Http\Controllers\Admin\Infrastructure\InfrastructureSettingsController::class, 'index'])->name('settings.index');
+            Route::put('/settings', [\App\Http\Controllers\Admin\Infrastructure\InfrastructureSettingsController::class, 'update'])->name('settings.update');
+            Route::post('/settings/test-connection', [\App\Http\Controllers\Admin\Infrastructure\InfrastructureSettingsController::class, 'testConnection'])->name('settings.test-connection');
+
+            Route::get('/servers', [\App\Http\Controllers\Admin\Infrastructure\InfrastructureServerController::class, 'index'])->name('servers.index');
+            Route::post('/servers/sync', [\App\Http\Controllers\Admin\Infrastructure\InfrastructureServerController::class, 'sync'])->name('servers.sync');
+            Route::get('/servers/{uuid}/edit', [\App\Http\Controllers\Admin\Infrastructure\InfrastructureServerController::class, 'edit'])->name('servers.edit');
+            Route::put('/servers/{uuid}', [\App\Http\Controllers\Admin\Infrastructure\InfrastructureServerController::class, 'update'])->name('servers.update');
+            Route::post('/servers/{uuid}/refresh', [\App\Http\Controllers\Admin\Infrastructure\InfrastructureServerController::class, 'refresh'])->name('servers.refresh');
+            Route::post('/servers/{uuid}/{action}', [\App\Http\Controllers\Admin\Infrastructure\InfrastructureServerController::class, 'power'])
+                ->name('servers.power')
+                ->where('action', 'start|stop|shutdown|restart');
+            Route::get('/servers/{uuid}/metrics/history', [\App\Http\Controllers\Admin\Infrastructure\InfrastructureMetricsController::class, 'history'])->name('servers.metrics.history');
+            Route::get('/servers/{uuid}/metrics', [\App\Http\Controllers\Admin\Infrastructure\InfrastructureMetricsController::class, 'live'])->name('servers.metrics.live');
+            Route::get('/servers/{uuid}/terminal/commands', [\App\Http\Controllers\Admin\Infrastructure\InfrastructureTerminalController::class, 'commands'])->name('servers.terminal.commands');
+            Route::post('/servers/{uuid}/terminal/session', [\App\Http\Controllers\Admin\Infrastructure\InfrastructureTerminalController::class, 'session'])->name('servers.terminal.session');
+            Route::get('/servers/{uuid}/terminal', [\App\Http\Controllers\Admin\Infrastructure\InfrastructureTerminalController::class, 'show'])->name('servers.terminal');
+            Route::get('/servers/{uuid}/lifecycle/images', [\App\Http\Controllers\Admin\Infrastructure\InfrastructureLifecycleController::class, 'images'])->name('servers.lifecycle.images');
+            Route::post('/servers/{uuid}/reinstall', [\App\Http\Controllers\Admin\Infrastructure\InfrastructureLifecycleController::class, 'reinstall'])->name('servers.reinstall');
+            Route::get('/servers/{uuid}', [\App\Http\Controllers\Admin\Infrastructure\InfrastructureServerController::class, 'show'])->name('servers.show');
+        });
+
         // ========== Coolify ==========
         Route::prefix('coolify')->name('coolify.')->group(function () {
             Route::get('/', [CoolifySettingsController::class, 'overview'])->name('overview');
@@ -336,6 +372,10 @@ Route::middleware(['auth', 'admin.panel'])->group(function () {
             });
 
             Route::get('/settings', [CoolifySettingsController::class, 'index'])->name('settings.index');
+            Route::get('/settings/{section}', [CoolifySettingsController::class, 'section'])->name('settings.section')
+                ->where('section', 'api|backups|wordpress|cloudflare|wp-cli|ssh|terminal');
+            Route::put('/settings/{section}', [CoolifySettingsController::class, 'updateSection'])->name('settings.section.update')
+                ->where('section', 'api|backups|wordpress|cloudflare|wp-cli|ssh|terminal');
             Route::put('/settings', [CoolifySettingsController::class, 'update'])->name('settings.update');
             Route::post('/settings/test-connection', [CoolifySettingsController::class, 'testConnection'])->name('settings.test');
             Route::post('/settings/test-ssh', [CoolifySettingsController::class, 'testSsh'])->name('settings.test-ssh');
@@ -382,6 +422,10 @@ Route::middleware(['auth', 'admin.panel'])->group(function () {
                 Route::get('/{uuid}/files/download', [CoolifyWordpressSiteFilesController::class, 'download'])->name('files.download');
                 Route::get('/{uuid}/docker/logs', [CoolifyWordpressSiteFilesController::class, 'dockerLogs'])->name('docker.logs');
                 Route::get('/{uuid}/docker/inspect', [CoolifyWordpressSiteFilesController::class, 'dockerInspect'])->name('docker.inspect');
+                Route::get('/{uuid}/docker/stats', [\App\Http\Controllers\Admin\Coolify\CoolifyWordpressSiteDockerController::class, 'stats'])->name('docker.stats');
+                Route::get('/{uuid}/docker/health', [\App\Http\Controllers\Admin\Coolify\CoolifyWordpressSiteDockerController::class, 'health'])->name('docker.health');
+                Route::post('/{uuid}/docker/db-backup', [\App\Http\Controllers\Admin\Coolify\CoolifyWordpressSiteDockerController::class, 'dbBackup'])->name('docker.db-backup');
+                Route::post('/{uuid}/docker/db-restore', [\App\Http\Controllers\Admin\Coolify\CoolifyWordpressSiteDockerController::class, 'dbRestore'])->name('docker.db-restore');
                 Route::post('/{uuid}/terminal/session', [CoolifyWordpressSiteFilesController::class, 'terminalSession'])->name('terminal.session');
                 Route::get('/terminal/commands', [CoolifyWordpressSiteFilesController::class, 'terminalCommands'])->name('terminal.commands');
                 Route::get('/{uuid}/filebrowser', [\App\Http\Controllers\Admin\Coolify\CoolifyWordpressSiteFilebrowserController::class, 'show'])->name('filebrowser');
@@ -510,10 +554,16 @@ Route::middleware(['auth', 'admin.panel'])->group(function () {
                     Route::post('/snapshots', [CoolifyProjectSnapshotController::class, 'store'])->name('snapshots.store');
                 });
 
+                Route::post('/resource-snapshot', [CoolifyResourceSnapshotController::class, 'store'])->name('resource-snapshot.store');
+
                 Route::prefix('snapshots')->name('snapshots.')->group(function () {
                     Route::get('/', [CoolifyProjectSnapshotController::class, 'snapshotsIndex'])->name('index');
                     Route::get('/{uuid}/status', [CoolifyProjectSnapshotController::class, 'status'])->name('status');
+                    Route::get('/{uuid}/restore-status', [CoolifyProjectSnapshotController::class, 'restoreStatus'])->name('restore-status');
                     Route::post('/{uuid}/restore', [CoolifyProjectSnapshotController::class, 'restore'])->name('restore');
+                    Route::post('/{uuid}/cancel', [CoolifyProjectSnapshotController::class, 'cancel'])->name('cancel');
+                    Route::post('/{uuid}/resume', [CoolifyProjectSnapshotController::class, 'resume'])->name('resume');
+                    Route::post('/{uuid}/restore-drill', [CoolifyProjectSnapshotController::class, 'restoreDrill'])->name('restore-drill');
                     Route::get('/{uuid}', [CoolifyProjectSnapshotController::class, 'show'])->name('show');
                 });
 

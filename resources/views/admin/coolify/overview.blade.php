@@ -2,7 +2,6 @@
 @section('page-title') لوحة Coolify @stop
 
 @section('content')
-@include('admin.coolify.partials.overview-styles')
 <div class="main-content app-content">
     <div class="container-fluid">
         {{-- Hero --}}

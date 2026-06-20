@@ -2,11 +2,8 @@
 @php
     $href = $url ?? (isset($route) ? route($route) : '#');
     $widgetLabel = $label ?? ($title ?? '');
-    $accentClass = 'coolify-accent-' . match ($accent ?? 'primary') {
-        'teal' => 'success',
-        'purple' => 'primary',
-        default => $accent ?? 'primary',
-    };
+    $accentKey = $accent ?? 'primary';
+    $cardClass = 'dash-card--' . $accentKey;
     if (!isset($widgetCount)) {
         if (!empty($meta_html)) {
             $widgetCount = null;
@@ -17,33 +14,42 @@
         } elseif (isset($meta) && empty($meta_html)) {
             $widgetCount = $meta;
         } else {
-            $widgetCount = '—';
+            $widgetCount = null;
         }
     }
+    $isNumericValue = $widgetCount !== null && $widgetCount !== '' && is_numeric($widgetCount);
 @endphp
-<a href="{{ $href }}" class="coolify-widget-link {{ $linkClass ?? '' }}" aria-label="{{ $widgetLabel }}">
-    <div class="coolify-widget {{ $accentClass }}">
-        <div class="coolify-widget-accent"></div>
-        <div class="coolify-widget-body">
-            <div class="coolify-widget-top">
-                <div>
-                    <p class="coolify-widget-label">{{ $widgetLabel }}</p>
-                    @if(!empty($desc))
-                        <p class="coolify-widget-desc">{{ $desc }}</p>
-                    @endif
-                </div>
-                <div class="coolify-widget-icon" aria-hidden="true">
+<a href="{{ $href }}" class="dash-card-link {{ $linkClass ?? '' }}" aria-label="{{ $widgetLabel }}">
+    <div class="dash-card {{ $cardClass }}">
+        <div class="dash-card__stripe" aria-hidden="true"></div>
+        <div class="dash-card__body">
+            <div class="dash-card__top">
+                <div class="dash-card__icon" aria-hidden="true">
                     <i class="{{ $icon ?? 'fe fe-box' }}"></i>
                 </div>
+                <div class="dash-card__text">
+                    <p class="dash-card__title">{{ $widgetLabel }}</p>
+                    @if(!empty($desc))
+                        <p class="dash-card__desc">{{ $desc }}</p>
+                    @endif
+                </div>
             </div>
-            @if(!empty($meta_html))
-                <div class="coolify-widget-meta-html small fw-semibold">{!! $meta !!}</div>
-            @elseif($widgetCount !== null && $widgetCount !== '')
-                <div class="coolify-widget-count">{{ is_numeric($widgetCount) ? number_format((int) $widgetCount) : $widgetCount }}</div>
-            @endif
-            <div class="coolify-widget-foot">
-                <span>{{ $footLabel ?? 'فتح القسم' }}</span>
-                <i class="fe fe-arrow-left"></i>
+            <div class="dash-card__bottom">
+                @if(!empty($meta_html))
+                    <div class="dash-card__stat dash-card__stat--html">{!! $meta !!}</div>
+                @elseif($widgetCount !== null && $widgetCount !== '')
+                    @if($isNumericValue)
+                        <div class="dash-card__stat dash-card__stat--num">{{ number_format((int) $widgetCount) }}</div>
+                    @else
+                        <div class="dash-card__stat dash-card__stat--text">{{ $widgetCount }}</div>
+                    @endif
+                @else
+                    <div class="dash-card__stat dash-card__stat--text text-muted">—</div>
+                @endif
+                <span class="dash-card__foot">
+                    <span>{{ $footLabel ?? 'فتح' }}</span>
+                    <i class="fe fe-arrow-left"></i>
+                </span>
             </div>
         </div>
     </div>

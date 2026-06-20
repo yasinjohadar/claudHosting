@@ -46,6 +46,13 @@
             <a href="{{ route('admin.coolify.backups.index', ['database_uuid' => $uuid]) }}" class="btn btn-outline-primary btn-sm">
                 <i class="fe fe-archive"></i> مركز النسخ
             </a>
+            @include('admin.coolify.backups.partials.resource-snapshot-button', [
+                'resourceUuid' => $uuid,
+                'resourceType' => 'database',
+                'resourceName' => $database['name'] ?? $uuid,
+                'projectUuid' => $database['project_uuid'] ?? ($database['environment']['project_uuid'] ?? null),
+                'serverUuid' => $database['server_uuid'] ?? ($database['destination']['server']['uuid'] ?? null),
+            ])
             @include('admin.coolify.partials.delete-form', ['action' => route('admin.coolify.databases.destroy', $uuid)])
         </div>
 

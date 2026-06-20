@@ -10,5 +10,8 @@ Artisan::command('inspire', function () {
 
 Schedule::command('backup:run-scheduled')->everyMinute()->withoutOverlapping()->runInBackground();
 Schedule::command('coolify:run-scheduled-snapshots')->hourly()->withoutOverlapping()->runInBackground();
+Schedule::command('coolify:run-restore-drills')->weeklyOn(0, '04:00')->withoutOverlapping()->runInBackground();
 Schedule::command('coolify:check-ops-alerts')->everyFifteenMinutes()->withoutOverlapping()->runInBackground();
 Schedule::command('backup:cleanup-expired')->daily()->at('02:00')->withoutOverlapping();
+Schedule::command('infrastructure:record-vps-metrics')->everyFiveMinutes()->withoutOverlapping()->runInBackground();
+Schedule::command('infrastructure:prune-vps-metrics')->daily()->at('03:30')->withoutOverlapping();

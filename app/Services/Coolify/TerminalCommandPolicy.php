@@ -20,6 +20,12 @@ class TerminalCommandPolicy
             }
         }
 
+        foreach (config('vps_terminal_commands.blocked_patterns', []) as $pattern) {
+            if (@preg_match($pattern, $trimmed) === 1) {
+                return ['allowed' => false, 'message' => 'أمر محظور لأسباب أمنية'];
+            }
+        }
+
         return ['allowed' => true];
     }
 }

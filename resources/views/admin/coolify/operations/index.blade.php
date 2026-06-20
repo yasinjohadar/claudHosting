@@ -40,6 +40,65 @@
         <div class="alert alert-warning">Coolify API غير متصل — <a href="{{ route('admin.coolify.settings.index') }}">الإعدادات</a></div>
         @else
         @include('admin.coolify.partials.metrics-operations')
+
+        @if(!empty($ops['docker_infrastructure']))
+        <div class="card custom-card mb-3">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <span class="card-title mb-0">Docker على السيرفرات</span>
+                @php $wpDh = $ops['wordpress_docker_health'] ?? []; @endphp
+                <span class="badge {{ ($wpDh['unhealthy_count'] ?? 0) > 0 ? 'bg-warning' : 'bg-success' }}">
+                    مواقع WP: {{ $wpDh['unhealthy_count'] ?? 0 }} غير سليمة / {{ $wpDh['checked'] ?? 0 }} مفحوصة
+                </span>
+            </div>
+            <div class="card-body">
+                <div class="row g-3 mb-3">
+                    @foreach($ops['docker_infrastructure'] as $infra)
+                    <div class="col-md-6 col-lg-4">
+                        <div class="card border h-100 mb-0">
+                            <div class="card-body small">
+                                <h6 class="mb-2">
+                                    @if(!empty($infra['url']))
+                                    <a href="{{ $infra['url'] }}">{{ $infra['server_name'] ?? $infra['server_uuid'] }}</a>
+                                    @else
+                                    {{ $infra['server_name'] ?? '—' }}
+                                    @endif
+                                </h6>
+                                @if($infra['success'] ?? false)
+                                <div class="mb-1">قرص /: <strong>{{ $infra['disk_percent'] ?? 0 }}%</strong>
+                                    @if($infra['disk_warning'] ?? false)<span class="badge bg-danger ms-1">تحذير</span>@endif
+                                </div>
+                                <code class="d-block text-muted mb-2" style="font-size:.7rem">{{ $infra['disk_line'] ?? '' }}</code>
+                                @if(!empty($infra['docker_system_df']))
+                                <ul class="list-unstyled mb-0">
+                                    @foreach(array_slice($infra['docker_system_df'], 0, 4) as $row)
+                                    <li>{{ $row['type'] ?? '' }}: {{ $row['size'] ?? '' }} <span class="text-muted">({{ $row['reclaimable'] ?? '' }})</span></li>
+                                    @endforeach
+                                </ul>
+                                @endif
+                                @else
+                                <span class="text-danger">{{ $infra['message'] ?? 'غير متاح' }}</span>
+                                @endif
+                            </div>
+                        </div>
+                    </div>
+                    @endforeach
+                </div>
+                @if(!empty($wpDh['unhealthy']))
+                <p class="small fw-semibold mb-2">مواقع WordPress بصحة Docker غير سليمة</p>
+                <table class="table table-sm mb-0">
+                    @foreach($wpDh['unhealthy'] as $row)
+                    <tr>
+                        <td><a href="{{ $row['url'] }}">{{ $row['name'] }}</a></td>
+                        <td><code>{{ $row['slug'] }}</code></td>
+                        <td class="text-muted small">{{ $row['message'] }}</td>
+                    </tr>
+                    @endforeach
+                </table>
+                @endif
+            </div>
+        </div>
+        @endif
+
         <div class="row mb-3">
             @foreach(['servers' => 'سيرفرات', 'projects' => 'مشاريع', 'applications' => 'تطبيقات', 'services' => 'خدمات', 'databases' => 'قواعد بيانات'] as $k => $label)
             <div class="col-6 col-md-4 col-lg-2 mb-2">

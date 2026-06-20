@@ -1,0 +1,346 @@
+/* VPS SSH Terminal page */
+
+.vps-terminal-page {
+    min-height: calc(100vh - 120px);
+}
+
+.vps-terminal-hero {
+    background: linear-gradient(135deg, rgba(15, 23, 42, 0.04) 0%, rgba(var(--primary-rgb, 132, 90, 223), 0.07) 100%);
+    border: 1px solid var(--default-border, #e2e8f0);
+    border-radius: 1rem;
+    padding: 1rem 1.25rem;
+    margin-bottom: 1rem;
+}
+
+.vps-terminal-hero__title {
+    font-size: 1.2rem;
+    font-weight: 700;
+    margin: 0 0 0.25rem;
+}
+
+.vps-terminal-hero__meta {
+    font-size: 0.78rem;
+    color: var(--text-muted, #64748b);
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+}
+
+.vps-terminal-toolbar {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    align-items: center;
+}
+
+.vps-terminal-toolbar .btn {
+    border-radius: 0.5rem;
+    font-weight: 600;
+    font-size: 0.78rem;
+}
+
+.vps-terminal-status {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    font-size: 0.72rem;
+    font-weight: 700;
+    padding: 0.25rem 0.6rem;
+    border-radius: 2rem;
+    background: rgba(100, 116, 139, 0.12);
+    color: #64748b;
+}
+
+.vps-terminal-status--connected {
+    background: rgba(34, 197, 94, 0.12);
+    color: #16a34a;
+}
+
+.vps-terminal-status__dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: currentColor;
+}
+
+.vps-terminal-status--connected .vps-terminal-status__dot {
+    animation: vps-term-pulse 2s ease-in-out infinite;
+}
+
+@keyframes vps-term-pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.45; }
+}
+
+.vps-terminal-layout {
+    display: grid;
+    grid-template-columns: 1fr 360px;
+    gap: 1rem;
+    min-height: calc(100vh - 260px);
+}
+
+@media (max-width: 991px) {
+    .vps-terminal-layout {
+        grid-template-columns: 1fr;
+        min-height: auto;
+    }
+}
+
+.vps-terminal-pane {
+    border: 1px solid var(--default-border, #e2e8f0);
+    border-radius: 0.85rem;
+    overflow: hidden;
+    background: #0f172a;
+    display: flex;
+    flex-direction: column;
+    min-height: 420px;
+}
+
+.vps-terminal-pane__head {
+    padding: 0.55rem 0.85rem;
+    background: rgba(255, 255, 255, 0.04);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem;
+}
+
+.vps-terminal-pane__head-title {
+    font-size: 0.72rem;
+    font-weight: 700;
+    color: rgba(255, 255, 255, 0.65);
+    margin: 0;
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+}
+
+.vps-terminal-xterm {
+    flex: 1;
+    min-height: 380px;
+    padding: 0.35rem;
+}
+
+.vps-terminal-xterm .xterm {
+    height: 100%;
+}
+
+.vps-terminal-xterm .xterm-viewport {
+    border-radius: 0 0 0.75rem 0.75rem;
+}
+
+.vps-commands-pane {
+    border: 1px solid var(--default-border, #e2e8f0);
+    border-radius: 0.85rem;
+    background: var(--custom-white, #fff);
+    display: flex;
+    flex-direction: column;
+    max-height: calc(100vh - 260px);
+    overflow: hidden;
+}
+
+@media (max-width: 991px) {
+    .vps-commands-pane {
+        max-height: 520px;
+    }
+}
+
+.vps-commands-pane__head {
+    padding: 0.85rem 1rem;
+    border-bottom: 1px solid var(--default-border, #e2e8f0);
+    background: linear-gradient(to left, rgba(var(--primary-rgb, 132, 90, 223), 0.04), transparent);
+}
+
+.vps-commands-pane__title {
+    font-size: 0.88rem;
+    font-weight: 700;
+    margin: 0 0 0.55rem;
+}
+
+.vps-commands-search {
+    border-radius: 0.5rem;
+    font-size: 0.78rem;
+    border-color: var(--default-border, #e2e8f0);
+}
+
+.vps-commands-search:focus {
+    border-color: rgb(var(--primary-rgb, 132, 90, 223));
+    box-shadow: 0 0 0 3px rgba(var(--primary-rgb, 132, 90, 223), 0.12);
+}
+
+.vps-commands-body {
+    flex: 1;
+    overflow-y: auto;
+    padding: 0.65rem;
+}
+
+.vps-cmd-group {
+    margin-bottom: 0.45rem;
+    border: 1px solid var(--default-border, #e2e8f0);
+    border-radius: 0.65rem;
+    overflow: hidden;
+}
+
+.vps-cmd-group__toggle {
+    width: 100%;
+    border: none;
+    background: rgba(248, 250, 252, 0.9);
+    padding: 0.6rem 0.75rem;
+    display: flex;
+    align-items: center;
+    gap: 0.55rem;
+    text-align: start;
+    font-weight: 700;
+    font-size: 0.78rem;
+    color: var(--default-text-color, #1e293b);
+    transition: background 0.15s;
+}
+
+.vps-cmd-group__toggle:hover {
+    background: #fff;
+}
+
+.vps-cmd-group__toggle[aria-expanded="true"] {
+    background: #fff;
+    border-bottom: 1px solid var(--default-border, #e2e8f0);
+}
+
+.vps-cmd-group__icon {
+    width: 28px;
+    height: 28px;
+    border-radius: 7px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.78rem;
+    flex-shrink: 0;
+}
+
+.vps-cmd-group__icon--primary { background: rgba(var(--primary-rgb, 132, 90, 223), 0.12); color: rgb(var(--primary-rgb, 132, 90, 223)); }
+.vps-cmd-group__icon--success { background: rgba(34, 197, 94, 0.12); color: #16a34a; }
+.vps-cmd-group__icon--info { background: rgba(14, 165, 233, 0.12); color: #0ea5e9; }
+.vps-cmd-group__icon--warning { background: rgba(245, 158, 11, 0.14); color: #d97706; }
+.vps-cmd-group__icon--danger { background: rgba(239, 68, 68, 0.12); color: #dc2626; }
+.vps-cmd-group__icon--secondary { background: rgba(100, 116, 139, 0.12); color: #64748b; }
+.vps-cmd-group__icon--teal { background: rgba(20, 184, 166, 0.12); color: #0d9488; }
+.vps-cmd-group__icon--purple { background: rgba(168, 85, 247, 0.12); color: #9333ea; }
+
+.vps-cmd-group__chevron {
+    margin-inline-start: auto;
+    transition: transform 0.2s;
+    opacity: 0.5;
+}
+
+.vps-cmd-group__toggle[aria-expanded="true"] .vps-cmd-group__chevron {
+    transform: rotate(-90deg);
+}
+
+.vps-cmd-group__list {
+    padding: 0.45rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+}
+
+.vps-cmd-card {
+    width: 100%;
+    text-align: start;
+    border: 1px solid var(--default-border, #e2e8f0);
+    border-radius: 0.55rem;
+    padding: 0.55rem 0.65rem;
+    background: #fff;
+    cursor: pointer;
+    transition: transform 0.15s, box-shadow 0.15s, border-color 0.15s;
+    position: relative;
+    overflow: hidden;
+}
+
+.vps-cmd-card::before {
+    content: '';
+    position: absolute;
+    inset-inline-start: 0;
+    top: 0;
+    bottom: 0;
+    width: 3px;
+    background: var(--vps-cmd-accent, rgb(var(--primary-rgb, 132, 90, 223)));
+    opacity: 0;
+    transition: opacity 0.15s;
+}
+
+.vps-cmd-card:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 6px 16px rgba(15, 23, 42, 0.08);
+    border-color: rgba(var(--primary-rgb, 132, 90, 223), 0.25);
+}
+
+.vps-cmd-card:hover::before {
+    opacity: 1;
+}
+
+.vps-cmd-card--danger {
+    border-color: rgba(239, 68, 68, 0.25);
+}
+
+.vps-cmd-card--danger::before {
+    background: #ef4444;
+}
+
+.vps-cmd-card__label {
+    font-size: 0.76rem;
+    font-weight: 700;
+    color: var(--default-text-color, #1e293b);
+    margin-bottom: 0.15rem;
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
+}
+
+.vps-cmd-card__desc {
+    font-size: 0.66rem;
+    color: var(--text-muted, #64748b);
+    margin-bottom: 0.25rem;
+    line-height: 1.35;
+}
+
+.vps-cmd-card__cmd {
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+    font-size: 0.62rem;
+    color: #475569;
+    background: rgba(15, 23, 42, 0.04);
+    padding: 0.2rem 0.4rem;
+    border-radius: 0.3rem;
+    display: block;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    direction: ltr;
+    text-align: left;
+}
+
+.vps-cmd-badge {
+    font-size: 0.58rem;
+    font-weight: 700;
+    padding: 0.1rem 0.35rem;
+    border-radius: 0.25rem;
+    background: rgba(239, 68, 68, 0.12);
+    color: #dc2626;
+}
+
+.vps-commands-empty {
+    text-align: center;
+    padding: 2rem 1rem;
+    color: var(--text-muted, #64748b);
+    font-size: 0.8rem;
+}
+
+.vps-terminal-blocked {
+    border-radius: 0.85rem;
+    padding: 2rem;
+    text-align: center;
+}
+
+.vps-terminal-blocked .btn {
+    border-radius: 0.5rem;
+    font-weight: 600;
+}

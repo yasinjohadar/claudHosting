@@ -77,8 +77,8 @@ return [
         'ssh_private_key' => '',
         'ssh_private_key_path' => '',
         'ssh_key_cache_path' => 'coolify-keys',
-        'ssh_host_fallback' => env('COOLIFY_SSH_HOST', ''),
-        'ssh_port' => (int) env('COOLIFY_SSH_PORT', 22),
+        'ssh_host_fallback' => '',
+        'ssh_port' => 22,
         'backup_queue' => 'coolify-backups',
         'snapshot_storage_config_id' => '',
         'coolify_s3_storage_uuid' => '',
@@ -124,6 +124,12 @@ return [
         'cloudflare_r2',
     ],
 
+    /** أقصى انتظار لاكتمال نسخ DB عبر Coolify داخل اللقطة (ثوانٍ) */
+    'snapshot_db_backup_wait_seconds' => (int) env('COOLIFY_SNAPSHOT_DB_WAIT', 120),
+
+    /** اعتبار عنصر اللقطة «عالقاً» بعد هذه الدقائق وإعادة جدولته */
+    'snapshot_item_stale_minutes' => (int) env('COOLIFY_SNAPSHOT_STALE_MINUTES', 8),
+
     'metrics_refresh_seconds' => 10,
     'metrics_cache_seconds' => 8,
 
@@ -134,6 +140,12 @@ return [
             'deploy' => env('COOLIFY_CLIENT_DEPLOY', true),
             'restart' => env('COOLIFY_CLIENT_RESTART', false),
             'stop' => env('COOLIFY_CLIENT_STOP', false),
+            'view_deployments' => env('COOLIFY_CLIENT_VIEW_DEPLOYMENTS', true),
+            'service_lifecycle' => env('COOLIFY_CLIENT_SERVICE_LIFECYCLE', true),
+            'service_logs' => env('COOLIFY_CLIENT_SERVICE_LOGS', true),
+            'database_lifecycle' => env('COOLIFY_CLIENT_DATABASE_LIFECYCLE', true),
+            'db_backup' => env('COOLIFY_CLIENT_DB_BACKUP', true),
+            'docker_stats' => env('COOLIFY_CLIENT_DOCKER_STATS', true),
         ],
     ],
 

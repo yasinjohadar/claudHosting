@@ -1,4 +1,4 @@
-<div class="tab-pane fade show active" id="tabApi" role="tabpanel">
+<div class="coolify-settings-fields">
     <p class="text-muted small">اتصال Coolify API — تُحفظ في قاعدة البيانات (مجموعة <code>coolify</code>) دون تعديل <code>.env</code>.</p>
     <div class="mb-3">
         <label class="form-label">عنوان Coolify API *</label>

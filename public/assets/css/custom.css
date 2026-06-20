@@ -8,3 +8,8 @@
 a {
     font-weight: bold !important;
 }
+
+.app-sidebar a.side-menu__item,
+.app-sidebar .slide-menu a.side-menu__item {
+    font-weight: inherit !important;
+}

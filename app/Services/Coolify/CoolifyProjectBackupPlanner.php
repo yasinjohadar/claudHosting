@@ -15,6 +15,7 @@ class CoolifyProjectBackupPlanner
      * @param  array{
      *     scope: string,
      *     project_uuid?: string|null,
+     *     server_uuid?: string|null,
      *     resource_uuids?: array<int, string>,
      *     include_databases?: bool,
      *     include_applications?: bool,
@@ -30,7 +31,11 @@ class CoolifyProjectBackupPlanner
         $includeServices = $input['include_services'] ?? true;
         $selectedUuids = $input['resource_uuids'] ?? [];
 
-        $resources = $this->collectResources($scope, $input['project_uuid'] ?? null);
+        $resources = $this->collectResources(
+            $scope,
+            $input['project_uuid'] ?? null,
+            $input['server_uuid'] ?? null
+        );
 
         if ($scope === 'custom' && $selectedUuids !== []) {
             $resources = array_values(array_filter(
@@ -82,8 +87,12 @@ class CoolifyProjectBackupPlanner
     /**
      * @return array<int, array<string, mixed>>
      */
-    protected function collectResources(string $scope, ?string $projectUuid): array
+    protected function collectResources(string $scope, ?string $projectUuid, ?string $serverUuid = null): array
     {
+        if ($scope === 'server' && $serverUuid) {
+            return $this->collectServerResources($serverUuid);
+        }
+
         if ($scope === 'all_projects') {
             $all = [];
             $projectsResponse = $this->coolify->listProjects();
@@ -107,6 +116,31 @@ class CoolifyProjectBackupPlanner
         }
 
         return [];
+    }
+
+    /**
+     * @return array<int, array<string, mixed>>
+     */
+    protected function collectServerResources(string $serverUuid): array
+    {
+        $all = [];
+        $projectsResponse = $this->coolify->listProjects();
+        $projects = $this->coolify->normalizeList($projectsResponse['data'] ?? []);
+
+        foreach ($projects as $project) {
+            $puuid = (string) ($project['uuid'] ?? '');
+            if ($puuid === '') {
+                continue;
+            }
+            foreach ($this->projectResources($puuid, $project['name'] ?? null) as $resource) {
+                $resourceServer = $this->coolify->extractResourceServerUuid($resource);
+                if ($resourceServer === $serverUuid) {
+                    $all[] = $resource;
+                }
+            }
+        }
+
+        return $all;
     }
 
     /**

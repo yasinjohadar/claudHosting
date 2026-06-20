@@ -1,4 +1,4 @@
-<div class="tab-pane fade" id="tabSsh" role="tabpanel">
+<div class="coolify-settings-fields">
     <div class="alert alert-warning py-2 small mb-3">
         إذا كان IP السيرفر في Coolify = <code>host.docker.internal</code> (سيرفر محلي)، ضع هنا <strong>IP الحقيقي</strong> للجهاز الذي يشغّل Docker/Coolify (مثال: <code>203.0.113.10</code> أو <code>192.168.1.50</code>) — وليس <code>host.docker.internal</code>.
     </div>

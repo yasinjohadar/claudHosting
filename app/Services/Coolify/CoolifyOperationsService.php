@@ -13,7 +13,8 @@ class CoolifyOperationsService
         protected CoolifyApiService $coolify,
         protected CoolifySettingsService $settings,
         protected CoolifySshExecutor $ssh,
-        protected CoolifyProjectCleanupService $projectCleanup
+        protected CoolifyProjectCleanupService $projectCleanup,
+        protected DockerHostService $dockerHost
     ) {}
 
     /**
@@ -32,6 +33,8 @@ class CoolifyOperationsService
         $sshStatuses = [];
         $systemHealth = null;
         $systemVersion = null;
+        $dockerInfrastructure = [];
+        $wordpressDockerHealth = ['checked' => 0, 'unhealthy_count' => 0, 'unhealthy' => []];
 
         if ($connected) {
             $unhealthyResources = $this->collectUnhealthyResources();
@@ -39,6 +42,8 @@ class CoolifyOperationsService
             $systemHealth = $this->coolify->getHealth();
             $versionResponse = $this->coolify->getVersion();
             $systemVersion = $versionResponse['data'] ?? $versionResponse['message'] ?? null;
+            $dockerInfrastructure = $this->collectDockerInfrastructure();
+            $wordpressDockerHealth = $this->dockerHost->summarizeWordpressSitesHealth();
         }
 
         $wordpressIssues = CoolifyWordpressSite::query()
@@ -89,7 +94,33 @@ class CoolifyOperationsService
             'ssh_statuses' => $sshStatuses,
             'system_health' => $systemHealth,
             'system_version' => $systemVersion,
+            'docker_infrastructure' => $dockerInfrastructure,
+            'wordpress_docker_health' => $wordpressDockerHealth,
         ];
+    }
+
+    /**
+     * @return array<int, array<string, mixed>>
+     */
+    protected function collectDockerInfrastructure(): array
+    {
+        $out = [];
+        $servers = $this->coolify->normalizeList($this->coolify->listServers()['data'] ?? []);
+        foreach ($servers as $server) {
+            if (! is_array($server)) {
+                continue;
+            }
+            $uuid = (string) ($server['uuid'] ?? '');
+            if ($uuid === '') {
+                continue;
+            }
+            $summary = $this->dockerHost->collectInfrastructureSummary($uuid);
+            $summary['server_name'] = $server['name'] ?? $uuid;
+            $summary['url'] = route('admin.coolify.servers.show', $uuid);
+            $out[] = $summary;
+        }
+
+        return $out;
     }
 
     /**

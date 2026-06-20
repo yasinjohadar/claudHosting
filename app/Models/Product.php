@@ -103,7 +103,7 @@ class Product extends Model
     public function customers()
     {
         return $this->belongsToMany(Customer::class, 'customer_products', 'product_id', 'customer_id')
-            ->withPivot(['id', 'whmcs_service_id', 'status', 'nextduedate', 'amount', 'billingcycle', 'created_at', 'updated_at']);
+            ->withPivot(['id', 'whmcs_service_id', 'status', 'regdate', 'nextduedate', 'amount', 'billingcycle', 'created_at', 'updated_at']);
     }
 
     /**

@@ -18,6 +18,50 @@
     </details>
 
     @if($wpManagementState['execute_ready'] ?? false)
+    @php $wpSiteRoutes = $wpSiteRoutes ?? \App\Support\WordpressSiteRouteMap::forPanel(empty($isClientPanel ?? false) ? 'admin' : 'client', $uuid); @endphp
+    <div class="card custom-card mb-3" id="dockerHostMetricsCard">
+        <div class="card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
+            <span class="card-title mb-0"><i class="fe fe-cpu me-1"></i> موارد Docker والصحة</span>
+            <div class="d-flex gap-2">
+                <button type="button" class="btn btn-outline-primary btn-sm" id="btnDockerStatsRefresh">تحديث الموارد</button>
+                @if(empty($isClientPanel ?? false) || config('coolify.client_portal.actions.db_backup', true))
+                <form method="POST" action="{{ $wpSiteRoutes['dockerDbBackup'] }}" class="d-inline" id="dockerDbBackupForm">@csrf
+                    <button type="submit" class="btn btn-outline-success btn-sm">نسخ DB الآن</button>
+                </form>
+                @endif
+            </div>
+        </div>
+        <div class="card-body">
+            <div id="dockerHealthSummary" class="small text-muted mb-3">جاري الفحص…</div>
+            <div class="row g-3" id="dockerStatsGrid">
+                <div class="col-md-4"><div class="text-muted small">CPU</div><div class="fw-semibold" id="dockerStatCpu">—</div></div>
+                <div class="col-md-4"><div class="text-muted small">RAM</div><div class="fw-semibold" id="dockerStatMem">—</div></div>
+                <div class="col-md-4"><div class="text-muted small">الشبكة / القرص</div><div class="fw-semibold small" id="dockerStatIo">—</div></div>
+            </div>
+        </div>
+    </div>
+    @php $wpDbBackups = array_reverse($site->metadata['db_backups'] ?? []); @endphp
+    @if(!empty($wpDbBackups) && empty($isClientPanel ?? false))
+    <div class="card custom-card mb-3">
+        <div class="card-header"><span class="card-title mb-0">نسخ قاعدة البيانات المحلية</span></div>
+        <ul class="list-group list-group-flush">
+            @foreach(array_slice($wpDbBackups, 0, 10) as $backup)
+            <li class="list-group-item d-flex justify-content-between align-items-center flex-wrap gap-2 small">
+                <span>
+                    <code>{{ $backup['filename'] ?? basename($backup['path'] ?? '') }}</code>
+                    <span class="text-muted">— {{ isset($backup['size_bytes']) ? number_format($backup['size_bytes'] / 1024, 1).' KB' : '' }}</span>
+                </span>
+                <form method="POST" action="{{ $wpSiteRoutes['dockerDbRestore'] ?? '' }}" class="d-inline"
+                    onsubmit="return confirm('استعادة قاعدة البيانات من هذه النسخة؟ سيتم استبدال البيانات الحالية.');">
+                    @csrf
+                    <input type="hidden" name="backup_path" value="{{ $backup['path'] ?? '' }}">
+                    <button type="submit" class="btn btn-sm btn-outline-warning">استعادة</button>
+                </form>
+            </li>
+            @endforeach
+        </ul>
+    </div>
+    @endif
     <details class="site-show-log-card mb-3" id="dockerLogsCard" open>
         <summary class="d-flex justify-content-between align-items-center">
             <span><i class="fe fe-terminal me-1 text-primary"></i> سجلات Docker (حاوية WordPress)</span>
@@ -40,6 +84,36 @@
 (function() {
     const logsUrl = @json($wpSiteRoutes['dockerLogs']);
     const inspectUrl = @json($wpSiteRoutes['dockerInspect']);
+    const statsUrl = @json($wpSiteRoutes['dockerStats']);
+    const healthUrl = @json($wpSiteRoutes['dockerHealth']);
+
+    async function refreshDockerMetrics() {
+        const healthEl = document.getElementById('dockerHealthSummary');
+        try {
+            const [hRes, sRes] = await Promise.all([
+                fetch(healthUrl, { headers: { 'Accept': 'application/json' } }),
+                fetch(statsUrl, { headers: { 'Accept': 'application/json' } }),
+            ]);
+            const h = await hRes.json();
+            const s = await sRes.json();
+            if (healthEl && h.success) {
+                const ok = h.healthy ? 'سليم' : 'يحتاج انتباه';
+                healthEl.innerHTML = '<span class="badge ' + (h.healthy ? 'bg-success' : 'bg-warning') + '">' + ok + '</span> '
+                    + 'WP: ' + (h.wordpress?.message || '—') + ' · DB: ' + (h.database?.message || '—');
+            } else if (healthEl) {
+                healthEl.textContent = h.message || 'تعذّر فحص الصحة';
+            }
+            if (s.success && s.stats) {
+                document.getElementById('dockerStatCpu').textContent = (s.stats.cpu_percent ?? '—') + '%';
+                document.getElementById('dockerStatMem').textContent = (s.stats.mem_percent ?? '—') + '% · ' + (s.stats.mem_usage || '');
+                document.getElementById('dockerStatIo').textContent = (s.stats.net_io || '—') + ' / ' + (s.stats.block_io || '—');
+            }
+        } catch (e) {
+            if (healthEl) healthEl.textContent = 'فشل جلب مقاييس Docker';
+        }
+    }
+    document.getElementById('btnDockerStatsRefresh')?.addEventListener('click', refreshDockerMetrics);
+    refreshDockerMetrics();
     document.getElementById('btnDockerLogsRefresh')?.addEventListener('click', async () => {
         const el = document.getElementById('dockerContainerLogs');
         if (el) el.textContent = 'جاري التحميل…';

@@ -4,8 +4,11 @@ namespace App\Http\Controllers\Admin\Coolify;
 
 use App\Http\Controllers\Admin\Coolify\Concerns\HandlesCoolifyResponses;
 use App\Http\Controllers\Controller;
+use App\Models\CoolifyBackupAuditLog;
 use App\Models\CoolifyProjectSnapshot;
+use App\Models\CoolifyRestoreDrill;
 use App\Models\CoolifySnapshotSchedule;
+use App\Models\VpsServer;
 use App\Services\Coolify\CoolifyBackupService;
 use App\Services\Coolify\CoolifySettingsService;
 use App\Services\CoolifyApiService;
@@ -36,9 +39,24 @@ class CoolifyBackupController extends Controller
                 'snapshots_failed' => CoolifyProjectSnapshot::query()->whereIn('status', ['failed', 'partial'])->count(),
                 'schedules_total' => CoolifySnapshotSchedule::query()->count(),
                 'schedules_enabled' => CoolifySnapshotSchedule::query()->where('enabled', true)->count(),
+                'drills_failed' => CoolifyRestoreDrill::query()->whereIn('status', ['failed', 'partial'])->count(),
             ];
 
-            return view('admin.coolify.backups.hub', compact('configured', 'readiness', 'hubStats'));
+            $linkedVpsServers = VpsServer::query()
+                ->whereNotNull('coolify_server_uuid')
+                ->where('coolify_server_uuid', '!=', '')
+                ->orderBy('name')
+                ->get(['uuid', 'name', 'ip', 'provider', 'coolify_server_uuid']);
+
+            $recentAudit = CoolifyBackupAuditLog::query()->latest()->limit(8)->get();
+
+            return view('admin.coolify.backups.hub', compact(
+                'configured',
+                'readiness',
+                'hubStats',
+                'linkedVpsServers',
+                'recentAudit'
+            ));
         }
 
         if (! $configured) {

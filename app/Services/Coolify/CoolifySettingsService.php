@@ -127,36 +127,27 @@ class CoolifySettingsService
                 ->toArray();
 
             $defaults = config('coolify.defaults');
-            $env = config('terminal_bridge.env_fallback', []);
 
             $enabledRaw = $stored[$keys['terminal_bridge_enabled']] ?? null;
-            if ($enabledRaw === null || $enabledRaw === '') {
-                $enabled = (bool) ($env['enabled'] ?? false);
-            } else {
-                $enabled = filter_var($enabledRaw, FILTER_VALIDATE_BOOLEAN);
-            }
+            $enabled = ($enabledRaw === null || $enabledRaw === '')
+                ? filter_var($defaults['terminal_bridge_enabled'] ?? '0', FILTER_VALIDATE_BOOLEAN)
+                : filter_var($enabledRaw, FILTER_VALIDATE_BOOLEAN);
 
             $url = trim((string) ($stored[$keys['terminal_bridge_url']] ?? $defaults['terminal_bridge_url'] ?? ''));
             if ($url === '') {
-                $url = (string) ($env['url'] ?? 'http://127.0.0.1:3099');
+                $url = 'http://127.0.0.1:3099';
             }
             $url = rtrim($url, '/');
 
             $secretRaw = $stored[$keys['terminal_bridge_secret']] ?? '';
             $secret = $this->decryptIfEncrypted($secretRaw);
-            if ($secret === '') {
-                $secret = trim((string) ($env['secret'] ?? ''));
-            }
 
-            $port = (int) ($stored[$keys['terminal_bridge_port']] ?? $defaults['terminal_bridge_port'] ?? 0);
+            $port = (int) ($stored[$keys['terminal_bridge_port']] ?? $defaults['terminal_bridge_port'] ?? 3099);
             if ($port <= 0 || $port > 65535) {
-                $port = (int) ($env['port'] ?? 3099);
+                $port = 3099;
             }
 
-            $ttl = (int) ($stored[$keys['terminal_bridge_token_ttl']] ?? $defaults['terminal_bridge_token_ttl'] ?? 0);
-            if ($ttl < 60 || $ttl > 86400) {
-                $ttl = (int) ($env['token_ttl_seconds'] ?? 900);
-            }
+            $ttl = (int) ($stored[$keys['terminal_bridge_token_ttl']] ?? $defaults['terminal_bridge_token_ttl'] ?? 900);
             $ttl = max(60, min(86400, $ttl));
 
             return [

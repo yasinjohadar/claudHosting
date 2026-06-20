@@ -21,13 +21,74 @@ class ProductController extends Controller
 
     /**
      * عرض قائمة المنتجات
-     *
-     * @return \Illuminate\View\View
      */
-    public function index()
+    public function index(Request $request)
     {
-        $products = Product::orderBy('name', 'asc')->paginate(10);
-        return view('admin.products.index', compact('products'));
+        $products = $this->paginateProducts($request);
+        $stats = $this->productStats();
+
+        if ($request->ajax() || $request->boolean('ajax')) {
+            return response()->json([
+                'html' => view('admin.products.partials.list-results', compact('products'))->render(),
+                'total' => $products->total(),
+            ]);
+        }
+
+        return view('admin.products.index', compact('products', 'stats'));
+    }
+
+    /**
+     * @return array<string, int>
+     */
+    protected function productStats(): array
+    {
+        return [
+            'total' => Product::count(),
+            'active' => Product::where('status', 'Active')->count(),
+            'inactive' => Product::where('status', '!=', 'Active')->count(),
+            'hosting' => Product::where('type', 'hostingaccount')->count(),
+        ];
+    }
+
+    /**
+     * @return array<string, string>
+     */
+    public static function filterTypes(): array
+    {
+        return [
+            'hostingaccount' => 'استضافة',
+            'reselleraccount' => 'ريسيلر',
+            'server' => 'خادم',
+        ];
+    }
+
+    protected function paginateProducts(Request $request): \Illuminate\Contracts\Pagination\LengthAwarePaginator
+    {
+        return $this->buildProductsQuery($request)->paginate(15)->withQueryString();
+    }
+
+    protected function buildProductsQuery(Request $request): \Illuminate\Database\Eloquent\Builder
+    {
+        $query = Product::query()->orderByDesc('id');
+
+        if ($request->filled('q')) {
+            $term = '%'.trim((string) $request->q).'%';
+            $query->where(function ($qb) use ($term) {
+                $qb->where('name', 'like', $term)
+                    ->orWhere('product_group', 'like', $term)
+                    ->orWhere('description', 'like', $term);
+            });
+        }
+
+        if ($request->filled('status') && in_array($request->status, ['Active', 'Inactive'], true)) {
+            $query->where('status', $request->status);
+        }
+
+        if ($request->filled('type') && array_key_exists($request->type, self::filterTypes())) {
+            $query->where('type', $request->type);
+        }
+
+        return $query;
     }
 
     /**
@@ -138,15 +199,12 @@ class ProductController extends Controller
      */
     public function show($id)
     {
-        $product = Product::findOrFail($id);
-        
-        // الحصول على العملاء الذين اشتروا هذا المنتج
-        $customerProducts = CustomerProduct::where('product_id', $id)
-            ->with('customer')
-            ->orderBy('created_at', 'desc')
-            ->get();
-            
-        return view('admin.products.show', compact('product', 'customerProducts'));
+        $product = Product::with([
+            'customers.user',
+            'invoices.customer.user',
+        ])->findOrFail($id);
+
+        return view('admin.products.show', compact('product'));
     }
 
     /**
