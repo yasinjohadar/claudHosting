@@ -1,27 +1,43 @@
 @if(isset($projectSnapshots) && $projectSnapshots->isNotEmpty())
+@if(empty($embedded))
 <div class="card custom-card mb-3">
     <div class="card-header d-flex justify-content-between align-items-center">
         <span class="card-title mb-0">لقطات المشروع</span>
         <a href="{{ route('admin.coolify.backups.projects.wizard', ['project_uuid' => $uuid]) }}" class="btn btn-sm btn-outline-primary">لقطة جديدة</a>
     </div>
     <div class="card-body p-0">
-        <table class="table table-sm mb-0">
-            <thead><tr><th>الاسم</th><th>الحالة</th><th>التاريخ</th><th></th></tr></thead>
+@endif
+        <div class="table-responsive">
+        <table class="table table-hover table-sm mb-0 cf-project-snapshots-table">
+            <thead>
+                <tr>
+                    <th>الاسم</th>
+                    <th>الحالة</th>
+                    <th>التاريخ</th>
+                    <th class="text-end">إجراء</th>
+                </tr>
+            </thead>
             <tbody>
             @foreach($projectSnapshots as $snap)
             <tr>
-                <td><a href="{{ route('admin.coolify.backups.snapshots.show', $snap->uuid) }}">{{ $snap->name }}</a></td>
+                <td>
+                    <a href="{{ route('admin.coolify.backups.snapshots.show', $snap->uuid) }}" class="text-decoration-none fw-semibold">
+                        {{ $snap->name }}
+                    </a>
+                </td>
                 <td>@include('admin.coolify.backups.partials.backup-status-badge', ['status' => $snap->status])</td>
                 <td class="small text-muted">{{ $snap->created_at?->format('Y-m-d H:i') }}</td>
-                <td>
+                <td class="text-end">
                     @if(in_array($snap->status, ['completed', 'partial']))
-                    <button type="button" class="btn btn-sm btn-outline-warning" data-bs-toggle="collapse" data-bs-target="#restore-{{ $snap->uuid }}">استعادة</button>
+                    <button type="button" class="btn btn-sm btn-outline-warning" data-bs-toggle="collapse" data-bs-target="#restore-{{ $snap->uuid }}">
+                        استعادة
+                    </button>
                     @endif
                 </td>
             </tr>
             @if(in_array($snap->status, ['completed', 'partial']))
             <tr class="collapse" id="restore-{{ $snap->uuid }}">
-                <td colspan="4" class="bg-light">
+                <td colspan="4" class="bg-light border-top-0">
                     <form method="POST" action="{{ route('admin.coolify.projects.snapshots.restore', [$uuid, $snap->uuid]) }}" onsubmit="return confirm('تحذير: الاستعادة قد تستبدل بيانات volumes. متابعة؟');">
                         @csrf
                         @include('admin.coolify.backups.partials.restore-scope-form', ['snapshot' => $snap])
@@ -32,7 +48,9 @@
             @endforeach
             </tbody>
         </table>
+        </div>
+@if(empty($embedded))
     </div>
 </div>
 @endif
-
+@endif

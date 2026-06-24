@@ -141,6 +141,14 @@ class VpsMetricsService
     /**
      * @return array<string, mixed>
      */
+    public function recordSnapshotForServer(VpsServer $server): array
+    {
+        return $this->recordSnapshot($server);
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
     public function recordSnapshot(VpsServer $server): array
     {
         if (! $server->isRunning() || trim((string) $server->ip) === '') {
@@ -165,6 +173,7 @@ class VpsMetricsService
             'net_tx_bps' => $srv['net_tx_bps'] ?? null,
             'containers_count' => count($containers),
             'payload' => [
+                'source' => 'ssh',
                 'swap_percent' => $srv['swap_percent'] ?? null,
                 'uptime_seconds' => $srv['uptime_seconds'] ?? null,
                 'disks' => $srv['disks'] ?? [],

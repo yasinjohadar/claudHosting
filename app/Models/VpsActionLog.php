@@ -11,6 +11,7 @@ class VpsActionLog extends Model
         'vps_server_id',
         'user_id',
         'action',
+        'provider_task_uuid',
         'success',
         'message',
         'meta',

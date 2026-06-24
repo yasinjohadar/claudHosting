@@ -5,7 +5,9 @@ namespace App\Http\Controllers\Admin\Infrastructure;
 use App\Http\Controllers\Controller;
 use App\Models\VpsServer;
 use App\Services\Infrastructure\InfrastructureSettingsService;
+use App\Services\Infrastructure\Netcup\NetcupDeviceAuthService;
 use App\Services\Infrastructure\VpsProviderRegistry;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
@@ -15,7 +17,8 @@ class InfrastructureSettingsController extends Controller
 {
     public function __construct(
         protected InfrastructureSettingsService $settings,
-        protected VpsProviderRegistry $registry
+        protected VpsProviderRegistry $registry,
+        protected NetcupDeviceAuthService $netcupDeviceAuth
     ) {
         $this->middleware('auth');
     }
@@ -64,8 +67,9 @@ class InfrastructureSettingsController extends Controller
                 'ovh_endpoint' => 'nullable|string|max:32',
             ],
             'netcup' => [
-                'netcup_client_id' => 'nullable|string|max:255',
-                'netcup_client_secret' => 'nullable|string|max:500',
+                'netcup_customer_number' => 'nullable|string|max:32',
+                'netcup_api_password' => 'nullable|string|max:500',
+                'netcup_refresh_token' => 'nullable|string|max:4000',
             ],
             default => [],
         };
@@ -102,8 +106,9 @@ class InfrastructureSettingsController extends Controller
                 'ovh_endpoint' => 'nullable|string|max:32',
             ],
             'netcup' => [
-                'netcup_client_id' => 'nullable|string|max:255',
-                'netcup_client_secret' => 'nullable|string|max:500',
+                'netcup_customer_number' => 'nullable|string|max:32',
+                'netcup_api_password' => 'nullable|string|max:500',
+                'netcup_refresh_token' => 'nullable|string|max:4000',
             ],
             default => [],
         };
@@ -127,5 +132,36 @@ class InfrastructureSettingsController extends Controller
                 ($result['success'] ?? false) ? 'success' : 'error',
                 $result['message'] ?? '—'
             );
+    }
+
+    public function netcupDeviceStart(Request $request): JsonResponse
+    {
+        $result = $this->netcupDeviceAuth->start((int) $request->user()->id);
+
+        return response()->json($result, ($result['success'] ?? false) ? 200 : 422);
+    }
+
+    public function netcupDevicePoll(Request $request): JsonResponse
+    {
+        $data = $request->validate([
+            'poll_token' => ['required', 'string', 'max:80'],
+        ]);
+
+        $result = $this->netcupDeviceAuth->poll($data['poll_token'], (int) $request->user()->id);
+
+        $status = match ($result['status'] ?? '') {
+            'success' => 200,
+            'pending' => 202,
+            default => 422,
+        };
+
+        return response()->json($result, $status);
+    }
+
+    public function netcupRevoke(Request $request): JsonResponse
+    {
+        $result = $this->netcupDeviceAuth->revoke();
+
+        return response()->json($result, ($result['success'] ?? false) ? 200 : 422);
     }
 }

@@ -1,18 +1,106 @@
 @extends('admin.layouts.master')
 @section('page-title') مشاريع Coolify @stop
+
+@push('styles')
+    @include('admin.coolify.projects.partials.index-styles')
+@endpush
+
 @section('content')
+@php
+    $iconVariants = ['a', 'b', 'c', 'd', 'e'];
+    $kpiTotal = count($projects);
+    $kpiWithResources = 0;
+    $kpiEmpty = 0;
+    $kpiLinked = 0;
+    foreach ($projects as $p) {
+        $t = (int) (($p['_inspection']['total'] ?? 0));
+        if ($t > 0) {
+            $kpiWithResources++;
+        } else {
+            $kpiEmpty++;
+        }
+        if (! empty($p['_client'])) {
+            $kpiLinked++;
+        }
+    }
+@endphp
 <div class="main-content app-content">
     <div class="container-fluid">
-        <div class="d-md-flex justify-content-between my-4">
-            <h4>المشاريع</h4>
-            <a href="{{ route('admin.coolify.projects.create') }}" class="btn btn-primary"><i class="fe fe-plus"></i> إضافة مشروع</a>
+        <div class="d-md-flex justify-content-between align-items-center flex-wrap gap-3 my-4">
+            <div>
+                <h4 class="mb-1">مشاريع Coolify</h4>
+                <p class="text-muted small mb-0">إدارة مشاريع الاستضافة وربطها بالعملاء</p>
+            </div>
+            <div class="d-flex flex-wrap gap-2">
+                <a href="{{ route('admin.coolify.overview') }}" class="btn btn-outline-secondary btn-sm">
+                    <i class="fe fe-arrow-right me-1"></i> لوحة Coolify
+                </a>
+                <a href="{{ route('admin.coolify.settings.index') }}" class="btn btn-outline-secondary btn-sm">
+                    <i class="fe fe-settings me-1"></i> الإعدادات
+                </a>
+                <a href="{{ route('admin.coolify.projects.create') }}" class="btn btn-primary btn-sm">
+                    <i class="fe fe-plus me-1"></i> مشروع جديد
+                </a>
+            </div>
         </div>
+
         @include('admin.coolify.partials.alerts')
-        <div class="card custom-card mb-3">
+        @if(!empty($error))
+            <div class="alert alert-danger border-0 shadow-sm">{{ $error }}</div>
+        @endif
+
+        <div class="row g-3 mb-4">
+            <div class="col-sm-6 col-xl-3">
+                <div class="cf-project-kpi">
+                    <div class="cf-project-kpi__icon cf-project-kpi__icon--total">
+                        <i class="fe fe-layers"></i>
+                    </div>
+                    <div>
+                        <div class="cf-project-kpi__value">{{ $kpiTotal }}</div>
+                        <div class="cf-project-kpi__label">إجمالي المشاريع</div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-sm-6 col-xl-3">
+                <div class="cf-project-kpi">
+                    <div class="cf-project-kpi__icon cf-project-kpi__icon--active">
+                        <i class="fe fe-box"></i>
+                    </div>
+                    <div>
+                        <div class="cf-project-kpi__value">{{ $kpiWithResources }}</div>
+                        <div class="cf-project-kpi__label">بها موارد</div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-sm-6 col-xl-3">
+                <div class="cf-project-kpi">
+                    <div class="cf-project-kpi__icon cf-project-kpi__icon--empty">
+                        <i class="fe fe-inbox"></i>
+                    </div>
+                    <div>
+                        <div class="cf-project-kpi__value">{{ $kpiEmpty }}</div>
+                        <div class="cf-project-kpi__label">فارغة</div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-sm-6 col-xl-3">
+                <div class="cf-project-kpi">
+                    <div class="cf-project-kpi__icon cf-project-kpi__icon--clients">
+                        <i class="fe fe-users"></i>
+                    </div>
+                    <div>
+                        <div class="cf-project-kpi__value">{{ $kpiLinked }}</div>
+                        <div class="cf-project-kpi__label">مرتبطة بعملاء</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="cf-projects-filter card custom-card border-0 shadow-sm mb-3">
             <div class="card-body py-3">
-                <form method="GET" class="row g-2 align-items-end">
-                    <div class="col-md-4">
-                        <label class="form-label mb-0 small">فلتر العميل</label>
+                <form method="GET" class="row g-3 align-items-end">
+                    <div class="col-md-4 col-lg-3">
+                        <label class="form-label">فلتر العميل</label>
                         <select name="user_id" class="form-select form-select-sm">
                             <option value="">كل المشاريع</option>
                             @foreach($clientUsers ?? [] as $u)
@@ -20,93 +108,117 @@
                             @endforeach
                         </select>
                     </div>
-                    <div class="col-auto">
-                        <button type="submit" class="btn btn-sm btn-primary">تطبيق</button>
+                    <div class="col-auto d-flex flex-wrap gap-2">
+                        <button type="submit" class="btn btn-sm btn-primary">
+                            <i class="fe fe-filter me-1"></i> تطبيق
+                        </button>
                         <a href="{{ route('admin.coolify.projects.index') }}" class="btn btn-sm btn-light">مسح</a>
                     </div>
                 </form>
             </div>
         </div>
-        <div class="card custom-card">
-            <div class="table-responsive">
-                <table class="table table-hover mb-0">
-                    <thead>
-                        <tr>
-                            <th>الاسم</th>
-                            <th>UUID</th>
-                            <th>الموارد</th>
-                            <th>العميل</th>
-                            <th></th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                    @forelse($projects as $p)
-                        @php
-                            $uuid = $p['uuid'] ?? '';
-                            $inspection = $p['_inspection'] ?? [];
-                            $total = (int) ($inspection['total'] ?? 0);
-                            $canDelete = (bool) ($inspection['can_delete'] ?? false);
-                            $summary = $inspection['summary_label'] ?? '—';
-                            $fetchError = $inspection['fetch_error'] ?? null;
-                        @endphp
-                        <tr>
-                            <td>{{ $p['name'] ?? '—' }}</td>
-                            <td><code class="small text-muted">{{ $uuid }}</code></td>
-                            <td>
-                                @if($fetchError)
-                                    <span class="text-muted small" title="{{ $fetchError }}">تعذّر الجلب</span>
-                                @elseif($total > 0)
-                                    <a href="{{ route('admin.coolify.projects.resources', $uuid) }}" class="small">{{ $total }} مورد</a>
-                                    <div class="small text-muted">{{ $summary }}</div>
-                                @else
-                                    <span class="text-muted small">فارغ</span>
-                                @endif
-                            </td>
-                            <td class="project-client-cell project-row-{{ $loop->index }}">
-                                <div class="project-client-label">
+
+        <div class="card custom-card border-0 shadow-sm">
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover mb-0 cf-projects-table align-middle">
+                        <thead>
+                            <tr>
+                                <th>المشروع</th>
+                                <th>الموارد</th>
+                                <th>العميل</th>
+                                <th class="cf-projects-table__col-actions text-end">إجراءات</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                        @forelse($projects as $p)
+                            @php
+                                $uuid = $p['uuid'] ?? '';
+                                $name = $p['name'] ?? '—';
+                                $inspection = $p['_inspection'] ?? [];
+                                $total = (int) ($inspection['total'] ?? 0);
+                                $canDelete = (bool) ($inspection['can_delete'] ?? false);
+                                $summary = $inspection['summary_label'] ?? '—';
+                                $fetchError = $inspection['fetch_error'] ?? null;
+                                $iconVariant = $iconVariants[crc32(mb_strtolower($name)) % count($iconVariants)];
+                            @endphp
+                            <tr class="cf-project-row-{{ $loop->index }}">
+                                <td>
+                                    <div class="cf-project-name">
+                                        <span class="cf-project-name__icon cf-project-name__icon--{{ $iconVariant }}" aria-hidden="true">
+                                            <i class="fe fe-layers"></i>
+                                        </span>
+                                        <div class="min-w-0">
+                                            <div class="cf-project-name__title text-truncate">{{ $name }}</div>
+                                            @if($uuid !== '')
+                                                <div class="cf-project-name__uuid" title="{{ $uuid }}">{{ Str::limit($uuid, 28) }}</div>
+                                            @endif
+                                        </div>
+                                    </div>
+                                </td>
+                                <td>
+                                    <div class="cf-project-resources">
+                                        @if($fetchError)
+                                            <span class="cf-project-resources__badge cf-project-resources__badge--error" title="{{ $fetchError }}">
+                                                <i class="fe fe-alert-circle"></i> تعذّر الجلب
+                                            </span>
+                                        @elseif($total > 0)
+                                            <a href="{{ route('admin.coolify.projects.resources', $uuid) }}"
+                                               class="cf-project-resources__link">
+                                                <span class="cf-project-resources__badge cf-project-resources__badge--active">
+                                                    <i class="fe fe-grid"></i> {{ $total }} مورد
+                                                </span>
+                                            </a>
+                                            @if($summary !== '—')
+                                                <span class="cf-project-resources__summary" title="{{ $summary }}">{{ $summary }}</span>
+                                            @endif
+                                        @else
+                                            <span class="cf-project-resources__badge cf-project-resources__badge--empty">
+                                                <i class="fe fe-inbox"></i> فارغ
+                                            </span>
+                                        @endif
+                                    </div>
+                                </td>
+                                <td class="cf-project-client-cell">
                                     @include('admin.coolify.projects.partials.client-cell', ['client' => $p['_client'] ?? null])
-                                </div>
-                                @if($uuid !== '')
-                                <div class="mt-1">
-                                    @include('admin.partials.asset-client-assign-inline', [
-                                        'assignUrl' => route('admin.coolify.projects.assign-client', $uuid),
-                                        'payloadKey' => 'project_name',
-                                        'payloadValue' => $p['name'] ?? '',
+                                </td>
+                                <td class="text-end">
+                                    @include('admin.coolify.projects.partials.index-row-actions', [
+                                        'uuid' => $uuid,
+                                        'name' => $name,
+                                        'total' => $total,
+                                        'canDelete' => $canDelete,
+                                        'rowIndex' => $loop->index,
                                         'clientUsers' => $clientUsers ?? [],
                                         'selectedUserId' => $p['_user_id'] ?? null,
-                                        'cellSelector' => '.project-row-'.$loop->index.' .project-client-label',
                                     ])
-                                </div>
-                                @endif
-                            </td>
-                            <td>
-                                <div class="d-flex gap-1 justify-content-end flex-wrap">
-                                    <a href="{{ route('admin.coolify.projects.show', $uuid) }}" class="btn btn-sm btn-outline-primary">عرض</a>
-                                    @if($uuid !== '')
-                                        @if($total > 0)
-                                            <a href="{{ route('admin.coolify.projects.resources', $uuid) }}" class="btn btn-sm btn-outline-secondary">الموارد</a>
-                                        @endif
-                                        @if($canDelete)
-                                            @include('admin.coolify.partials.delete-form', [
-                                                'action' => route('admin.coolify.projects.destroy', $uuid),
-                                                'message' => 'حذف المشروع «'.($p['name'] ?? $uuid).'» من Coolify؟ المشروع فارغ ولا يحتوي موارد.',
-                                            ])
-                                        @else
-                                            <button type="button" class="btn btn-sm btn-outline-danger" disabled
-                                                title="احذف الموارد أولاً">حذف</button>
-                                        @endif
-                                    @endif
-                                </div>
-                            </td>
-                        </tr>
-                    @empty
-                        <tr><td colspan="5" class="text-center text-muted py-4">لا توجد مشاريع</td></tr>
-                    @endforelse
-                    </tbody>
-                </table>
+                                </td>
+                            </tr>
+                        @empty
+                            <tr class="cf-projects-empty">
+                                <td colspan="4">
+                                    <div class="text-center text-muted">
+                                        <div class="cf-projects-empty__icon">
+                                            <i class="fe fe-layers"></i>
+                                        </div>
+                                        <p class="mb-2 fw-semibold">لا توجد مشاريع</p>
+                                        <p class="small mb-3">أنشئ مشروعاً جديداً في Coolify أو من هنا مباشرة.</p>
+                                        <a href="{{ route('admin.coolify.projects.create') }}" class="btn btn-sm btn-primary">
+                                            <i class="fe fe-plus me-1"></i> إضافة مشروع
+                                        </a>
+                                    </div>
+                                </td>
+                            </tr>
+                        @endforelse
+                        </tbody>
+                    </table>
+                </div>
+                <div class="cf-projects-footnote">
+                    <i class="fe fe-info me-1"></i>
+                    لا يُحذف المشروع إلا إذا كان فارغاً (بدون تطبيقات، خدمات، قواعد بيانات، أو مواقع WordPress مرتبطة).
+                </div>
             </div>
         </div>
-        <p class="small text-muted mb-0">لا يُحذف المشروع إلا إذا كان فارغاً (بدون تطبيقات، خدمات، قواعد بيانات، أو مواقع WordPress مرتبطة).</p>
     </div>
 </div>
 @push('scripts')
@@ -114,4 +226,3 @@
 @include('admin.partials.asset-client-assign-script')
 @endpush
 @endsection
-

@@ -116,4 +116,54 @@ class VpsServer extends Model
     {
         return in_array($this->provider, ['ovh', 'netcup'], true);
     }
+
+    public function latestSshMetricSnapshot(): ?VpsMetricSnapshot
+    {
+        return $this->metricSnapshots()
+            ->where(function ($query) {
+                $query->where('payload->source', 'ssh')
+                    ->orWhereNull('payload');
+            })
+            ->latest('recorded_at')
+            ->first();
+    }
+
+    /**
+     * @return array<string, string|null>
+     */
+    public function scpPlatformSummary(): array
+    {
+        $scp = is_array($this->metadata['scp_live'] ?? null) ? $this->metadata['scp_live'] : [];
+
+        $ram = null;
+        $maxMem = (int) ($scp['max_memory_mib'] ?? 0);
+        if ($maxMem > 0) {
+            $ram = self::formatMib($maxMem).' مخصص';
+        }
+
+        $disk = null;
+        if (isset($scp['disk_percent_platform'])) {
+            $disk = number_format((float) $scp['disk_percent_platform'], 0).'% تخصيص منصة';
+        }
+
+        $cpus = isset($scp['cpu_count']) ? (string) (int) $scp['cpu_count'].' نوى' : null;
+
+        return [
+            'ram' => $ram,
+            'disk' => $disk,
+            'cpu' => $cpus,
+        ];
+    }
+
+    public static function formatMib(int $mib): string
+    {
+        if ($mib >= 1024 * 1024) {
+            return round($mib / (1024 * 1024), 1).' TiB';
+        }
+        if ($mib >= 1024) {
+            return round($mib / 1024, $mib >= 10240 ? 0 : 1).' GiB';
+        }
+
+        return $mib.' MiB';
+    }
 }

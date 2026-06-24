@@ -4,14 +4,19 @@ namespace App\Services\Infrastructure;
 
 use App\Contracts\VpsLifecycleContract;
 use App\Contracts\VpsProviderContract;
-use App\Services\Infrastructure\Concerns\MakesHttpVpsRequests;
+use App\Services\Infrastructure\Netcup\NetcupImageService;
+use App\Services\Infrastructure\Netcup\NetcupPowerService;
 use App\Services\Infrastructure\Netcup\NetcupScpClient;
+use App\Services\Infrastructure\Netcup\NetcupServerService;
 
 class NetcupVpsProvider implements VpsProviderContract, VpsLifecycleContract
 {
-    use MakesHttpVpsRequests;
-
-    public function __construct(protected NetcupScpClient $client) {}
+    public function __construct(
+        protected NetcupScpClient $client,
+        protected NetcupServerService $servers,
+        protected NetcupPowerService $power,
+        protected NetcupImageService $images
+    ) {}
 
     public function providerKey(): string
     {
@@ -25,93 +30,60 @@ class NetcupVpsProvider implements VpsProviderContract, VpsLifecycleContract
 
     public function listInstances(): array
     {
-        $res = $this->client->request('GET', '/servers', ['limit' => 500]);
-        if (! ($res['success'] ?? false)) {
-            return ['success' => false, 'message' => $res['message'] ?? 'فشل', 'instances' => []];
-        }
+        $res = $this->servers->listInstances();
 
-        $body = $res['body'] ?? [];
-        $rows = $body['data'] ?? $body['servers'] ?? (is_array($body) && array_is_list($body) ? $body : []);
-
-        $instances = [];
-        foreach ($rows as $row) {
-            if (! is_array($row)) {
-                continue;
-            }
-            $mapped = $this->mapServer($row);
-            if ($mapped !== null) {
-                $instances[] = $mapped;
-            }
-        }
-
-        return ['success' => true, 'instances' => $instances];
+        return [
+            'success' => $res['success'],
+            'message' => $res['message'] ?? ($res['success'] ? 'OK' : 'فشل'),
+            'instances' => $res['instances'] ?? [],
+        ];
     }
 
     public function getInstance(string $externalId): array
     {
-        $serverId = $this->parseExternalId($externalId);
-        $res = $this->client->request('GET', '/servers/'.$serverId);
-        if (! ($res['success'] ?? false)) {
-            return ['success' => false, 'message' => $res['message'] ?? 'فشل'];
-        }
-
-        $row = $res['body']['data'] ?? $res['body'] ?? null;
-        if (! is_array($row)) {
-            return ['success' => false, 'message' => 'السيرفر غير موجود'];
-        }
-
-        $mapped = $this->mapServer($row);
-
-        return $mapped
-            ? ['success' => true, 'instance' => $mapped]
-            : ['success' => false, 'message' => 'تعذّر قراءة السيرفر'];
+        return $this->servers->getInstance($externalId, true);
     }
 
     public function start(string $externalId): array
     {
-        return $this->power($externalId, 'on', null, 'تم إرسال أمر التشغيل');
+        return $this->power->start($externalId);
     }
 
     public function stop(string $externalId): array
     {
-        return $this->power($externalId, 'off', 'POWEROFF', 'تم إرسال الإيقاف الفوري');
+        return $this->power->stop($externalId);
     }
 
     public function shutdown(string $externalId): array
     {
-        return $this->power($externalId, 'off', null, 'تم إرسال إيقاف ACPI');
+        return $this->power->shutdown($externalId);
     }
 
     public function restart(string $externalId): array
     {
-        return $this->power($externalId, 'off', 'POWERCYCLE', 'تم إرسال إعادة التشغيل (Powercycle)');
+        return $this->power->restart($externalId);
     }
 
     public function listImages(string $externalId): array
     {
-        $serverId = $this->parseExternalId($externalId);
-        $res = $this->client->request('GET', '/servers/'.$serverId.'/image/flavours');
-
-        if (! ($res['success'] ?? false)) {
-            return ['success' => false, 'message' => $res['message'] ?? 'فشل'];
+        $res = $this->images->listFlavours($externalId);
+        if (! $res['success']) {
+            return ['success' => false, 'message' => $res['message']];
         }
 
-        $images = $res['body']['data'] ?? $res['body'] ?? [];
+        $images = $this->extractImageList($res['data']);
 
-        return ['success' => true, 'message' => 'OK', 'images' => is_array($images) ? $images : []];
+        return ['success' => true, 'message' => 'OK', 'images' => $images];
     }
 
     public function reinstall(string $externalId, string $imageId, array $options = []): array
     {
-        $serverId = $this->parseExternalId($externalId);
-        $res = $this->client->request('POST', '/servers/'.$serverId.'/image/setup', [], [
-            'imageId' => $imageId,
-            'hostname' => $options['hostname'] ?? null,
-        ]);
+        $res = $this->images->setupImage($externalId, $imageId, $options);
 
         return [
-            'success' => $res['success'] ?? false,
-            'message' => $res['success'] ? 'تم طلب إعداد/إعادة تثبيت الصورة' : ($res['message'] ?? 'فشل'),
+            'success' => $res['success'],
+            'message' => $res['message'],
+            'task_uuid' => $res['task_uuid'] ?? null,
         ];
     }
 
@@ -124,60 +96,20 @@ class NetcupVpsProvider implements VpsProviderContract, VpsLifecycleContract
     }
 
     /**
-     * @return array{success: bool, message: string}
+     * @return list<mixed>
      */
-    protected function power(string $externalId, string $state, ?string $option, string $successMessage): array
+    protected function extractImageList(mixed $data): array
     {
-        $serverId = $this->parseExternalId($externalId);
-        $payload = array_filter([
-            'power' => $state,
-            'option' => $option,
-        ]);
-
-        $res = $this->client->request('POST', '/servers/'.$serverId.'/power', [], $payload);
-
-        return [
-            'success' => $res['success'] ?? false,
-            'message' => $res['success'] ? $successMessage : ($res['message'] ?? 'فشل'),
-        ];
-    }
-
-    /**
-     * @param  array<string, mixed>  $row
-     * @return array<string, mixed>|null
-     */
-    protected function mapServer(array $row): ?array
-    {
-        $id = (string) ($row['id'] ?? $row['serverId'] ?? '');
-        if ($id === '') {
-            return null;
+        if (! is_array($data)) {
+            return [];
         }
 
-        $name = (string) ($row['nickname'] ?? $row['hostname'] ?? $row['name'] ?? 'Netcup '.$id);
-        $ip = (string) ($row['ip'] ?? $row['primaryIp'] ?? '');
-        if ($ip === '' && isset($row['ips']) && is_array($row['ips'])) {
-            $ip = (string) ($row['ips'][0] ?? '');
+        foreach (['data', 'imageFlavours', 'flavours', 'images'] as $key) {
+            if (isset($data[$key]) && is_array($data[$key])) {
+                return $data[$key];
+            }
         }
 
-        $state = strtolower((string) ($row['state'] ?? $row['status'] ?? $row['powerState'] ?? ''));
-
-        return [
-            'external_id' => 'scp:'.$id,
-            'name' => $name,
-            'ip' => $ip,
-            'region' => (string) ($row['location'] ?? $row['datacenter'] ?? ''),
-            'status' => $this->normalizeStatus($state),
-            'metadata' => [
-                'product_line' => (string) ($row['type'] ?? 'netcup_server'),
-                'server_id' => $id,
-            ],
-        ];
-    }
-
-    protected function parseExternalId(string $externalId): string
-    {
-        return str_starts_with($externalId, 'scp:')
-            ? substr($externalId, 4)
-            : $externalId;
+        return array_is_list($data) ? $data : [];
     }
 }

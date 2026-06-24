@@ -3,11 +3,16 @@
 namespace App\Services\Infrastructure\Netcup;
 
 use App\Services\Infrastructure\InfrastructureSettingsService;
+use App\Services\Infrastructure\Netcup\Concerns\NetcupScpHelpers;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
 
 class NetcupScpClient
 {
+    use NetcupScpHelpers;
+
+    protected ?string $lastTokenError = null;
+
     public function __construct(protected InfrastructureSettingsService $settings) {}
 
     public function baseUrl(): string
@@ -15,11 +20,21 @@ class NetcupScpClient
         return rtrim((string) config('infrastructure.netcup.api_base'), '/');
     }
 
+    public function pingUrl(): string
+    {
+        return rtrim((string) config('infrastructure.netcup.ping_url'), '/');
+    }
+
     /**
      * @return array{success: bool, message: string}
      */
     public function test(): array
     {
+        $ping = $this->ping();
+        if ($ping['success']) {
+            return ['success' => true, 'message' => 'الاتصال بـ Netcup SCP ناجح'];
+        }
+
         $res = $this->request('GET', '/servers', ['limit' => 1]);
 
         return [
@@ -29,13 +44,47 @@ class NetcupScpClient
     }
 
     /**
-     * @return array{success: bool, message?: string, body?: mixed}
+     * @return array{success: bool, message: string, data?: mixed}
+     */
+    public function ping(): array
+    {
+        try {
+            $response = Http::timeout(15)->acceptJson()->get($this->pingUrl());
+
+            return [
+                'success' => $response->successful(),
+                'message' => $response->successful() ? 'SCP API متاح' : 'HTTP '.$response->status(),
+                'data' => $response->json(),
+            ];
+        } catch (\Throwable $e) {
+            return ['success' => false, 'message' => $e->getMessage()];
+        }
+    }
+
+    /**
+     * @return array{success: bool, message: string, data?: mixed}
+     */
+    public function maintenance(): array
+    {
+        return $this->wrapResponse($this->request('GET', '/maintenance'));
+    }
+
+    public function getUserId(): ?string
+    {
+        return $this->resolveUserId($this->settings);
+    }
+
+    /**
+     * @return array{success: bool, message?: string, body?: mixed, task_uuid?: ?string}
      */
     public function request(string $method, string $path, array $query = [], ?array $json = null): array
     {
         $token = $this->accessToken();
         if ($token === null) {
-            return ['success' => false, 'message' => 'توكن Netcup غير متاح — راجع Client ID/Secret'];
+            return [
+                'success' => false,
+                'message' => $this->lastTokenError ?? 'توكن Netcup غير متاح — راجع بيانات SCP أدناه',
+            ];
         }
 
         try {
@@ -59,6 +108,11 @@ class NetcupScpClient
                 if ($token !== null) {
                     return $this->request($method, $path, $query, $json);
                 }
+
+                return [
+                    'success' => false,
+                    'message' => $this->lastTokenError ?? 'انتهت صلاحية توكن Netcup — أعد اختبار الاتصال',
+                ];
             }
 
             $body = $response->json();
@@ -70,7 +124,11 @@ class NetcupScpClient
                 return ['success' => false, 'message' => $message, 'body' => $body];
             }
 
-            return ['success' => true, 'body' => $body];
+            return [
+                'success' => true,
+                'body' => $body,
+                'task_uuid' => $this->extractTaskUuid($body),
+            ];
         } catch (\Throwable $e) {
             return ['success' => false, 'message' => $e->getMessage()];
         }
@@ -82,41 +140,114 @@ class NetcupScpClient
             Cache::forget($this->tokenCacheKey());
         }
 
-        return Cache::remember($this->tokenCacheKey(), 3300, function () {
-            $creds = $this->settings->getCredentials();
-            $clientId = $creds['netcup_client_id'] ?? '';
-            $clientSecret = $creds['netcup_client_secret'] ?? '';
+        $this->lastTokenError = null;
 
-            if ($clientId === '' || $clientSecret === '') {
-                return null;
-            }
-
-            $tokenUrl = config('infrastructure.netcup.token_url');
-
-            try {
-                $response = Http::asForm()
-                    ->timeout(30)
-                    ->post($tokenUrl, [
-                        'grant_type' => 'client_credentials',
-                        'client_id' => $clientId,
-                        'client_secret' => $clientSecret,
-                    ]);
-
-                if (! $response->successful()) {
-                    return null;
-                }
-
-                return $response->json('access_token');
-            } catch (\Throwable) {
-                return null;
-            }
+        return Cache::remember($this->tokenCacheKey(), 240, function () {
+            return $this->fetchAccessToken();
         });
+    }
+
+    protected function fetchAccessToken(): ?string
+    {
+        $creds = $this->settings->getCredentials();
+        $tokenUrl = (string) config('infrastructure.netcup.token_url');
+        $clientId = (string) config('infrastructure.netcup.oauth_client_id', 'scp');
+
+        $refreshToken = trim((string) ($creds['netcup_refresh_token'] ?? ''));
+        if ($refreshToken !== '') {
+            $token = $this->requestToken($tokenUrl, [
+                'grant_type' => 'refresh_token',
+                'client_id' => $clientId,
+                'refresh_token' => $refreshToken,
+            ]);
+
+            if ($token !== null) {
+                return $token;
+            }
+        }
+
+        $customerNumber = trim((string) ($creds['netcup_customer_number'] ?? $creds['netcup_client_id'] ?? ''));
+        $apiPassword = trim((string) ($creds['netcup_api_password'] ?? $creds['netcup_client_secret'] ?? ''));
+
+        if ($customerNumber !== '' && $apiPassword !== '') {
+            $token = $this->requestToken($tokenUrl, [
+                'grant_type' => 'password',
+                'client_id' => $clientId,
+                'username' => $customerNumber,
+                'password' => $apiPassword,
+                'scope' => 'offline_access openid',
+            ]);
+
+            if ($token !== null) {
+                return $token;
+            }
+        }
+
+        if ($this->lastTokenError === null) {
+            $this->lastTokenError = 'اربط SCP عبر Device Flow أو أدخل رقم العميل + API Password';
+        }
+
+        return null;
+    }
+
+    /**
+     * @param  array<string, string>  $payload
+     */
+    protected function requestToken(string $tokenUrl, array $payload): ?string
+    {
+        try {
+            $response = Http::asForm()->timeout(30)->post($tokenUrl, $payload);
+
+            if (! $response->successful()) {
+                $body = $response->json();
+                $error = is_array($body)
+                    ? (string) ($body['error_description'] ?? $body['error'] ?? json_encode($body))
+                    : 'HTTP '.$response->status();
+                $this->lastTokenError = 'فشل مصادقة Netcup SCP: '.$error;
+
+                return null;
+            }
+
+            $newRefresh = $response->json('refresh_token');
+            if (is_string($newRefresh) && $newRefresh !== '') {
+                $this->settings->save(['netcup_refresh_token' => $newRefresh]);
+            }
+
+            $accessToken = $response->json('access_token');
+            if (is_string($accessToken) && $accessToken !== '') {
+                $this->persistUserIdFromToken($accessToken);
+            }
+
+            return is_string($accessToken) && $accessToken !== '' ? $accessToken : null;
+        } catch (\Throwable $e) {
+            $this->lastTokenError = 'فشل مصادقة Netcup SCP: '.$e->getMessage();
+
+            return null;
+        }
+    }
+
+    protected function persistUserIdFromToken(string $accessToken): void
+    {
+        $parts = explode('.', $accessToken);
+        if (count($parts) < 2) {
+            return;
+        }
+
+        $payload = json_decode(base64_decode(strtr($parts[1], '-_', '+/')) ?: '', true);
+        if (is_array($payload) && ! empty($payload['sub'])) {
+            $this->settings->save(['netcup_scp_user_id' => (string) $payload['sub']]);
+        }
     }
 
     protected function tokenCacheKey(): string
     {
         $creds = $this->settings->getCredentials();
+        $fingerprint = implode('|', [
+            $creds['netcup_refresh_token'] ?? '',
+            $creds['netcup_customer_number'] ?? $creds['netcup_client_id'] ?? '',
+            $creds['netcup_api_password'] ?? $creds['netcup_client_secret'] ?? '',
+        ]);
 
-        return 'netcup_scp_token_'.md5($creds['netcup_client_id'] ?? 'x');
+        return 'netcup_scp_token_'.md5($fingerprint);
     }
 }

@@ -317,8 +317,8 @@ class CoolifySettingsController extends Controller
             + ($stats['databases'] ?? 0)
             + ($stats['services'] ?? 0)
             + ($stats['deployments'] ?? 0);
-        $apiListBlocked = $connected && $apiResourceTotal === 0 && ! empty($stats['api_errors'] ?? []);
-        $apiListEmpty = $connected && $apiResourceTotal === 0 && empty($stats['api_errors'] ?? []);
+        $apiListBlocked = ($configured ?? false) && ! empty($stats['api_errors'] ?? []);
+        $apiListEmpty = ($connected ?? false) && $apiResourceTotal === 0 && empty($stats['api_errors'] ?? []);
 
         return view('admin.coolify.overview', compact(
             'stats',
@@ -399,22 +399,33 @@ class CoolifySettingsController extends Controller
         }
 
         $health = $this->coolify->getHealth();
-        $version = $this->coolify->getVersion();
-
-        if ($health['success'] || $version['success']) {
-            $this->coolify->clearDashboardCache();
-
+        if (! ($health['success'] ?? false)) {
             return response()->json([
-                'success' => true,
-                'message' => 'تم الاتصال بنجاح بـ Coolify',
-                'health' => $health['data'] ?? null,
-                'version' => $version['data'] ?? null,
+                'success' => false,
+                'message' => $health['message'] ?? 'تعذّر الوصول إلى Coolify',
             ]);
         }
 
+        if (! $this->coolify->isAuthenticated()) {
+            $probe = $this->coolify->listProjects();
+
+            return response()->json([
+                'success' => false,
+                'message' => 'لوحة Coolify متاحة لكن التوكن مرفوض ('
+                    .($probe['message'] ?? 'Unauthenticated')
+                    .'). أنشئ API Token جديداً من Keys & Tokens وألصقه كاملاً في الإعدادات.',
+                'health' => $health['data'] ?? null,
+            ]);
+        }
+
+        $projects = $this->coolify->normalizeList($this->coolify->listProjects()['data'] ?? []);
+        $this->coolify->clearDashboardCache();
+
         return response()->json([
-            'success' => false,
-            'message' => $health['message'] ?? $version['message'] ?? 'فشل الاتصال',
+            'success' => true,
+            'message' => 'تم الاتصال بنجاح — '.count($projects).' مشروع',
+            'health' => $health['data'] ?? null,
+            'projects' => count($projects),
         ]);
     }
 

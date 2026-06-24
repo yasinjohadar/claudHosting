@@ -19,6 +19,8 @@ class InfrastructureSettingsService
         'digitalocean_api_token',
         'ovh_application_secret',
         'ovh_consumer_key',
+        'netcup_api_password',
+        'netcup_refresh_token',
         'netcup_client_secret',
     ];
 
@@ -65,8 +67,10 @@ class InfrastructureSettingsService
             'ovh_endpoint' => $creds['ovh_endpoint'] ?? 'ovh-eu',
             'has_ovh_application_secret' => ($creds['ovh_application_secret'] ?? '') !== '',
             'has_ovh_consumer_key' => ($creds['ovh_consumer_key'] ?? '') !== '',
-            'netcup_client_id' => $creds['netcup_client_id'] ?? '',
-            'has_netcup_client_secret' => ($creds['netcup_client_secret'] ?? '') !== '',
+            'netcup_customer_number' => $creds['netcup_customer_number'] ?? $creds['netcup_client_id'] ?? '',
+            'has_netcup_api_password' => ($creds['netcup_api_password'] ?? $creds['netcup_client_secret'] ?? '') !== '',
+            'has_netcup_refresh_token' => ($creds['netcup_refresh_token'] ?? '') !== '',
+            'netcup_scp_user_id' => $creds['netcup_scp_user_id'] ?? '',
         ];
     }
 
@@ -97,6 +101,21 @@ class InfrastructureSettingsService
         $this->clearCache();
     }
 
+    public function clearCredential(string $formKey): void
+    {
+        $dbKey = config('infrastructure.keys')[$formKey] ?? null;
+        if ($dbKey === null) {
+            return;
+        }
+
+        SystemSetting::query()
+            ->where('group', self::GROUP)
+            ->where('key', $dbKey)
+            ->delete();
+
+        $this->clearCache();
+    }
+
     public function isProviderConfigured(string $provider): bool
     {
         $creds = $this->getCredentials();
@@ -111,8 +130,11 @@ class InfrastructureSettingsService
             'ovh' => ($creds['ovh_application_key'] ?? '') !== ''
                 && ($creds['ovh_application_secret'] ?? '') !== ''
                 && ($creds['ovh_consumer_key'] ?? '') !== '',
-            'netcup' => ($creds['netcup_client_id'] ?? '') !== ''
-                && ($creds['netcup_client_secret'] ?? '') !== '',
+            'netcup' => ($creds['netcup_refresh_token'] ?? '') !== ''
+                || (
+                    ($creds['netcup_customer_number'] ?? $creds['netcup_client_id'] ?? '') !== ''
+                    && ($creds['netcup_api_password'] ?? $creds['netcup_client_secret'] ?? '') !== ''
+                ),
             default => false,
         };
     }
@@ -120,7 +142,14 @@ class InfrastructureSettingsService
     public function clearCache(): void
     {
         Cache::forget(self::CACHE_KEY);
-        Cache::forget('netcup_scp_token_'.md5($this->getCredentials()['netcup_client_id'] ?? 'x'));
+        $creds = $this->getCredentials();
+        $fingerprint = implode('|', [
+            $creds['netcup_refresh_token'] ?? '',
+            $creds['netcup_customer_number'] ?? $creds['netcup_client_id'] ?? '',
+            $creds['netcup_api_password'] ?? $creds['netcup_client_secret'] ?? '',
+        ]);
+        Cache::forget('netcup_scp_token_'.md5($fingerprint));
+        Cache::forget('netcup_scp_token_'.md5($creds['netcup_client_id'] ?? 'x'));
     }
 
     protected function decryptIfEncrypted(?string $value): string

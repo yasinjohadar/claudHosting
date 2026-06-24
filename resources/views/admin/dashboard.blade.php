@@ -11,8 +11,6 @@
 
         @include('admin.partials.dashboard-kpi-row')
 
-        @include('admin.partials.dashboard-insights')
-
         @php
             $whmMeta = (isset($whmConnected) && $whmConnected)
                 ? '<span class="text-success fw-semibold">متصل</span>'
@@ -67,8 +65,8 @@
             <div class="admin-dash-section">
                 <h6 class="admin-section-title">{{ $sectionTitle }}</h6>
                 <div class="admin-dash-grid" role="list">
-                    @foreach($cards as $card)
-                        <div role="listitem">
+                    @foreach($cards as $dashIndex => $card)
+                        <div role="listitem" style="--dash-i: {{ $dashIndex }}">
                             @include('admin.partials.stat-widget', $card)
                         </div>
                     @endforeach
@@ -77,4 +75,50 @@
         @endforeach
     </div>
 </div>
+
+@push('scripts')
+<script>
+(function() {
+    const prefersReduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+    function animateDashCount(el) {
+        const target = parseInt(el.dataset.dashCount || '0', 10);
+        if (prefersReduced || target <= 0) {
+            el.textContent = target.toLocaleString('ar-EG');
+            return;
+        }
+        const duration = 700;
+        const start = performance.now();
+        function tick(now) {
+            const p = Math.min((now - start) / duration, 1);
+            const eased = 1 - Math.pow(1 - p, 3);
+            el.textContent = Math.round(target * eased).toLocaleString('ar-EG');
+            if (p < 1) requestAnimationFrame(tick);
+        }
+        requestAnimationFrame(tick);
+    }
+
+    document.querySelectorAll('.admin-dash-grid').forEach(function(grid) {
+        if (prefersReduced) {
+            grid.classList.add('is-inview');
+            grid.querySelectorAll('[data-dash-count]').forEach(function(el) {
+                el.textContent = parseInt(el.dataset.dashCount || '0', 10).toLocaleString('ar-EG');
+            });
+            return;
+        }
+
+        const observer = new IntersectionObserver(function(entries) {
+            entries.forEach(function(entry) {
+                if (!entry.isIntersecting) return;
+                entry.target.classList.add('is-inview');
+                entry.target.querySelectorAll('[data-dash-count]').forEach(animateDashCount);
+                observer.unobserve(entry.target);
+            });
+        }, { threshold: 0.12, rootMargin: '0px 0px -40px 0px' });
+
+        observer.observe(grid);
+    });
+})();
+</script>
+@endpush
 @stop

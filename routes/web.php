@@ -338,6 +338,40 @@ Route::middleware(['auth', 'admin.panel'])->group(function () {
             Route::get('/settings', [\App\Http\Controllers\Admin\Infrastructure\InfrastructureSettingsController::class, 'index'])->name('settings.index');
             Route::put('/settings', [\App\Http\Controllers\Admin\Infrastructure\InfrastructureSettingsController::class, 'update'])->name('settings.update');
             Route::post('/settings/test-connection', [\App\Http\Controllers\Admin\Infrastructure\InfrastructureSettingsController::class, 'testConnection'])->name('settings.test-connection');
+            Route::post('/settings/netcup/device-start', [\App\Http\Controllers\Admin\Infrastructure\InfrastructureSettingsController::class, 'netcupDeviceStart'])->name('settings.netcup.device-start');
+            Route::post('/settings/netcup/device-poll', [\App\Http\Controllers\Admin\Infrastructure\InfrastructureSettingsController::class, 'netcupDevicePoll'])->name('settings.netcup.device-poll');
+            Route::post('/settings/netcup/revoke', [\App\Http\Controllers\Admin\Infrastructure\InfrastructureSettingsController::class, 'netcupRevoke'])->name('settings.netcup.revoke');
+
+            Route::prefix('servers/{uuid}/netcup')->name('servers.netcup.')->group(function () {
+                $nc = \App\Http\Controllers\Admin\Infrastructure\InfrastructureNetcupController::class;
+                Route::get('/overview', [$nc, 'overview'])->name('overview');
+                Route::patch('/server', [$nc, 'updateServer'])->name('server.update');
+                Route::get('/snapshots', [$nc, 'snapshots'])->name('snapshots.index');
+                Route::post('/snapshots', [$nc, 'storeSnapshot'])->name('snapshots.store');
+                Route::delete('/snapshots/{name}', [$nc, 'destroySnapshot'])->name('snapshots.destroy');
+                Route::post('/snapshots/{name}/revert', [$nc, 'revertSnapshot'])->name('snapshots.revert');
+                Route::get('/disks', [$nc, 'disks'])->name('disks.index');
+                Route::post('/disks/{diskName}/format', [$nc, 'formatDisk'])->name('disks.format');
+                Route::get('/interfaces', [$nc, 'networkInterfaces'])->name('interfaces.index');
+                Route::post('/rdns', [$nc, 'rdns'])->name('rdns');
+                Route::match(['GET', 'PUT'], '/interfaces/{mac}/firewall', [$nc, 'firewall'])->name('firewall');
+                Route::post('/interfaces/{mac}/firewall/reapply', [$nc, 'firewallReapply'])->name('firewall.reapply');
+                Route::match(['GET', 'POST', 'DELETE'], '/iso', [$nc, 'iso'])->name('iso');
+                Route::get('/isoimages', [$nc, 'isoImages'])->name('iso.images');
+                Route::match(['GET', 'POST', 'DELETE'], '/rescue', [$nc, 'rescue'])->name('rescue');
+                Route::get('/metrics/{type}', [$nc, 'scpMetrics'])->name('metrics');
+                Route::get('/tasks', [$nc, 'taskList'])->name('tasks.index');
+                Route::get('/tasks/{taskUuid}', [$nc, 'taskShow'])->name('tasks.show');
+                Route::put('/tasks/{taskUuid}/cancel', [$nc, 'taskCancel'])->name('tasks.cancel');
+                Route::get('/logs', [$nc, 'logs'])->name('logs');
+                Route::get('/imageflavours', [$nc, 'imageFlavours'])->name('imageflavours');
+                Route::post('/image', [$nc, 'setupImage'])->name('image.setup');
+            });
+
+            Route::get('/netcup/maintenance', [\App\Http\Controllers\Admin\Infrastructure\InfrastructureNetcupController::class, 'maintenance'])->name('netcup.maintenance');
+            Route::get('/netcup/ping', [\App\Http\Controllers\Admin\Infrastructure\InfrastructureNetcupController::class, 'ping'])->name('netcup.ping');
+            Route::match(['GET', 'POST'], '/netcup/ssh-keys', [\App\Http\Controllers\Admin\Infrastructure\InfrastructureNetcupController::class, 'sshKeys'])->name('netcup.ssh-keys');
+            Route::delete('/netcup/ssh-keys/{id}', [\App\Http\Controllers\Admin\Infrastructure\InfrastructureNetcupController::class, 'deleteSshKey'])->name('netcup.ssh-keys.delete');
 
             Route::get('/servers', [\App\Http\Controllers\Admin\Infrastructure\InfrastructureServerController::class, 'index'])->name('servers.index');
             Route::post('/servers/sync', [\App\Http\Controllers\Admin\Infrastructure\InfrastructureServerController::class, 'sync'])->name('servers.sync');

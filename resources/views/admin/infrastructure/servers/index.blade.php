@@ -131,7 +131,9 @@
                     <tbody>
                     @forelse($servers as $server)
                         @php
-                            $snap = $server->latestMetricSnapshot;
+                            $sshSnap = $server->latestSshMetricSnapshot();
+                            $snap = $sshSnap ?? (($server->latestMetricSnapshot?->payload['source'] ?? null) !== 'netcup_scp' ? $server->latestMetricSnapshot : null);
+                            $scpSummary = $server->provider === 'netcup' ? $server->scpPlatformSummary() : [];
                             $providerClass = match($server->provider) {
                                 'hetzner' => 'hetzner',
                                 'digitalocean' => 'digitalocean',
@@ -187,7 +189,24 @@
                                     </div>
                                     @endforeach
                                 </div>
-                                <div class="text-muted mt-1" style="font-size:0.65rem">لقطة {{ $snap->recorded_at?->diffForHumans() }}</div>
+                                <div class="text-muted mt-1" style="font-size:0.65rem">
+                                    لقطة SSH {{ $snap->recorded_at?->diffForHumans() }}
+                                </div>
+                                @elseif($server->provider === 'netcup' && array_filter($scpSummary))
+                                <div class="small text-muted">
+                                    @if($scpSummary['ram'])
+                                    <div dir="ltr" class="text-start"><strong>RAM:</strong> {{ $scpSummary['ram'] }}</div>
+                                    @endif
+                                    @if($scpSummary['cpu'])
+                                    <div dir="ltr" class="text-start"><strong>CPU:</strong> {{ $scpSummary['cpu'] }}</div>
+                                    @endif
+                                    @if($scpSummary['disk'])
+                                    <div dir="ltr" class="text-start"><strong>قرص:</strong> {{ $scpSummary['disk'] }}</div>
+                                    @endif
+                                </div>
+                                <div class="text-muted mt-1" style="font-size:0.65rem">
+                                    موارد مخصّصة من SCP — لاستخدام النظام الفعلي اضبط SSH
+                                </div>
                                 @else
                                 <span class="text-muted small">—</span>
                                 @endif

@@ -151,26 +151,88 @@
 
                     {{-- Netcup --}}
                     <div class="tab-pane fade {{ $activeProvider === 'netcup' ? 'show active' : '' }}" id="tab-netcup" role="tabpanel">
-                        <p class="text-muted small">من SCP → REST-API Doku: OAuth <strong>Client ID</strong> و <strong>Client Secret</strong> (client_credentials).</p>
-                        <form method="POST" action="{{ route('admin.infrastructure.settings.update', ['provider' => 'netcup']) }}">
+                        <div class="card border mb-3">
+                            <div class="card-body">
+                                <div class="d-flex flex-wrap justify-content-between align-items-start gap-2 mb-3">
+                                    <div>
+                                        <h6 class="mb-1">ربط SCP عبر OAuth Device Flow</h6>
+                                        <p class="text-muted small mb-0">الطريقة الرسمية من Netcup: توليد Refresh Token دائم ثم تجديد Access Token تلقائياً كل 300 ثانية.</p>
+                                    </div>
+                                    @if($form['has_netcup_refresh_token'] ?? false)
+                                    <span class="badge bg-success-transparent text-success">Refresh Token محفوظ</span>
+                                    @endif
+                                </div>
+
+                                <div id="netcupDeviceIdle">
+                                    <button type="button" class="btn btn-primary" id="netcupDeviceStartBtn">
+                                        <i class="fe fe-link me-1"></i> بدء ربط SCP
+                                    </button>
+                                    @if($form['has_netcup_refresh_token'] ?? false)
+                                    <button type="button" class="btn btn-outline-danger ms-1" id="netcupDeviceRevokeBtn">إلغاء الربط</button>
+                                    @endif
+                                </div>
+
+                                <div id="netcupDeviceActive" class="d-none">
+                                    <div class="alert alert-warning border-0 small mb-3">
+                                        <div class="fw-semibold mb-1">الخطوات:</div>
+                                        <ol class="mb-0 ps-3">
+                                            <li>اضغط «فتح SCP للموافقة» وأكمل تسجيل الدخول.</li>
+                                            <li>وافق على صلاحيات <code dir="ltr">offline_access</code> للتطبيق <code dir="ltr">scp</code>.</li>
+                                            <li>ارجع لهذه الصفحة — سيتم حفظ Refresh Token تلقائياً.</li>
+                                        </ol>
+                                    </div>
+                                    <div class="d-flex flex-wrap align-items-center gap-2 mb-2">
+                                        <span class="text-muted small">رمز الجهاز:</span>
+                                        <code id="netcupUserCode" class="fs-5" dir="ltr">—</code>
+                                    </div>
+                                    <div class="d-flex flex-wrap gap-2">
+                                        <a href="#" target="_blank" rel="noopener" class="btn btn-success" id="netcupOpenScpBtn">فتح SCP للموافقة</a>
+                                        <button type="button" class="btn btn-light" id="netcupDeviceCancelBtn">إلغاء</button>
+                                    </div>
+                                    <div class="mt-3 small text-muted" id="netcupDeviceStatus">بانتظار بدء الربط…</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <details class="mb-3">
+                            <summary class="fw-semibold small text-muted cursor-pointer">طرق بديلة (يدوياً)</summary>
+                            <div class="pt-3">
+                                <div class="alert alert-info border-0 small mb-3">
+                                    يمكنك لصق Refresh Token يدوياً، أو استخدام رقم العميل + كلمة مرور API من Stammdaten (ليست API keys من CCP).
+                                </div>
+                                <form method="POST" action="{{ route('admin.infrastructure.settings.update', ['provider' => 'netcup']) }}">
+                                    @csrf
+                                    @method('PUT')
+                                    <input type="hidden" name="provider" value="netcup">
+                                    <div class="row g-3">
+                                        <div class="col-md-6">
+                                            <label class="form-label">رقم العميل (Customer Number)</label>
+                                            <input type="text" name="netcup_customer_number" class="form-control" dir="ltr" inputmode="numeric" placeholder="384160" value="{{ old('netcup_customer_number', $form['netcup_customer_number'] ?? '') }}" autocomplete="off">
+                                        </div>
+                                        <div class="col-md-6">
+                                            <label class="form-label">كلمة مرور API</label>
+                                            <input type="password" name="netcup_api_password" class="form-control" dir="ltr" placeholder="{{ ($form['has_netcup_api_password'] ?? false) ? '•••• محفوظ — اتركه فارغاً للإبقاء' : '' }}" autocomplete="new-password">
+                                        </div>
+                                        <div class="col-12">
+                                            <label class="form-label">Refresh Token (لصق يدوي)</label>
+                                            <textarea name="netcup_refresh_token" class="form-control font-monospace" dir="ltr" rows="3" placeholder="{{ ($form['has_netcup_refresh_token'] ?? false) ? '•••• محفوظ — اتركه فارغاً للإبقاء' : 'eyJhbGciOi...' }}"></textarea>
+                                        </div>
+                                    </div>
+                                    <div class="d-flex flex-wrap gap-2 mt-4 pt-3 border-top">
+                                        <button type="submit" class="btn btn-primary">حفظ Netcup</button>
+                                        <button type="submit" formaction="{{ route('admin.infrastructure.settings.test-connection') }}" formmethod="POST" class="btn btn-outline-primary" onclick="this.form.querySelector('input[name=_method]')?.remove()">اختبار الاتصال</button>
+                                    </div>
+                                </form>
+                            </div>
+                        </details>
+
+                        @if($form['has_netcup_refresh_token'] ?? false)
+                        <form method="POST" action="{{ route('admin.infrastructure.settings.test-connection') }}" class="d-flex">
                             @csrf
-                            @method('PUT')
                             <input type="hidden" name="provider" value="netcup">
-                            <div class="row g-3">
-                                <div class="col-md-6">
-                                    <label class="form-label">Client ID</label>
-                                    <input type="text" name="netcup_client_id" class="form-control" dir="ltr" value="{{ old('netcup_client_id', $form['netcup_client_id'] ?? '') }}">
-                                </div>
-                                <div class="col-md-6">
-                                    <label class="form-label">Client Secret</label>
-                                    <input type="password" name="netcup_client_secret" class="form-control" dir="ltr" placeholder="{{ ($form['has_netcup_client_secret'] ?? false) ? '•••• محفوظ' : '' }}" autocomplete="new-password">
-                                </div>
-                            </div>
-                            <div class="d-flex flex-wrap gap-2 mt-4 pt-3 border-top">
-                                <button type="submit" class="btn btn-primary">حفظ Netcup</button>
-                                <button type="submit" formaction="{{ route('admin.infrastructure.settings.test-connection') }}" formmethod="POST" class="btn btn-outline-primary" onclick="this.form.querySelector('input[name=_method]')?.remove()">اختبار الاتصال</button>
-                            </div>
+                            <button type="submit" class="btn btn-outline-primary btn-sm">اختبار الاتصال (Refresh Token)</button>
                         </form>
+                        @endif
                     </div>
                 </div>
             </div>
@@ -213,6 +275,163 @@
             }
         } catch (e) {}
     }
+})();
+</script>
+<script>
+(function() {
+    const csrf = document.querySelector('meta[name="csrf-token"]')?.content || '';
+    const routes = {
+        start: @json(route('admin.infrastructure.settings.netcup.device-start')),
+        poll: @json(route('admin.infrastructure.settings.netcup.device-poll')),
+        revoke: @json(route('admin.infrastructure.settings.netcup.revoke')),
+    };
+
+    const idleEl = document.getElementById('netcupDeviceIdle');
+    const activeEl = document.getElementById('netcupDeviceActive');
+    const startBtn = document.getElementById('netcupDeviceStartBtn');
+    const revokeBtn = document.getElementById('netcupDeviceRevokeBtn');
+    const cancelBtn = document.getElementById('netcupDeviceCancelBtn');
+    const openBtn = document.getElementById('netcupOpenScpBtn');
+    const userCodeEl = document.getElementById('netcupUserCode');
+    const statusEl = document.getElementById('netcupDeviceStatus');
+
+    if (!startBtn || !idleEl || !activeEl) return;
+
+    let pollToken = null;
+    let pollTimer = null;
+    let pollIntervalMs = 5000;
+
+    function setStatus(text, isError) {
+        if (!statusEl) return;
+        statusEl.textContent = text;
+        statusEl.classList.toggle('text-danger', !!isError);
+        statusEl.classList.toggle('text-muted', !isError);
+    }
+
+    function stopPolling() {
+        if (pollTimer) {
+            clearTimeout(pollTimer);
+            pollTimer = null;
+        }
+        pollToken = null;
+    }
+
+    function showIdle() {
+        stopPolling();
+        idleEl.classList.remove('d-none');
+        activeEl.classList.add('d-none');
+        setStatus('بانتظار بدء الربط…', false);
+    }
+
+    function showActive() {
+        idleEl.classList.add('d-none');
+        activeEl.classList.remove('d-none');
+    }
+
+    async function pollOnce() {
+        if (!pollToken) return;
+
+        try {
+            const res = await fetch(routes.poll, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json',
+                    'X-CSRF-TOKEN': csrf,
+                },
+                body: JSON.stringify({ poll_token: pollToken }),
+            });
+
+            const data = await res.json();
+
+            if (data.status === 'success') {
+                stopPolling();
+                const label = data.user_label ? ' (' + data.user_label + ')' : '';
+                setStatus((data.message || 'تم الربط') + label, false);
+                setTimeout(() => window.location.reload(), 1200);
+                return;
+            }
+
+            if (data.status === 'pending') {
+                setStatus(data.message || 'بانتظار الموافقة في SCP…', false);
+                pollIntervalMs = Math.max(3000, (data.interval || 5) * 1000);
+                pollTimer = setTimeout(pollOnce, pollIntervalMs);
+                return;
+            }
+
+            stopPolling();
+            setStatus(data.message || 'فشل الربط', true);
+            setTimeout(showIdle, 2500);
+        } catch (e) {
+            stopPolling();
+            setStatus('خطأ في الاتصال: ' + e.message, true);
+            setTimeout(showIdle, 2500);
+        }
+    }
+
+    startBtn.addEventListener('click', async function() {
+        startBtn.disabled = true;
+        setStatus('جاري تجهيز رمز الجهاز…', false);
+
+        try {
+            const res = await fetch(routes.start, {
+                method: 'POST',
+                headers: {
+                    'Accept': 'application/json',
+                    'X-CSRF-TOKEN': csrf,
+                },
+            });
+
+            const data = await res.json();
+            if (!data.success) {
+                setStatus(data.message || 'فشل بدء الربط', true);
+                startBtn.disabled = false;
+                return;
+            }
+
+            pollToken = data.poll_token;
+            pollIntervalMs = Math.max(3000, (data.interval || 5) * 1000);
+            if (userCodeEl) userCodeEl.textContent = data.user_code || '—';
+            if (openBtn && data.verification_uri_complete) {
+                openBtn.href = data.verification_uri_complete;
+            }
+
+            showActive();
+            setStatus('افتح SCP ووافق على الصلاحيات…', false);
+            if (data.verification_uri_complete) {
+                window.open(data.verification_uri_complete, '_blank', 'noopener');
+            }
+
+            pollTimer = setTimeout(pollOnce, pollIntervalMs);
+        } catch (e) {
+            setStatus('خطأ: ' + e.message, true);
+        } finally {
+            startBtn.disabled = false;
+        }
+    });
+
+    cancelBtn?.addEventListener('click', showIdle);
+    revokeBtn?.addEventListener('click', async function() {
+        if (!confirm('إلغاء ربط Netcup SCP وحذف Refresh Token المحفوظ؟')) return;
+
+        revokeBtn.disabled = true;
+        try {
+            const res = await fetch(routes.revoke, {
+                method: 'POST',
+                headers: {
+                    'Accept': 'application/json',
+                    'X-CSRF-TOKEN': csrf,
+                },
+            });
+            const data = await res.json();
+            alert(data.message || (data.success ? 'تم' : 'فشل'));
+            if (data.success) window.location.reload();
+        } catch (e) {
+            alert('خطأ: ' + e.message);
+        } finally {
+            revokeBtn.disabled = false;
+        }
+    });
 })();
 </script>
 @endsection

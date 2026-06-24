@@ -256,6 +256,8 @@
 
         @endif
 
+        @include('admin.infrastructure.servers.partials.netcup-console')
+
 
 
         <div class="card custom-card vps-action-log">

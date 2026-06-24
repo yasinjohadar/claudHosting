@@ -148,14 +148,35 @@ class CoolifyApiService
 
     public function ping(): bool
     {
-        $health = $this->request('GET', 'health');
-        if ($health['success']) {
-            return true;
+        if (! $this->isConfigured()) {
+            return false;
         }
 
-        $version = $this->request('GET', 'version');
+        $health = $this->request('GET', 'health');
+        if (! ($health['success'] ?? false)) {
+            return false;
+        }
 
-        return $version['success'];
+        return $this->isAuthenticated();
+    }
+
+    public function isAuthenticated(): bool
+    {
+        if (! $this->isConfigured()) {
+            return false;
+        }
+
+        foreach (['teams/current', 'projects', 'servers'] as $path) {
+            $res = $this->request('GET', $path);
+            if ($res['success'] ?? false) {
+                return true;
+            }
+            if (($res['status'] ?? 0) === 403) {
+                return false;
+            }
+        }
+
+        return false;
     }
 
     public function getVersion(): array
@@ -2726,11 +2747,12 @@ class CoolifyApiService
             return $stats;
         }
 
-        $stats['connected'] = $this->ping();
-
-        if (! $stats['connected']) {
+        $health = $this->request('GET', 'health');
+        if (! ($health['success'] ?? false)) {
             return $stats;
         }
+
+        $stats['connected'] = $this->isAuthenticated();
 
         $errors = [];
         foreach ([

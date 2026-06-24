@@ -22,6 +22,11 @@
                     <a href="{{ route('frontend.consultation') }}" class="top-bar-item"><i class="fas fa-calendar-check"></i><span class="top-bar-text">حجز موعد</span></a>
                     <a href="{{ route('frontend.contact') }}" class="top-bar-item"><i class="fas fa-paper-plane"></i><span class="top-bar-text">تواصل معنا</span></a>
                 </div>
+                <div class="top-bar-actions">
+                    <button class="theme-toggle top-bar-theme-toggle" id="themeToggle" type="button" title="تبديل الوضع" aria-label="تبديل الوضع الليلي/النهاري">
+                        <i class="fas fa-moon" aria-hidden="true"></i>
+                    </button>
+                </div>
             </div>
         </div>
     </div>
@@ -54,10 +59,26 @@
                 </ul>
 
                 <div class="navbar-actions">
-                    @include('frontend.partials.social-links', ['wrapperClass' => 'nav-social'])
-                    <button class="theme-toggle" id="themeToggle" type="button" title="تبديل الوضع" aria-label="تبديل الوضع الليلي/النهاري">
-                        <i class="fas fa-moon" aria-hidden="true"></i>
-                    </button>
+                    @auth
+                        @php
+                            $authUser = auth()->user();
+                            $authPanelUrl = $authUser->isAdminPanelUser()
+                                ? route('admin.dashboard')
+                                : route('client.dashboard');
+                            $authAvatar = $authUser->photo
+                                ? asset('storage/' . $authUser->photo)
+                                : asset('assets/images/faces/default-avatar.jpg');
+                        @endphp
+                        <a href="{{ $authPanelUrl }}" class="navbar-user" title="لوحة التحكم">
+                            <img src="{{ $authAvatar }}" alt="{{ $authUser->name }}" class="navbar-user__avatar" width="36" height="36">
+                            <span class="navbar-user__name">{{ $authUser->name }}</span>
+                        </a>
+                    @else
+                        <a href="{{ route('login') }}" class="btn btn-primary navbar-login-btn">
+                            <i class="fas fa-sign-in-alt ms-1" aria-hidden="true"></i>
+                            تسجيل الدخول
+                        </a>
+                    @endauth
                 </div>
             </div>
         </div>
