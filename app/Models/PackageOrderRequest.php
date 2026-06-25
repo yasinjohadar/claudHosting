@@ -24,6 +24,7 @@ class PackageOrderRequest extends Model
         'provision_status',
         'coolify_wordpress_site_id',
         'whm_account_id',
+        'cyberpanel_website_id',
     ];
 
     protected $casts = [
@@ -75,6 +76,11 @@ class PackageOrderRequest extends Model
     public function whmAccount(): BelongsTo
     {
         return $this->belongsTo(WhmAccount::class, 'whm_account_id');
+    }
+
+    public function cyberpanelWebsite(): BelongsTo
+    {
+        return $this->belongsTo(CyberPanelWebsite::class, 'cyberpanel_website_id');
     }
 
     public static function provisionStatuses(): array

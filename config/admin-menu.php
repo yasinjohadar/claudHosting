@@ -128,7 +128,7 @@ return [
         'label' => 'الاستضافة والسيرفرات',
         'icon' => 'fe fe-server',
         'color' => 'teal',
-        'active' => ['admin.coolify.*', 'admin.whm.*', 'admin.infrastructure.*'],
+        'active' => ['admin.coolify.*', 'admin.whm.*', 'admin.cyberpanel.*', 'admin.infrastructure.*'],
         'children' => [
             [
                 'type' => 'subgroup',
@@ -234,6 +234,19 @@ return [
                     ['type' => 'link', 'label' => 'إعدادات WHM', 'route' => 'admin.whm.settings.index', 'icon' => 'fe fe-settings', 'color' => 'info', 'active' => 'admin.whm.settings.*'],
                     ['type' => 'link', 'label' => 'حالة السيرفر', 'route' => 'admin.whm.server.index', 'icon' => 'fe fe-monitor', 'color' => 'teal', 'active' => 'admin.whm.server.*'],
                     ['type' => 'link', 'label' => 'حسابات الاستضافة', 'route' => 'admin.whm.accounts.index', 'icon' => 'fe fe-user-check', 'color' => 'success', 'active' => 'admin.whm.accounts.*'],
+                ],
+            ],
+            [
+                'type' => 'subgroup',
+                'label' => 'CyberPanel',
+                'icon' => 'fe fe-server',
+                'color' => 'purple',
+                'active' => ['admin.cyberpanel.*'],
+                'children' => [
+                    ['type' => 'link', 'label' => 'إعدادات CyberPanel', 'route' => 'admin.cyberpanel.settings.index', 'icon' => 'fe fe-settings', 'color' => 'purple', 'active' => 'admin.cyberpanel.settings.*'],
+                    ['type' => 'link', 'label' => 'مواقع الاستضافة', 'route' => 'admin.cyberpanel.websites.index', 'icon' => 'fe fe-globe', 'color' => 'success', 'active' => 'admin.cyberpanel.websites.*'],
+                    ['type' => 'link', 'label' => 'الباقات', 'route' => 'admin.cyberpanel.packages.index', 'icon' => 'fe fe-package', 'color' => 'info', 'active' => 'admin.cyberpanel.packages.*'],
+                    ['type' => 'link', 'label' => 'WordPress', 'route' => 'admin.cyberpanel.wordpress-sites.index', 'icon' => 'fab fa-wordpress', 'color' => 'primary', 'active' => 'admin.cyberpanel.wordpress-sites.*'],
                 ],
             ],
         ],

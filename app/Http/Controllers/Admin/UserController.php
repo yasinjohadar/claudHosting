@@ -166,12 +166,14 @@ public function index(Request $request)
     public function show(string $id)
     {
         $user = User::with(['whmAccounts' => fn ($q) => $q->orderByDesc('joined_at')])
-            ->withCount('whmAccounts')
+            ->with(['cyberpanelWebsites' => fn ($q) => $q->orderByDesc('joined_at')])
+            ->withCount(['whmAccounts', 'cyberpanelWebsites'])
             ->findOrFail($id);
 
         $whmConfigured = app(\App\Services\Whm\WhmApiService::class)->isConfigured();
+        $cyberpanelConfigured = app(\App\Services\CyberPanel\CyberPanelApiService::class)->isConfigured();
 
-        return view('admin.pages.users.profile', compact('user', 'whmConfigured'));
+        return view('admin.pages.users.profile', compact('user', 'whmConfigured', 'cyberpanelConfigured'));
     }
 
     /**

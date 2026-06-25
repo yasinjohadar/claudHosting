@@ -183,6 +183,11 @@
                                     <textarea name="whm_provision_json" id="whm_provision_json" class="form-control font-monospace @error('whm_provision_json') is-invalid @enderror" rows="6" dir="ltr">{{ old('whm_provision_json', json_encode($product->whm_provision ?? ['enabled' => false, 'package' => 'default'], JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE)) }}</textarea>
                                     <small class="text-muted">مثال: {"enabled":true,"package":"default","username_prefix":"u"}</small>
                                 </div>
+                                <div class="col-12">
+                                    <label for="cyberpanel_provision_json" class="form-label">تزويد CyberPanel (JSON)</label>
+                                    <textarea name="cyberpanel_provision_json" id="cyberpanel_provision_json" class="form-control font-monospace @error('cyberpanel_provision_json') is-invalid @enderror" rows="8" dir="ltr">{{ old('cyberpanel_provision_json', json_encode($product->cyberpanel_provision ?? ['enabled' => false, 'package' => 'Default', 'php_version' => 'PHP 8.3', 'install_wordpress' => false], JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE)) }}</textarea>
+                                    <small class="text-muted">مثال: {"enabled":true,"package":"Default","php_version":"PHP 8.3","owner":"admin","domain_suffix":"clients.example.com","install_wordpress":true}</small>
+                                </div>
                             </div>
                         </div>
                         <div class="card-footer d-flex flex-wrap gap-2">

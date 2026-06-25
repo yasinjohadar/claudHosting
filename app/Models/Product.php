@@ -72,6 +72,7 @@ class Product extends Model
         'synced_at',
         'coolify_provision',
         'whm_provision',
+        'cyberpanel_provision',
     ];
 
     /**
@@ -95,6 +96,7 @@ class Product extends Model
         'synced_at' => 'datetime',
         'coolify_provision' => 'array',
         'whm_provision' => 'array',
+        'cyberpanel_provision' => 'array',
     ];
 
     /**

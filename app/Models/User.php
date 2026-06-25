@@ -63,6 +63,11 @@ class User extends Authenticatable
         return $this->hasMany(WhmAccount::class);
     }
 
+    public function cyberpanelWebsites()
+    {
+        return $this->hasMany(CyberPanelWebsite::class);
+    }
+
     public function clientDomains()
     {
         return $this->hasMany(ClientDomain::class);

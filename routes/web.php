@@ -69,6 +69,10 @@ use App\Http\Controllers\Admin\WhatsAppWebSettingsController;
 use App\Http\Controllers\Admin\Whm\WhmAccountController;
 use App\Http\Controllers\Admin\Whm\WhmServerStatusController;
 use App\Http\Controllers\Admin\Whm\WhmSettingsController;
+use App\Http\Controllers\Admin\CyberPanel\CyberPanelPackageController;
+use App\Http\Controllers\Admin\CyberPanel\CyberPanelSettingsController;
+use App\Http\Controllers\Admin\CyberPanel\CyberPanelWebsiteController;
+use App\Http\Controllers\Admin\CyberPanel\CyberPanelWordpressSiteController;
 use App\Http\Controllers\ReportController;
 use Illuminate\Support\Facades\Route;
 
@@ -246,6 +250,7 @@ Route::middleware(['auth', 'admin.panel'])->group(function () {
             Route::get('/{id}', [PackageOrderRequestController::class, 'show'])->name('show');
             Route::put('/{id}', [PackageOrderRequestController::class, 'update'])->name('update');
             Route::post('/{id}/provision-whm', [PackageOrderRequestController::class, 'provisionWhm'])->name('provision-whm');
+            Route::post('/{id}/provision-cyberpanel', [PackageOrderRequestController::class, 'provisionCyberPanel'])->name('provision-cyberpanel');
             Route::post('/{id}/provision-hosting', [PackageOrderRequestController::class, 'provisionHosting'])->name('provision-hosting');
         });
 
@@ -722,6 +727,41 @@ Route::middleware(['auth', 'admin.panel'])->group(function () {
                 Route::post('/{account}/rename-user', [WhmAccountController::class, 'renameUser'])->name('rename-user');
                 Route::post('/{account}/renew', [WhmAccountController::class, 'renew'])->name('renew');
             });
+        });
+
+        // CyberPanel
+        Route::prefix('cyberpanel')->name('cyberpanel.')->group(function () {
+            Route::get('/settings', [CyberPanelSettingsController::class, 'index'])->name('settings.index');
+            Route::put('/settings', [CyberPanelSettingsController::class, 'update'])->name('settings.update');
+            Route::post('/settings/test-connection', [CyberPanelSettingsController::class, 'testConnection'])->name('settings.test');
+            Route::get('/panel', [CyberPanelWebsiteController::class, 'panelRedirect'])->name('panel');
+            Route::prefix('websites')->name('websites.')->group(function () {
+                Route::get('/', [CyberPanelWebsiteController::class, 'index'])->name('index');
+                Route::post('/sync', [CyberPanelWebsiteController::class, 'sync'])->name('sync');
+                Route::get('/create', [CyberPanelWebsiteController::class, 'create'])->name('create');
+                Route::post('/', [CyberPanelWebsiteController::class, 'store'])->name('store');
+                Route::get('/{website}', [CyberPanelWebsiteController::class, 'show'])->name('show');
+                Route::delete('/{website}', [CyberPanelWebsiteController::class, 'destroy'])->name('destroy');
+                Route::post('/{website}/toggle-status', [CyberPanelWebsiteController::class, 'toggleStatus'])->name('toggle-status');
+                Route::post('/{website}/change-package', [CyberPanelWebsiteController::class, 'changePackage'])->name('change-package');
+                Route::post('/{website}/assign-client', [CyberPanelWebsiteController::class, 'assignClient'])->name('assign-client');
+                Route::post('/{website}/renew', [CyberPanelWebsiteController::class, 'renew'])->name('renew');
+                Route::post('/{website}/install-wordpress', [CyberPanelWebsiteController::class, 'installWordpress'])->name('install-wordpress');
+            });
+            Route::get('/packages', [CyberPanelPackageController::class, 'index'])->name('packages.index');
+            Route::post('/packages', [CyberPanelPackageController::class, 'store'])->name('packages.store');
+            Route::get('/wordpress-sites', [CyberPanelWordpressSiteController::class, 'index'])->name('wordpress-sites.index');
+            Route::get('/wordpress-sites/{wordpressSite}', [CyberPanelWordpressSiteController::class, 'show'])->name('wordpress-sites.show');
+            Route::get('/wordpress-sites/{wordpressSite}/wp-info', [CyberPanelWordpressSiteController::class, 'wpInfo'])->name('wordpress-sites.wp-info');
+            Route::post('/wordpress-sites/{wordpressSite}/wp-action', [CyberPanelWordpressSiteController::class, 'wpAction'])->name('wordpress-sites.wp-action');
+            Route::get('/wordpress-sites/{wordpressSite}/status', [CyberPanelWordpressSiteController::class, 'status'])->name('wordpress-sites.status');
+            Route::get('/wordpress-sites/{wordpressSite}/cyberpanel-links', [CyberPanelWordpressSiteController::class, 'cyberpanelLinks'])->name('wordpress-sites.cyberpanel-links');
+            Route::post('/wordpress-sites/{wordpressSite}/install-wordpress', [CyberPanelWordpressSiteController::class, 'installWordpress'])->name('wordpress-sites.install-wordpress');
+            Route::post('/wordpress-sites/{wordpressSite}/issue-ssl', [CyberPanelWordpressSiteController::class, 'issueSsl'])->name('wordpress-sites.issue-ssl');
+            Route::post('/wordpress-sites/{wordpressSite}/install-wordpress-ssl', [CyberPanelWordpressSiteController::class, 'installWordpressAndSsl'])->name('wordpress-sites.install-wordpress-ssl');
+            Route::post('/wordpress-sites/{wordpressSite}/refresh-status', [CyberPanelWordpressSiteController::class, 'refreshStatus'])->name('wordpress-sites.refresh-status');
+            Route::get('/wordpress-sites/{wordpressSite}/wp-login', [CyberPanelWordpressSiteController::class, 'wpAutoLogin'])->name('wordpress-sites.wp-login');
+            Route::post('/wordpress-sites/{wordpressSite}/credentials', [CyberPanelWordpressSiteController::class, 'saveCredentials'])->name('wordpress-sites.save-credentials');
         });
 
         // ========== Blog ==========

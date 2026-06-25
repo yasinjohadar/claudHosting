@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\PackageOrderRequest;
 use App\Services\Coolify\HostProvisioningService;
+use App\Services\CyberPanel\CyberPanelWebsiteService;
 use App\Services\Whm\WhmAccountService;
 use Illuminate\Http\Request;
 
@@ -12,6 +13,7 @@ class PackageOrderRequestController extends Controller
 {
     public function __construct(
         protected WhmAccountService $whmAccounts,
+        protected CyberPanelWebsiteService $cyberpanelWebsites,
         protected HostProvisioningService $hostProvisioning
     ) {
         $this->middleware('auth');
@@ -76,7 +78,7 @@ class PackageOrderRequestController extends Controller
 
     public function show($id)
     {
-        $orderRequest = PackageOrderRequest::with(['product', 'user', 'coolifyWordpressSite', 'whmAccount'])->findOrFail($id);
+        $orderRequest = PackageOrderRequest::with(['product', 'user', 'coolifyWordpressSite', 'whmAccount', 'cyberpanelWebsite'])->findOrFail($id);
         $this->hostProvisioning->syncOrderProvisionStatus($orderRequest);
         $orderRequest->refresh();
 
@@ -101,6 +103,19 @@ class PackageOrderRequestController extends Controller
     {
         $orderRequest = PackageOrderRequest::with('product')->findOrFail($id);
         $result = $this->whmAccounts->createFromOrder($orderRequest);
+
+        if (! $result['success']) {
+            return redirect()->back()->with('error', $result['message']);
+        }
+
+        return redirect()->route('admin.order-requests.show', $id)
+            ->with('success', $result['message']);
+    }
+
+    public function provisionCyberPanel($id)
+    {
+        $orderRequest = PackageOrderRequest::with('product')->findOrFail($id);
+        $result = $this->cyberpanelWebsites->createFromOrder($orderRequest);
 
         if (! $result['success']) {
             return redirect()->back()->with('error', $result['message']);

@@ -21,15 +21,24 @@
                 </nav>
             </div>
             <div class="ms-auto pageheader-btn">
-                @php $whmProv = $orderRequest->product?->whm_provision; @endphp
+                @php $whmProv = $orderRequest->product?->whm_provision; $cpProv = $orderRequest->product?->cyberpanel_provision; @endphp
                 @if(!$orderRequest->whm_account_id && is_array($whmProv) && !empty($whmProv['enabled']))
                 <form action="{{ route('admin.order-requests.provision-whm', $orderRequest->id) }}" method="POST" class="d-inline" onsubmit="return confirm('إنشاء حساب cPanel عبر WHM؟');">
                     @csrf
                     <button type="submit" class="btn btn-success"><i class="fe fe-check-circle"></i> إنشاء حساب WHM</button>
                 </form>
                 @endif
+                @if(!$orderRequest->cyberpanel_website_id && is_array($cpProv) && !empty($cpProv['enabled']))
+                <form action="{{ route('admin.order-requests.provision-cyberpanel', $orderRequest->id) }}" method="POST" class="d-inline" onsubmit="return confirm('إنشاء موقع عبر CyberPanel؟');">
+                    @csrf
+                    <button type="submit" class="btn btn-info"><i class="fe fe-globe"></i> تزويد CyberPanel</button>
+                </form>
+                @endif
                 @if($orderRequest->whmAccount)
                 <a href="{{ route('admin.whm.accounts.show', $orderRequest->whmAccount) }}" class="btn btn-outline-success">حساب WHM</a>
+                @endif
+                @if($orderRequest->cyberpanelWebsite)
+                <a href="{{ route('admin.cyberpanel.websites.show', $orderRequest->cyberpanelWebsite) }}" class="btn btn-outline-info">موقع CyberPanel</a>
                 @endif
                 @if($orderRequest->product && !$orderRequest->coolify_wordpress_site_id)
                 <form action="{{ route('admin.order-requests.provision-hosting', $orderRequest->id) }}" method="POST" class="d-inline" onsubmit="return confirm('بدء تزويد WordPress عبر Coolify؟');">

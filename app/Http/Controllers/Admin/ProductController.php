@@ -301,6 +301,12 @@ class ProductController extends Controller
                 $product->save();
             }
 
+            if ($request->filled('cyberpanel_provision_json')) {
+                $decoded = json_decode($request->cyberpanel_provision_json, true);
+                $product->cyberpanel_provision = is_array($decoded) ? $decoded : null;
+                $product->save();
+            }
+
             DB::commit();
             
             return redirect()->route('admin.products.index')

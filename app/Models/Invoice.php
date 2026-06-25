@@ -18,6 +18,7 @@ class Invoice extends Model
     protected $fillable = [
         'customer_id',
         'whm_account_id',
+        'cyberpanel_website_id',
         'client_domain_id',
         'whmcs_id',
         'whmcs_client_id',
@@ -71,6 +72,11 @@ class Invoice extends Model
     public function whmAccount()
     {
         return $this->belongsTo(WhmAccount::class, 'whm_account_id');
+    }
+
+    public function cyberpanelWebsite()
+    {
+        return $this->belongsTo(CyberPanelWebsite::class, 'cyberpanel_website_id');
     }
 
     public function clientDomain()
