@@ -26,6 +26,8 @@ class PageSeoService
      */
     protected array $skipRoutes = [
         'frontend.blog.show',
+        'frontend.blog.category',
+        'frontend.blog.tag',
     ];
 
     /**
@@ -118,8 +120,14 @@ class PageSeoService
             return null;
         }
 
-        $page = $this->getPageConfig($routeName);
+        $page = $routeName === 'home'
+            ? $this->getHomePageConfig()
+            : $this->getPageConfig($routeName);
+
         $page = $this->applyDynamicPlaceholders($routeName, $page, $viewData);
+        $page = $this->applySitePlaceholders($page);
+
+        $globalSeo = app(GlobalSeoService::class);
 
         $canonical = $page['canonical'] ?? null;
         if (empty($canonical)) {
@@ -128,11 +136,28 @@ class PageSeoService
             $canonical = url($canonical);
         }
 
+        $blogPage = (int) ($viewData['_blog_page'] ?? request()->query('page', 1));
+        if ($routeName === 'frontend.blog' && $blogPage > 1) {
+            $blogSettings = $globalSeo->blogSettings();
+            if (! ($blogSettings['paginated_canonical_self'] ?? true)) {
+                $canonical = route('frontend.blog');
+            }
+        }
+
         $ogImage = $this->resolveImageUrl($page['og_image'] ?? null)
-            ?? $this->resolveImageUrl(config('seo.default_og_image'));
+            ?? $globalSeo->defaultOgImageUrl();
 
         $metaTitle = Str::limit(trim((string) ($page['meta_title'] ?? '')), 70, '');
         $metaDescription = Str::limit(trim(strip_tags((string) ($page['meta_description'] ?? ''))), 160, '');
+
+        if ($routeName === 'frontend.blog' && $blogPage > 1) {
+            $template = $globalSeo->blogSettings()['paginated_title_template'] ?? 'المدونة — صفحة {page}';
+            $metaTitle = Str::limit(
+                $globalSeo->replaceSitePlaceholders(str_replace('{page}', (string) $blogPage, $template)),
+                70,
+                ''
+            );
+        }
 
         $ogTitle = trim((string) ($page['og_title'] ?? '')) ?: $metaTitle;
         $ogDescription = trim(strip_tags((string) ($page['og_description'] ?? ''))) ?: $metaDescription;
@@ -141,6 +166,11 @@ class PageSeoService
         $twitterDescription = trim(strip_tags((string) ($page['twitter_description'] ?? ''))) ?: $ogDescription;
         $twitterImage = $this->resolveImageUrl($page['twitter_image'] ?? null) ?? $ogImage;
 
+        $robots = $page['robots'] ?? 'index,follow';
+        if ($routeName === 'frontend.blog' && $blogPage > 1) {
+            $robots = $globalSeo->blogSettings()['paginated_robots'] ?? 'noindex,follow';
+        }
+
         $schemas = $this->buildSchemas($routeName, $page, $viewData, $canonical, $metaTitle, $metaDescription);
 
         return [
@@ -148,8 +178,8 @@ class PageSeoService
             'route' => $routeName,
             'meta_title' => $metaTitle,
             'meta_description' => $metaDescription,
-            'meta_keywords' => trim((string) ($page['meta_keywords'] ?? '')),
-            'robots' => $page['robots'] ?? 'index,follow',
+            'meta_keywords' => $globalSeo->replaceSitePlaceholders(trim((string) ($page['meta_keywords'] ?? ''))),
+            'robots' => $robots,
             'canonical' => $canonical,
             'og' => [
                 'type' => $page['og_type'] ?? 'website',
@@ -160,10 +190,11 @@ class PageSeoService
                 'locale' => $page['og_locale'] ?? 'ar_AR',
             ],
             'twitter' => [
-                'card' => $page['twitter_card'] ?? 'summary_large_image',
+                'card' => $page['twitter_card'] ?? $globalSeo->twitterCardDefault(),
                 'title' => $twitterTitle,
                 'description' => Str::limit($twitterDescription, 200, ''),
                 'image' => $twitterImage,
+                'site' => $globalSeo->twitterSite(),
             ],
             'schemas' => $schemas,
         ];
@@ -209,6 +240,51 @@ class PageSeoService
     }
 
     /**
+     * @return array<string, mixed>
+     */
+    protected function getHomePageConfig(): array
+    {
+        $page = $this->getDefaultsForRoute('home');
+        $globalHome = app(GlobalSeoService::class)->homepageSeo();
+
+        foreach (['meta_title', 'meta_description', 'meta_keywords', 'og_title', 'og_description', 'robots'] as $field) {
+            if (! empty(trim((string) ($globalHome[$field] ?? '')))) {
+                $page[$field] = $globalHome[$field];
+            }
+        }
+
+        $stored = $this->getStoredPages()['home'] ?? [];
+        if (is_array($stored)) {
+            foreach ($stored as $key => $value) {
+                if (is_string($value) && trim($value) !== '') {
+                    $page[$key] = $value;
+                } elseif (! is_string($value) && $value !== null && $value !== '') {
+                    $page[$key] = $value;
+                }
+            }
+        }
+
+        return $page;
+    }
+
+    /**
+     * @param  array<string, mixed>  $page
+     * @return array<string, mixed>
+     */
+    protected function applySitePlaceholders(array $page): array
+    {
+        $globalSeo = app(GlobalSeoService::class);
+
+        foreach (['meta_title', 'meta_description', 'meta_keywords', 'og_title', 'og_description', 'twitter_title', 'twitter_description', 'canonical'] as $field) {
+            if (! empty($page[$field]) && is_string($page[$field])) {
+                $page[$field] = $globalSeo->replaceSitePlaceholders($page[$field]);
+            }
+        }
+
+        return $page;
+    }
+
+    /**
      * @param  array<string, mixed>  $viewData
      * @return list<array<string, mixed>>
      */
@@ -221,9 +297,10 @@ class PageSeoService
         string $description
     ): array {
         $template = $page['schema'] ?? 'webpage';
-        $org = config('seo.organization', []);
-        $baseUrl = rtrim(config('app.url', url('/')), '/');
-        $logoUrl = $this->resolveImageUrl($org['logo'] ?? 'frontend/assets/images/logo.png');
+        $globalSeo = app(GlobalSeoService::class);
+        $org = $globalSeo->organization();
+        $baseUrl = rtrim((string) ($org['url'] ?? config('app.url', url('/'))), '/');
+        $logoUrl = $this->resolveImageUrl($org['logo'] ?? null) ?? $globalSeo->defaultOgImageUrl();
 
         $organization = [
             '@type' => 'Organization',
@@ -256,7 +333,7 @@ class PageSeoService
                         '@type' => 'SearchAction',
                         'target' => [
                             '@type' => 'EntryPoint',
-                            'urlTemplate' => route('frontend.domain-search').'?q={search_term_string}',
+                            'urlTemplate' => $globalSeo->searchActionUrlTemplate(),
                         ],
                         'query-input' => 'required name=search_term_string',
                     ],

@@ -38,26 +38,75 @@ class ReportController extends Controller
     public function customers(Request $request)
     {
         $filters = $request->only(['status', 'country', 'search']);
-        $customers = \App\Models\Customer::query();
+        $customers = $this->paginateCustomersReport($request);
+        $countries = \App\Models\Customer::query()
+            ->whereNotNull('country')
+            ->where('country', '!=', '')
+            ->distinct()
+            ->orderBy('country')
+            ->pluck('country');
+        $stats = $this->customerReportStats();
 
-        if (!empty($filters['status'])) {
-            $customers->where('status', $filters['status']);
+        if ($request->ajax() || $request->boolean('ajax')) {
+            return response()->json([
+                'html' => view('reports.partials.customers-list-results', compact('customers'))->render(),
+                'total' => $customers->total(),
+            ]);
         }
-        if (!empty($filters['country'])) {
-            $customers->where('country', $filters['country']);
+
+        return view('reports.customers', compact('customers', 'filters', 'countries', 'stats'));
+    }
+
+    protected function paginateCustomersReport(Request $request)
+    {
+        return $this->buildCustomersReportQuery($request)
+            ->orderByDesc('created_at')
+            ->orderByDesc('id')
+            ->paginate(15)
+            ->withQueryString();
+    }
+
+    protected function buildCustomersReportQuery(Request $request)
+    {
+        $query = \App\Models\Customer::query();
+
+        if ($request->filled('status')) {
+            $query->where('status', $request->status);
         }
-        if (!empty($filters['search'])) {
-            $search = $filters['search'];
-            $customers->where(function ($q) use ($search) {
-                $q->where('fullname', 'like', "%{$search}%")
-                  ->orWhere('email', 'like', "%{$search}%");
+
+        if ($request->filled('country')) {
+            $query->where('country', $request->country);
+        }
+
+        if ($request->filled('search')) {
+            $search = '%'.trim((string) $request->search).'%';
+            $query->where(function ($q) use ($search) {
+                $q->where('fullname', 'like', $search)
+                    ->orWhere('firstname', 'like', $search)
+                    ->orWhere('lastname', 'like', $search)
+                    ->orWhere('email', 'like', $search)
+                    ->orWhere('companyname', 'like', $search);
             });
         }
 
-        $customers = $customers->paginate(15);
-        $countries = \App\Models\Customer::distinct()->pluck('country');
+        return $query;
+    }
 
-        return view('reports.customers', compact('customers', 'filters', 'countries'));
+    /**
+     * @return array<string, int>
+     */
+    protected function customerReportStats(): array
+    {
+        return [
+            'total' => \App\Models\Customer::count(),
+            'active' => \App\Models\Customer::where('status', 'Active')->count(),
+            'inactive' => \App\Models\Customer::where('status', 'Inactive')->count(),
+            'countries' => \App\Models\Customer::query()
+                ->whereNotNull('country')
+                ->where('country', '!=', '')
+                ->distinct()
+                ->count('country'),
+        ];
     }
 
     /**

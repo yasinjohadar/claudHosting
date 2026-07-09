@@ -2,12 +2,7 @@
         <aside class="app-sidebar sticky" id="sidebar">
 
             <div class="main-sidebar-header">
-                <a href="{{ route('admin.dashboard') }}" class="header-logo">
-                    <img src="{{ asset('assets/images/brand-logos/desktop-logo.png') }}" alt="logo" class="desktop-logo">
-                    <img src="{{ asset('assets/images/brand-logos/toggle-logo.png') }}" alt="logo" class="toggle-logo">
-                    <img src="{{ asset('assets/images/brand-logos/desktop-white.png') }}" alt="logo" class="desktop-white">
-                    <img src="{{ asset('assets/images/brand-logos/toggle-white.png') }}" alt="logo" class="toggle-white">
-                </a>
+                @include('partials.app-brand', ['brandContext' => 'sidebar', 'brandUrl' => route('admin.dashboard')])
             </div>
 
             <div class="main-sidebar" id="sidebar-scroll">

@@ -6,27 +6,27 @@ document.addEventListener('DOMContentLoaded', function () {
     const itemsTable = document.querySelector('#itemsTable tbody');
     const totalAmount = document.getElementById('totalAmount');
     const invoiceForm = document.getElementById('invoiceForm');
-    const customerSelect = document.getElementById('customer_id');
+    const customerSelect = document.getElementById('customer_id_select');
 
     function rowTemplate(index) {
         return `
 <tr class="item-row">
-    <td class="text-center" style="width:4rem">
-        <button type="button" class="btn btn-icon btn-sm btn-danger-transparent rounded-pill remove-item" title="حذف">
-            <i class="ri-delete-bin-line"></i>
+    <td class="domain-list-table__action">
+        <button type="button" class="domain-action-btn domain-action-btn--danger remove-item" title="حذف">
+            <i class="fe fe-trash-2"></i>
         </button>
     </td>
-    <td style="min-width:12rem;width:35%">
+    <td>
         <input type="hidden" name="items[${index}][offered_service_id]" class="item-offered-service-id" value="">
         <input type="hidden" name="items[${index}][customer_service_id]" class="item-customer-service-id" value="">
         <input type="text" class="form-control form-control-sm item-description" name="items[${index}][description]" placeholder="وصف البند" required>
     </td>
-    <td style="width:10rem" class="text-center">
+    <td class="text-center">
         <div class="form-check d-flex justify-content-center mb-0">
             <input type="checkbox" class="form-check-input item-taxed" id="taxed${index}" name="items[${index}][taxed]" value="1">
         </div>
     </td>
-    <td style="width:14rem">
+    <td>
         <div class="input-group input-group-sm">
             <input type="number" class="form-control item-amount" name="items[${index}][amount]" placeholder="0.00" step="0.01" min="0" required>
             <span class="input-group-text">ر.س</span>
@@ -65,13 +65,29 @@ document.addEventListener('DOMContentLoaded', function () {
 
     function getOrCreateEmptyRow() {
         let lastRow = itemsTable.querySelector('tr.item-row:last-child');
-        let desc = lastRow.querySelector('.item-description');
-        let amount = lastRow.querySelector('.item-amount');
+        const desc = lastRow.querySelector('.item-description');
+        const amount = lastRow.querySelector('.item-amount');
         if (desc.value.trim() !== '' || (parseFloat(amount.value) || 0) > 0) {
             addItemBtn.click();
             lastRow = itemsTable.querySelector('tr.item-row:last-child');
         }
         return lastRow;
+    }
+
+    function setCustomerSelectValue(id, label) {
+        if (!customerSelect || !id) return;
+        const value = String(id);
+        const instance = customerSelect.__choicesInstance;
+        if (instance) {
+            instance.setChoices([{
+                value: value,
+                label: label || value,
+                selected: true,
+            }], 'value', 'label', false);
+            instance.setChoiceByValue(value);
+            return;
+        }
+        customerSelect.value = value;
     }
 
     if (addItemBtn) {
@@ -119,8 +135,8 @@ document.addEventListener('DOMContentLoaded', function () {
     document.querySelectorAll('.add-customer-service-item').forEach(function (el) {
         el.addEventListener('click', function (e) {
             e.preventDefault();
-            if (customerSelect && this.dataset.customerId) {
-                customerSelect.value = this.dataset.customerId;
+            if (this.dataset.customerId) {
+                setCustomerSelectValue(this.dataset.customerId, this.dataset.customerLabel);
             }
             fillRow(getOrCreateEmptyRow(), {
                 name: this.dataset.serviceName,

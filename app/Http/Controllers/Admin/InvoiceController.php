@@ -29,6 +29,30 @@ class InvoiceController extends Controller
 
     public function index(Request $request)
     {
+        $invoices = $this->paginateInvoices($request);
+        $stats = $this->invoiceStats();
+
+        if ($request->ajax() || $request->boolean('ajax')) {
+            return response()->json([
+                'html' => view('admin.invoices.partials.list-results', compact('invoices'))->render(),
+                'total' => $invoices->total(),
+            ]);
+        }
+
+        return view('admin.invoices.index', compact('invoices', 'stats'));
+    }
+
+    protected function paginateInvoices(Request $request)
+    {
+        return $this->buildInvoicesQuery($request)
+            ->orderByDesc('date')
+            ->orderByDesc('id')
+            ->paginate(15)
+            ->withQueryString();
+    }
+
+    protected function buildInvoicesQuery(Request $request)
+    {
         $query = Invoice::with('customer');
 
         if ($request->filled('status')) {
@@ -43,14 +67,40 @@ class InvoiceController extends Controller
             $query->whereDate('date', '<=', $request->date_to);
         }
 
-        $invoices = $query->orderByDesc('date')->paginate(10);
+        if ($request->filled('search')) {
+            $search = '%'.trim((string) $request->search).'%';
+            $query->where(function ($q) use ($search) {
+                $q->where('invoice_number', 'like', $search)
+                    ->orWhere('invoicenum', 'like', $search)
+                    ->orWhereHas('customer', function ($cq) use ($search) {
+                        $cq->where('fullname', 'like', $search)
+                            ->orWhere('firstname', 'like', $search)
+                            ->orWhere('lastname', 'like', $search)
+                            ->orWhere('email', 'like', $search);
+                    });
+            });
+        }
 
-        return view('admin.invoices.index', compact('invoices'));
+        return $query;
     }
 
-    public function create()
+    /**
+     * @return array<string, int|float>
+     */
+    protected function invoiceStats(): array
     {
-        $customers = Customer::orderBy('email')->get();
+        return [
+            'total' => Invoice::count(),
+            'paid' => Invoice::where('status', 'Paid')->count(),
+            'unpaid' => Invoice::where('status', 'Unpaid')->count(),
+            'cancelled' => Invoice::where('status', 'Cancelled')->count(),
+        ];
+    }
+
+    public function create(Request $request)
+    {
+        $selectedCustomerId = old('customer_id', $request->get('customer_id'));
+        $customers = $this->resolveCustomersForSelect($selectedCustomerId);
         $products = Product::orderBy('name')->get();
         $offeredServices = OfferedService::with('serviceType')->active()->ordered()->get();
         $customerServices = CustomerService::with(['customer', 'offeredService'])
@@ -59,7 +109,13 @@ class InvoiceController extends Controller
             ->limit(50)
             ->get();
 
-        return view('admin.invoices.create', compact('customers', 'products', 'offeredServices', 'customerServices'));
+        return view('admin.invoices.create', compact(
+            'customers',
+            'products',
+            'offeredServices',
+            'customerServices',
+            'selectedCustomerId'
+        ));
     }
 
     public function store(Request $request)
@@ -118,7 +174,8 @@ class InvoiceController extends Controller
     public function edit($id)
     {
         $invoice = Invoice::with('items')->findOrFail($id);
-        $customers = Customer::orderBy('email')->get();
+        $selectedCustomerId = old('customer_id', $invoice->customer_id);
+        $customers = $this->resolveCustomersForSelect($selectedCustomerId);
         $products = Product::orderBy('name')->get();
         $offeredServices = OfferedService::with('serviceType')->ordered()->get();
         $customerServices = CustomerService::with(['customer', 'offeredService'])
@@ -129,7 +186,14 @@ class InvoiceController extends Controller
             ->limit(50)
             ->get();
 
-        return view('admin.invoices.edit', compact('invoice', 'customers', 'products', 'offeredServices', 'customerServices'));
+        return view('admin.invoices.edit', compact(
+            'invoice',
+            'customers',
+            'products',
+            'offeredServices',
+            'customerServices',
+            'selectedCustomerId'
+        ));
     }
 
     public function update(Request $request, $id)
@@ -255,6 +319,20 @@ class InvoiceController extends Controller
         } catch (\Exception $e) {
             return redirect()->back()->with('error', 'حدث خطأ: '.$e->getMessage());
         }
+    }
+
+    /**
+     * @return \Illuminate\Support\Collection<int, Customer>
+     */
+    protected function resolveCustomersForSelect($customerId)
+    {
+        if (! $customerId) {
+            return collect();
+        }
+
+        return Customer::query()
+            ->where('id', $customerId)
+            ->get(['id', 'fullname', 'email']);
     }
 
     private function validateInvoiceRequest(Request $request)

@@ -10,13 +10,20 @@
 
     <link rel="canonical" href="{{ $seo['canonical'] }}">
 
+    @if (!empty($seo['prev_url']))
+        <link rel="prev" href="{{ $seo['prev_url'] }}">
+    @endif
+    @if (!empty($seo['next_url']))
+        <link rel="next" href="{{ $seo['next_url'] }}">
+    @endif
+
     <meta property="og:type" content="{{ $seo['og']['type'] ?? 'website' }}">
     <meta property="og:url" content="{{ $seo['og']['url'] ?? $seo['canonical'] }}">
     <meta property="og:title" content="{{ $seo['og']['title'] ?? $seo['meta_title'] }}">
     <meta property="og:description" content="{{ $seo['og']['description'] ?? $seo['meta_description'] }}">
     <meta property="og:image" content="{{ $seo['og']['image'] }}">
     <meta property="og:locale" content="{{ $seo['og']['locale'] ?? 'ar_AR' }}">
-    <meta property="og:site_name" content="{{ config('seo.organization.name', 'استضافة كلاودسوفت') }}">
+    <meta property="og:site_name" content="{{ $seo['og']['site_name'] ?? app(\App\Services\GlobalSeoService::class)->organization()['name'] ?? 'استضافة كلاودسوفت' }}">
 
     @if (!empty($seo['article']))
         @if (!empty($seo['article']['published_time']))
@@ -40,6 +47,9 @@
     <meta name="twitter:title" content="{{ $seo['twitter']['title'] ?? $seo['og']['title'] }}">
     <meta name="twitter:description" content="{{ $seo['twitter']['description'] ?? $seo['og']['description'] }}">
     <meta name="twitter:image" content="{{ $seo['twitter']['image'] ?? $seo['og']['image'] }}">
+    @if (!empty($seo['twitter']['site']))
+        <meta name="twitter:site" content="{{ $seo['twitter']['site'] }}">
+    @endif
     @if (!empty($seo['twitter']['creator']))
         <meta name="twitter:creator" content="{{ $seo['twitter']['creator'] }}">
     @endif

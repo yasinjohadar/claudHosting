@@ -1,0 +1,134 @@
+/* شعار كلاودسوفت — سايدبار مفتوح/مغلق + وضع ليلي/نهاري */
+
+.app-brand {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.65rem;
+    text-decoration: none !important;
+    min-width: 0;
+    max-width: 100%;
+}
+
+.app-brand__mark {
+    --brand-icon-size: 44px;
+    width: var(--brand-icon-size);
+    height: var(--brand-icon-size);
+    flex-shrink: 0;
+    border-radius: 50%;
+    overflow: hidden;
+    background: transparent;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: transform 0.2s ease;
+}
+
+.app-brand:hover .app-brand__mark {
+    transform: translateY(-1px);
+}
+
+.app-brand__mark img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    display: block !important;
+    background: transparent;
+    border-radius: 50%;
+}
+
+.app-brand__title {
+    font-weight: 800;
+    font-size: 0.92rem;
+    letter-spacing: -0.02em;
+    line-height: 1.2;
+    white-space: nowrap;
+    color: #003f88;
+    transition: opacity 0.2s ease, width 0.2s ease, margin 0.2s ease;
+}
+
+/* سايدبار — النص حسب نمط القائمة */
+[data-menu-styles=light] .app-sidebar .app-brand__title,
+[data-menu-styles=transparent][data-theme-mode=light] .app-sidebar .app-brand__title {
+    color: #003f88;
+}
+
+[data-menu-styles=dark] .app-sidebar .app-brand__title,
+[data-theme-mode=dark][data-menu-styles=light] .app-sidebar .app-brand__title,
+[data-theme-mode=dark][data-menu-styles=transparent] .app-sidebar .app-brand__title {
+    color: #e2e8f0;
+}
+
+[data-menu-styles=color] .app-sidebar .app-brand__title,
+[data-menu-styles=gradient] .app-sidebar .app-brand__title {
+    color: #ffffff;
+}
+
+/* هيدر أفقي (موبايل) */
+.app-brand--header .app-brand__title {
+    color: #003f88;
+}
+
+[data-theme-mode=dark] .app-header .app-brand--header .app-brand__title {
+    color: #e2e8f0;
+}
+
+.app-sidebar .main-sidebar-header .header-logo.app-brand {
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+    width: 100%;
+    padding-inline: 0.15rem;
+}
+
+.app-sidebar .main-sidebar-header {
+    padding-inline: 0.85rem !important;
+}
+
+/* سايدبار مغلق (أيقونات فقط) — اللوغو بدون النص */
+html[data-toggled="icon-overlay-close"] .app-sidebar .app-brand__title,
+html[data-toggled="icon-click-closed"] .app-sidebar .app-brand__title,
+html[data-toggled="icon-hover-closed"] .app-sidebar .app-brand__title,
+html[data-toggled="menu-click-closed"] .app-sidebar .app-brand__title,
+html[data-toggled="menu-hover-closed"] .app-sidebar .app-brand__title,
+html[data-toggled="icon-text-close"] .app-sidebar .app-brand__title,
+html[data-toggled="double-menu-close"] .app-sidebar .app-brand__title,
+html[data-toggled="detached-close"] .app-sidebar .app-brand__title,
+html[data-toggled="close-menu-close"] .app-sidebar .app-brand__title {
+    display: none !important;
+}
+
+html[data-toggled="icon-overlay-close"] .app-sidebar .app-brand,
+html[data-toggled="icon-click-closed"] .app-sidebar .app-brand,
+html[data-toggled="icon-hover-closed"] .app-sidebar .app-brand,
+html[data-toggled="menu-click-closed"] .app-sidebar .app-brand,
+html[data-toggled="menu-hover-closed"] .app-sidebar .app-brand,
+html[data-toggled="icon-text-close"] .app-sidebar .app-brand,
+html[data-toggled="double-menu-close"] .app-sidebar .app-brand,
+html[data-toggled="detached-close"] .app-sidebar .app-brand,
+html[data-toggled="close-menu-close"] .app-sidebar .app-brand {
+    justify-content: center;
+    gap: 0;
+}
+
+html[data-toggled="icon-overlay-close"][data-icon-overlay="open"] .app-sidebar .app-brand__title {
+    display: inline !important;
+}
+
+html[data-toggled="icon-overlay-close"][data-icon-overlay="open"] .app-sidebar .app-brand {
+    justify-content: flex-start;
+    gap: 0.65rem;
+}
+
+/* إخفاء شعارات القالب القديمة إن وُجدت */
+.header-logo:not(.app-brand) img.desktop-logo,
+.header-logo:not(.app-brand) img.toggle-logo,
+.header-logo:not(.app-brand) img.desktop-white,
+.header-logo:not(.app-brand) img.toggle-white {
+    display: none !important;
+}
+
+@media (max-width: 991.98px) {
+    .app-brand--header .app-brand__title {
+        display: inline !important;
+    }
+}

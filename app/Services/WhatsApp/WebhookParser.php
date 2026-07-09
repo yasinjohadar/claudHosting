@@ -4,10 +4,15 @@ namespace App\Services\WhatsApp;
 
 use App\DTOs\WhatsApp\InboundMessageDTO;
 use App\DTOs\WhatsApp\StatusUpdateDTO;
+use App\Services\WhatsApp\Evolution\EvolutionWebhookParser;
 use Illuminate\Support\Facades\Log;
 
 class WebhookParser
 {
+    public function __construct(
+        private EvolutionWebhookParser $evolutionParser
+    ) {}
+
     /**
      * Parse webhook payload and extract messages and statuses
      *
@@ -19,6 +24,7 @@ class WebhookParser
         $statuses = [];
 
         try {
+            // Meta style payload
             $entries = $payload['entry'] ?? [];
 
             foreach ($entries as $entry) {
@@ -59,6 +65,18 @@ class WebhookParser
                         }
                     }
                 }
+            }
+
+            // Evolution API payload
+            if (empty($messages) && empty($statuses) && $this->evolutionParser->isEvolutionPayload($payload)) {
+                $evolutionParsed = $this->evolutionParser->parse($payload);
+                $messages = $evolutionParsed['messages'];
+                $statuses = $evolutionParsed['statuses'];
+            }
+
+            // Wasender/Custom API style payload fallback
+            if (empty($messages) && empty($statuses)) {
+                $this->parseCustomProviderPayload($payload, $messages, $statuses);
             }
         } catch (\Exception $e) {
             Log::channel('whatsapp')->error('Error parsing webhook payload', [
@@ -134,6 +152,60 @@ class WebhookParser
             conversation: $statusData['conversation'] ?? null,
             pricing: $statusData['pricing'] ?? null
         );
+    }
+
+    /**
+     * Parse payloads from non-Meta providers (e.g. Wasender custom API webhook).
+     *
+     * This parser intentionally supports multiple possible keys for compatibility.
+     */
+    protected function parseCustomProviderPayload(array $payload, array &$messages, array &$statuses): void
+    {
+        $rootEvent = strtolower((string) ($payload['event'] ?? $payload['type'] ?? ''));
+        $data = is_array($payload['data'] ?? null) ? $payload['data'] : $payload;
+
+        // Inbound candidate (message upsert / message received)
+        $inboundEventNames = ['message_received', 'message_upsert', 'messages.upsert', 'inbound', 'message'];
+        $statusEventNames = ['message_status', 'message_status_update', 'status', 'message_sent', 'message_delivered', 'message_read', 'message_failed'];
+
+        if (in_array($rootEvent, $inboundEventNames, true) || isset($data['from']) || isset($data['sender'])) {
+            $messageId = (string) ($data['message_id'] ?? $data['id'] ?? $data['key']['id'] ?? '');
+            $from = (string) ($data['from'] ?? $data['sender'] ?? $data['key']['remoteJid'] ?? '');
+            $timestamp = (int) ($data['timestamp'] ?? $data['messageTimestamp'] ?? time());
+            $type = (string) ($data['type'] ?? 'text');
+            $textBody = (string) ($data['text'] ?? $data['body'] ?? $data['message']['conversation'] ?? '');
+
+            if ($messageId !== '' && $from !== '') {
+                $messages[] = new InboundMessageDTO(
+                    messageId: $messageId,
+                    from: $from,
+                    timestamp: $timestamp,
+                    type: $type,
+                    textBody: $textBody !== '' ? $textBody : null,
+                    metadata: ['provider_payload' => $payload]
+                );
+            }
+        }
+
+        // Status candidate
+        $rawStatus = (string) ($data['status'] ?? $payload['status'] ?? '');
+        if (in_array($rootEvent, $statusEventNames, true) || $rawStatus !== '') {
+            $messageId = (string) ($data['message_id'] ?? $data['id'] ?? $payload['message_id'] ?? '');
+            $recipientId = (string) ($data['to'] ?? $data['recipient_id'] ?? $payload['to'] ?? 'unknown');
+            $timestamp = (int) ($data['timestamp'] ?? $payload['timestamp'] ?? time());
+            $status = $rawStatus !== '' ? strtolower($rawStatus) : strtolower($rootEvent);
+
+            if ($messageId !== '' && $status !== '') {
+                $statuses[] = new StatusUpdateDTO(
+                    messageId: $messageId,
+                    status: $status,
+                    timestamp: $timestamp,
+                    recipientId: $recipientId,
+                    conversation: null,
+                    pricing: null
+                );
+            }
+        }
     }
 }
 

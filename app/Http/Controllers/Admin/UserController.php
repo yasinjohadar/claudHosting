@@ -4,8 +4,11 @@ namespace App\Http\Controllers\Admin;
 
 use HashContext;
 use App\Models\User;
+use App\Support\PhoneField;
+use App\Support\UserAddressField;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 use Spatie\Permission\Models\Role;
 use App\Http\Controllers\Controller;
 use Illuminate\Support\Facades\Hash;
@@ -45,45 +48,74 @@ class UserController extends Controller
     /**
      * Display a listing of the resource.
      */
-public function index(Request $request)
+    public function index(Request $request)
     {
         $roles = Role::all();
+        $sessions = $this->userSessionsGrouped();
+        $users = $this->paginateUsers($request);
+        $stats = $this->userStats();
 
-        // جلب آخر جلسات المستخدمين
-        $sessions = DB::table('sessions')
+        if ($request->ajax() || $request->boolean('ajax')) {
+            return response()->json([
+                'html' => view('admin.pages.users.partials.list-results', compact('users', 'sessions'))->render(),
+                'total' => $users->total(),
+            ]);
+        }
+
+        return view('admin.pages.users.index', compact('users', 'roles', 'sessions', 'stats'));
+    }
+
+    /**
+     * @return \Illuminate\Support\Collection<int, \Illuminate\Support\Collection>
+     */
+    protected function userSessionsGrouped()
+    {
+        return DB::table('sessions')
             ->orderByDesc('last_activity')
             ->get()
             ->groupBy('user_id');
+    }
 
-        // بدء استعلام المستخدمين
+    protected function paginateUsers(Request $request): \Illuminate\Contracts\Pagination\LengthAwarePaginator
+    {
+        return $this->buildUsersQuery($request)->paginate(10)->withQueryString();
+    }
+
+    protected function buildUsersQuery(Request $request): \Illuminate\Database\Eloquent\Builder
+    {
         $usersQuery = User::query();
 
-        // فلترة حسب البحث (name, email, phone)
         if ($request->filled('query')) {
-            $search = $request->input('query');
+            $search = '%'.trim((string) $request->input('query')).'%';
             $usersQuery->where(function ($q) use ($search) {
-                $q->where('name', 'like', "%$search%")
-                  ->orWhere('email', 'like', "%$search%")
-                  ->orWhere('phone', 'like', "%$search%");
+                $q->where('name', 'like', $search)
+                    ->orWhere('email', 'like', $search)
+                    ->orWhere('phone', 'like', $search);
             });
         }
 
-        // فلترة حسب الحالة
-        if ($request->filled('status')) {
-            $usersQuery->where('status', $request->input('status'));
+        if ($request->filled('status') && in_array($request->status, ['active', 'inactive', 'banned'], true)) {
+            $usersQuery->where('status', $request->status);
         }
 
-        // فلترة حسب الحالة النشطة
         if ($request->filled('is_active')) {
-            $usersQuery->where('is_active', $request->input('is_active'));
+            $usersQuery->where('is_active', $request->boolean('is_active'));
         }
 
-        $usersQuery->withCount('whmAccounts');
+        return $usersQuery->withCount('whmAccounts');
+    }
 
-        // تنفيذ الاستعلام
-        $users = $usersQuery->paginate(10);
-
-        return view("admin.pages.users.index", compact("users", "roles", "sessions"));
+    /**
+     * @return array<string, int>
+     */
+    protected function userStats(): array
+    {
+        return [
+            'total' => User::count(),
+            'active' => User::where('is_active', true)->count(),
+            'inactive' => User::where('is_active', false)->count(),
+            'with_whm' => User::whereHas('whmAccounts')->count(),
+        ];
     }
 
 
@@ -105,31 +137,29 @@ public function index(Request $request)
     public function store(Request $request)
     {
         // التحقق من صحة البيانات
-        $request->validate([
+        $request->validate(array_merge([
             'name' => 'required|string|max:255',
             'username' => 'nullable|string|max:255|unique:users,username',
             'email' => 'required|string|email|max:255|unique:users,email',
-            'phone' => 'nullable|string|max:20|unique:users,phone',
-            'password' => 'required|string|min:8|confirmed',
             'status' => 'required|in:active,inactive,banned',
             'is_active' => 'boolean',
             'roles' => 'array',
             'photo' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
-        ], [
+        ], PhoneField::validationRules(), UserAddressField::validationRules()), [
             'name.required' => 'الاسم مطلوب',
             'email.required' => 'البريد الإلكتروني مطلوب',
             'email.email' => 'البريد الإلكتروني غير صحيح',
             'email.unique' => 'البريد الإلكتروني مستخدم بالفعل',
             'username.unique' => 'اسم المستخدم مستخدم بالفعل',
-            'phone.unique' => 'رقم الهاتف مستخدم بالفعل',
-            'password.required' => 'كلمة المرور مطلوبة',
-            'password.min' => 'كلمة المرور يجب أن تكون 8 أحرف على الأقل',
-            'password.confirmed' => 'تأكيد كلمة المرور غير متطابق',
             'status.required' => 'حالة المستخدم مطلوبة',
             'photo.image' => 'يجب أن يكون الملف صورة',
             'photo.mimes' => 'نوع الصورة غير مدعوم',
             'photo.max' => 'حجم الصورة يجب أن يكون أقل من 2 ميجابايت',
         ]);
+
+        PhoneField::assertValidPair($request->country_code, $request->phone);
+        $phoneData = PhoneField::normalizeForStorage($request->country_code, $request->phone);
+        PhoneField::assertUniqueE164($phoneData['e164'] ?? null);
 
         // معالجة الصورة
         $photoPath = null;
@@ -140,24 +170,25 @@ public function index(Request $request)
         }
 
         // إنشاء المستخدم
-        $user = User::create([
+        $user = User::create(array_merge([
             'name' => $request->name,
             'username' => $request->username,
             'email' => $request->email,
-            'phone' => $request->phone,
-            'password' => Hash::make($request->password),
+            'phone' => $phoneData['phone'] ?? null,
+            'country_code' => $phoneData['country_code'] ?? null,
+            'password' => Hash::make(Str::random(24)),
             'status' => $request->status,
             'is_active' => $request->has('is_active'),
             'photo' => $photoPath,
-            'created_by' => auth()->id(), // المستخدم الذي أنشأ هذا الحساب
-        ]);
+            'created_by' => auth()->id(),
+        ], UserAddressField::fromRequest($request)));
 
         // تعيين الأدوار
         if ($request->has('roles')) {
             $user->syncRoles($request->roles);
         }
 
-        return redirect()->route("users.index")->with("success" , "تم إضافة مستخدم جديد بنجاح");
+        return redirect()->route('users.index')->with('success', 'تم إضافة مستخدم جديد بنجاح — يمكن تعيين كلمة المرور من قائمة المستخدمين.');
     }
 
     /**
@@ -194,23 +225,21 @@ public function index(Request $request)
         $user = User::findOrFail($id);
 
         // التحقق من صحة البيانات
-        $request->validate([
+        $request->validate(array_merge([
             'name' => 'required|string|max:255',
             'username' => 'nullable|string|max:255|unique:users,username,' . $id,
             'email' => 'required|string|email|max:255|unique:users,email,' . $id,
-            'phone' => 'nullable|string|max:20|unique:users,phone,' . $id,
             'password' => 'nullable|string|min:8|confirmed',
             'status' => 'required|in:active,inactive,banned',
             'is_active' => 'boolean',
             'roles' => 'array',
             'photo' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
-        ], [
+        ], PhoneField::validationRules(), UserAddressField::validationRules()), [
             'name.required' => 'الاسم مطلوب',
             'email.required' => 'البريد الإلكتروني مطلوب',
             'email.email' => 'البريد الإلكتروني غير صحيح',
             'email.unique' => 'البريد الإلكتروني مستخدم بالفعل',
             'username.unique' => 'اسم المستخدم مستخدم بالفعل',
-            'phone.unique' => 'رقم الهاتف مستخدم بالفعل',
             'password.min' => 'كلمة المرور يجب أن تكون 8 أحرف على الأقل',
             'password.confirmed' => 'تأكيد كلمة المرور غير متطابق',
             'status.required' => 'حالة المستخدم مطلوبة',
@@ -219,15 +248,20 @@ public function index(Request $request)
             'photo.max' => 'حجم الصورة يجب أن يكون أقل من 2 ميجابايت',
         ]);
 
+        PhoneField::assertValidPair($request->country_code, $request->phone);
+        $phoneData = PhoneField::normalizeForStorage($request->country_code, $request->phone);
+        PhoneField::assertUniqueE164($phoneData['e164'] ?? null, (int) $id);
+
         // تجهيز البيانات للتحديث
-        $updateData = [
+        $updateData = array_merge([
             'name' => $request->name,
             'username' => $request->username,
             'email' => $request->email,
-            'phone' => $request->phone,
+            'phone' => $phoneData['phone'] ?? null,
+            'country_code' => $phoneData['country_code'] ?? null,
             'status' => $request->status,
             'is_active' => $request->has('is_active'),
-        ];
+        ], UserAddressField::fromRequest($request));
 
         // تحديث كلمة المرور فقط إذا تم إدخالها
         if ($request->filled('password')) {

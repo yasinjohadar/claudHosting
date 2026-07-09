@@ -1,0 +1,38 @@
+/* قوالب البريد — مكمل لـ admin-email-settings.css */
+
+.admin-email-templates-page .group-show-actions {
+    justify-content: flex-end;
+}
+
+.admin-email-templates-page__table th {
+    white-space: nowrap;
+    font-weight: 600;
+    color: var(--text-muted);
+}
+
+.admin-email-templates-page__actions .btn {
+    white-space: nowrap;
+}
+
+.admin-email-templates-page__variables-card {
+    border-radius: 0.85rem;
+}
+
+.admin-email-templates-page__form-actions .btn {
+    min-width: 140px;
+}
+
+.admin-email-templates-page .required::after {
+    content: " *";
+    color: #dc3545;
+}
+
+@media (max-width: 576px) {
+    .admin-email-templates-page__form-actions .btn {
+        width: 100%;
+    }
+
+    .admin-email-templates-page__actions .btn {
+        flex: 1 1 auto;
+    }
+}

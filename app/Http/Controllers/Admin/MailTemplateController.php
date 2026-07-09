@@ -14,18 +14,39 @@ class MailTemplateController extends Controller
         protected MailTemplateResolver $resolver
     ) {}
 
-    public function index()
+    public function index(Request $request)
     {
         if (! Schema::hasTable('mail_templates')) {
             return redirect()
-                ->route('admin.mail-settings.index')
+                ->route('admin.settings.email.index')
                 ->with('error', 'جدول قوالب البريد غير موجود. يرجى تشغيل migrations أولاً.');
         }
 
         $this->resolver->ensureDefaults();
-        $templates = MailTemplate::query()->orderBy('name')->paginate(20);
 
-        return view('admin.mail-templates.index', compact('templates'));
+        $query = MailTemplate::query()->orderBy('name');
+
+        if ($search = trim((string) $request->get('search', ''))) {
+            $query->where(function ($builder) use ($search) {
+                $builder->where('name', 'like', "%{$search}%")
+                    ->orWhere('key', 'like', "%{$search}%")
+                    ->orWhere('subject', 'like', "%{$search}%");
+            });
+        }
+
+        if ($request->filled('is_active')) {
+            $query->where('is_active', $request->boolean('is_active'));
+        }
+
+        $templates = $query->paginate(20)->withQueryString();
+
+        $stats = [
+            'total' => MailTemplate::query()->count(),
+            'active' => MailTemplate::query()->where('is_active', true)->count(),
+            'inactive' => MailTemplate::query()->where('is_active', false)->count(),
+        ];
+
+        return view('admin.mail-templates.index', compact('templates', 'stats'));
     }
 
     public function create()

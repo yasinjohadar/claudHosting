@@ -8,9 +8,9 @@ use App\Listeners\AutoReplyWhatsAppListener;
 use App\Listeners\SendPaymentEmailListener;
 use App\Listeners\SendPaymentWhatsappListener;
 use App\Models\Setting;
-use App\Services\Mail\MailSettingsService;
 use App\Services\Mail\MailTemplateResolver;
 use App\Services\Mail\TemplateRendererService;
+use App\Services\WhatsApp\WhatsAppSettingsService;
 use App\View\Composers\SeoComposer;
 use Illuminate\Auth\Notifications\ResetPassword;
 use Illuminate\Auth\Notifications\VerifyEmail;
@@ -47,9 +47,13 @@ class AppServiceProvider extends ServiceProvider
     public function boot(): void
     {
         Paginator::useBootstrapFive();
-        app(MailSettingsService::class)->initializeDefaults();
-        app(MailSettingsService::class)->applyRuntimeConfig();
         app(MailTemplateResolver::class)->ensureDefaults();
+
+        try {
+            app(WhatsAppSettingsService::class)->initializeDefaults();
+        } catch (\Throwable) {
+            // DB may not be ready during install/migrate
+        }
 
         // تسجيل PermissionServiceProvider
         $this->app->register(PermissionServiceProvider::class);

@@ -42,6 +42,8 @@ Route::prefix('')->name('frontend.')->group(function () {
 
     // المدونة — ديناميكي من لوحة التحكم
     Route::get('/blog', [BlogController::class, 'index'])->name('blog');
+    Route::get('/blog/category/{slug}', [BlogController::class, 'category'])->name('blog.category');
+    Route::get('/blog/tag/{slug}', [BlogController::class, 'tag'])->name('blog.tag');
     Route::get('/blog/{slug}', [BlogController::class, 'show'])->name('blog.show');
 
     Route::get('/contact', function () {

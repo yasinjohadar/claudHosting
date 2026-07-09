@@ -11,6 +11,10 @@ return new class extends Migration
      */
     public function up(): void
     {
+        if (Schema::getConnection()->getDriverName() === 'sqlite') {
+            return;
+        }
+
         // في MySQL، لا يمكن تعديل enum مباشرة، يجب حذف العمود وإعادة إنشائه
         Schema::table('app_storage_configs', function (Blueprint $table) {
             // حذف العمود القديم
@@ -44,6 +48,10 @@ return new class extends Migration
      */
     public function down(): void
     {
+        if (Schema::getConnection()->getDriverName() === 'sqlite') {
+            return;
+        }
+
         // إعادة العمود إلى حالته الأصلية بدون 'bunny'
         Schema::table('app_storage_configs', function (Blueprint $table) {
             $table->dropColumn('driver');

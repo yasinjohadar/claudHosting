@@ -3,24 +3,24 @@
     $item = $item ?? null;
 @endphp
 <tr class="item-row">
-    <td class="text-center" style="width:4rem">
-        <button type="button" class="btn btn-icon btn-sm btn-danger-transparent rounded-pill remove-item" title="حذف">
-            <i class="ri-delete-bin-line"></i>
+    <td class="domain-list-table__action">
+        <button type="button" class="domain-action-btn domain-action-btn--danger remove-item" title="حذف">
+            <i class="fe fe-trash-2"></i>
         </button>
     </td>
-    <td style="min-width:12rem;width:35%">
+    <td>
         <input type="hidden" name="items[{{ $index }}][offered_service_id]" class="item-offered-service-id" value="{{ old('items.'.$index.'.offered_service_id', $item->offered_service_id ?? '') }}">
         <input type="hidden" name="items[{{ $index }}][customer_service_id]" class="item-customer-service-id" value="{{ old('items.'.$index.'.customer_service_id', $item->customer_service_id ?? '') }}">
         <input type="text" class="form-control form-control-sm item-description" name="items[{{ $index }}][description]"
             value="{{ old('items.'.$index.'.description', $item->description ?? '') }}" placeholder="وصف البند" required>
     </td>
-    <td style="width:10rem" class="text-center">
+    <td class="text-center">
         <div class="form-check d-flex justify-content-center mb-0">
             <input type="checkbox" class="form-check-input item-taxed" id="taxed{{ $index }}" name="items[{{ $index }}][taxed]" value="1"
                 {{ old('items.'.$index.'.taxed', $item->taxed ?? false) ? 'checked' : '' }}>
         </div>
     </td>
-    <td style="width:14rem">
+    <td>
         <div class="input-group input-group-sm">
             <input type="number" class="form-control item-amount" name="items[{{ $index }}][amount]"
                 value="{{ old('items.'.$index.'.amount', $item->amount ?? '') }}" placeholder="0.00" step="0.01" min="0" required>

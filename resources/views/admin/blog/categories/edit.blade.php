@@ -6,7 +6,7 @@
 <div><h4 class="mb-0">تعديل: {{ $category->name }}</h4></div>
 <div class="ms-auto"><a href="{{ route('admin.blog.categories.index') }}" class="btn btn-secondary"><i class="bi bi-arrow-right me-2"></i>رجوع</a></div></div>
 @if(session('success'))<div class="alert alert-success alert-dismissible fade show"><i class="bi bi-check-circle me-2"></i>{{ session('success') }}<button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>@endif
-<form action="{{ route('admin.blog.categories.update', $category->id) }}" method="POST">@csrf @method('PUT')
+<form action="{{ route('admin.blog.categories.update', $category->id) }}" method="POST" enctype="multipart/form-data">@csrf @method('PUT')
 <div class="row"><div class="col-lg-8">
 <div class="card custom-card mb-4"><div class="card-header"><div class="card-title">معلومات التصنيف</div></div>
 <div class="card-body">
@@ -30,15 +30,7 @@
 <div class="mb-3"><label class="form-label">الترتيب</label>
 <input type="number" name="order" class="form-control" value="{{ old('order', $category->order) }}" min="0"></div>
 </div></div>
-<div class="card custom-card"><div class="card-header"><div class="card-title">إعدادات SEO</div></div>
-<div class="card-body">
-<div class="mb-3"><label class="form-label">عنوان SEO</label>
-<input type="text" name="meta_title" class="form-control" value="{{ old('meta_title', $category->meta_title) }}"></div>
-<div class="mb-3"><label class="form-label">وصف SEO</label>
-<textarea name="meta_description" rows="2" class="form-control">{{ old('meta_description', $category->meta_description) }}</textarea></div>
-<div class="mb-3"><label class="form-label">الكلمات المفتاحية</label>
-<input type="text" name="meta_keywords" class="form-control" value="{{ old('meta_keywords', $category->meta_keywords) }}"></div>
-</div></div>
+@include('admin.partials.seo-archive-panel', ['model' => $category, 'archiveType' => 'category'])
 </div>
 <div class="col-lg-4">
 <div class="card custom-card"><div class="card-body">

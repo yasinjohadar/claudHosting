@@ -12,8 +12,12 @@ class DomainSearchController extends Controller
 {
     public function __construct(protected DomainAvailabilitySearchService $availabilitySearch) {}
 
-    public function index()
+    public function index(Request $request)
     {
+        if ($request->filled('domain')) {
+            return $this->search($request);
+        }
+
         $pricing = $this->defaultPricing();
         $currency = config('domain_search.default_currency', ['code' => 'USD', 'suffix' => ' USD']);
 

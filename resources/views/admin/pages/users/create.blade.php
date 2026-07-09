@@ -1,271 +1,189 @@
 @extends('admin.layouts.master')
 
 @section('page-title')
-    إنشاء مستخدم جديد
+إنشاء مستخدم جديد
 @stop
 
-@section('css')
-    <style>
-        .form-floating label {
-            right: auto;
-            left: 0.75rem;
-        }
-
-        select.form-select {
-            padding: 0.75rem;
-        }
-        
-        .photo-preview {
-            width: 100px;
-            height: 100px;
-            border-radius: 50%;
-            object-fit: cover;
-            border: 2px solid #e9ecef;
-        }
-        
-        .photo-upload {
-            position: relative;
-            display: inline-block;
-        }
-        
-        .photo-upload input[type="file"] {
-            position: absolute;
-            opacity: 0;
-            width: 100%;
-            height: 100%;
-            cursor: pointer;
-        }
-        
-        .photo-upload-label {
-            cursor: pointer;
-            display: inline-block;
-            padding: 8px 16px;
-            background: #f8f9fa;
-            border: 1px solid #dee2e6;
-            border-radius: 4px;
-            color: #6c757d;
-            transition: all 0.3s;
-        }
-        
-        .photo-upload-label:hover {
-            background: #e9ecef;
-            color: #495057;
-        }
-    </style>
-@stop
+@push('styles')
+@include('admin.partials.domain-ui-styles')
+@endpush
 
 @section('content')
-
-    @if (session('success'))
-        <div class="alert alert-success alert-dismissible fade show" role="alert">
-            {{ session('success') }}
-            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="إغلاق"></button>
+<div class="main-content app-content">
+    <div class="container-fluid">
+        <div class="domain-page-hero">
+            <div class="d-md-flex justify-content-between align-items-start flex-wrap gap-3">
+                <div>
+                    <nav class="domain-page-hero__breadcrumb mb-2">
+                        <a href="{{ route('admin.dashboard') }}">لوحة التحكم</a>
+                        <span class="text-muted mx-1">/</span>
+                        <a href="{{ route('users.index') }}">المستخدمون</a>
+                        <span class="text-muted mx-1">/</span>
+                        <span>إنشاء</span>
+                    </nav>
+                    <h1 class="domain-page-hero__title">إنشاء مستخدم جديد</h1>
+                    <p class="text-muted small mb-0">أدخل بيانات الحساب والأدوار — كلمة المرور تُعيَّن لاحقاً من قائمة المستخدمين.</p>
+                </div>
+                <div class="d-flex flex-wrap gap-2">
+                    <a href="{{ route('users.index') }}" class="btn btn-light btn-sm">
+                        <i class="fe fe-arrow-right me-1"></i> العودة للقائمة
+                    </a>
+                </div>
+            </div>
         </div>
-    @endif
 
-    @if (session('error'))
-        <div class="alert alert-danger alert-dismissible fade show" role="alert">
-            {{ session('error') }}
-            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="إغلاق"></button>
-        </div>
-    @endif
-
-    @if ($errors->any())
-        <div class="alert alert-danger alert-dismissible fade show" role="alert">
-            <ul class="mb-0">
-                @foreach ($errors->all() as $error)
-                    <li class="small">{{ $error }}</li>
+        @if(session('success'))
+        <div class="alert alert-success py-2">{{ session('success') }}</div>
+        @endif
+        @if(session('error'))
+        <div class="alert alert-danger py-2">{{ session('error') }}</div>
+        @endif
+        @if($errors->any())
+        <div class="alert alert-danger py-2">
+            <ul class="mb-0 ps-3">
+                @foreach($errors->all() as $error)
+                <li>{{ $error }}</li>
                 @endforeach
             </ul>
-            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="إغلاق"></button>
         </div>
-    @endif
+        @endif
 
-    <div class="main-content app-content">
-        <div class="container-fluid">
-            <div class="page-header d-flex justify-content-between align-items-center my-4">
-                <h5 class="page-title mb-0">إنشاء مستخدم جديد</h5>
-            </div>
+        <form method="POST" action="{{ route('users.store') }}" enctype="multipart/form-data">
+            @csrf
 
-            <div class="card">
-                <div class="card-body">
-                    <form method="POST" action="{{ route('users.store') }}" enctype="multipart/form-data">
-                        @csrf
-
-                        <div class="row g-3">
-                            <!-- المعلومات الأساسية -->
-                            <div class="col-12">
-                                <h6 class="text-primary mb-3">المعلومات الأساسية</h6>
-                            </div>
-
-                            <div class="col-md-6">
-                                <div class="form-floating">
-                                    <input type="text" class="form-control @error('name') is-invalid @enderror" 
-                                           name="name" placeholder="الاسم الكامل" value="{{ old('name') }}" required>
-                                    <label>الاسم الكامل <span class="text-danger">*</span></label>
-                                    @error('name')
-                                        <div class="invalid-feedback">{{ $message }}</div>
-                                    @enderror
-                                </div>
-                            </div>
-
-                            <div class="col-md-6">
-                                <div class="form-floating">
-                                    <input type="text" class="form-control @error('username') is-invalid @enderror" 
-                                           name="username" placeholder="اسم المستخدم" value="{{ old('username') }}">
-                                    <label>اسم المستخدم</label>
-                                    @error('username')
-                                        <div class="invalid-feedback">{{ $message }}</div>
-                                    @enderror
-                                </div>
-                            </div>
-
-                            <div class="col-md-6">
-                                <div class="form-floating">
-                                    <input type="email" class="form-control @error('email') is-invalid @enderror" 
-                                           name="email" placeholder="البريد الإلكتروني" value="{{ old('email') }}" required>
-                                    <label>البريد الإلكتروني <span class="text-danger">*</span></label>
-                                    @error('email')
-                                        <div class="invalid-feedback">{{ $message }}</div>
-                                    @enderror
-                                </div>
-                            </div>
-
-                            <div class="col-md-6">
-                                <div class="form-floating">
-                                    <input type="tel" class="form-control @error('phone') is-invalid @enderror" 
-                                           name="phone" placeholder="رقم الهاتف" value="{{ old('phone') }}">
-                                    <label>رقم الهاتف</label>
-                                    @error('phone')
-                                        <div class="invalid-feedback">{{ $message }}</div>
-                                    @enderror
-                                </div>
-                            </div>
-
-                            <!-- كلمة المرور -->
-                            <div class="col-md-6">
-                                <div class="form-floating">
-                                    <input type="password" class="form-control @error('password') is-invalid @enderror" 
-                                           name="password" placeholder="كلمة المرور" required>
-                                    <label>كلمة المرور <span class="text-danger">*</span></label>
-                                    @error('password')
-                                        <div class="invalid-feedback">{{ $message }}</div>
-                                    @enderror
-                                </div>
-                            </div>
-
-                            <div class="col-md-6">
-                                <div class="form-floating">
-                                    <input type="password" class="form-control @error('password_confirmation') is-invalid @enderror" 
-                                           name="password_confirmation" placeholder="تأكيد كلمة المرور" required>
-                                    <label>تأكيد كلمة المرور <span class="text-danger">*</span></label>
-                                    @error('password_confirmation')
-                                        <div class="invalid-feedback">{{ $message }}</div>
-                                    @enderror
-                                </div>
-                            </div>
-
-                            <!-- صورة المستخدم -->
-                            <div class="col-md-6">
-                                <label class="form-label">صورة المستخدم</label>
-                                <div class="d-flex align-items-center gap-3">
-                                    <div class="photo-upload">
-                                        <img id="photo-preview" src="{{ asset('assets/images/faces/default-avatar.jpg') }}" 
-                                             alt="صورة المستخدم" class="photo-preview">
-                                        <input type="file" name="photo" id="photo-input" accept="image/*" 
-                                               onchange="previewPhoto(this)">
-                                    </div>
-                                    <div>
-                                        <label for="photo-input" class="photo-upload-label">
-                                            <i class="fas fa-camera me-2"></i>اختر صورة
-                                        </label>
-                                    </div>
-                                </div>
-                                @error('photo')
-                                    <div class="text-danger small mt-1">{{ $message }}</div>
-                                @enderror
-                            </div>
-
-                            <!-- حالة المستخدم -->
-                            <div class="col-md-6">
-                                <div class="form-floating">
-                                    <select class="form-select @error('status') is-invalid @enderror" name="status" aria-label="حالة المستخدم">
-                                        <option value="active" {{ old('status') == 'active' ? 'selected' : '' }}>نشط</option>
-                                        <option value="inactive" {{ old('status') == 'inactive' ? 'selected' : '' }}>غير نشط</option>
-                                        <option value="banned" {{ old('status') == 'banned' ? 'selected' : '' }}>محظور</option>
-                                    </select>
-                                    <label>حالة المستخدم</label>
-                                    @error('status')
-                                        <div class="invalid-feedback">{{ $message }}</div>
-                                    @enderror
-                                </div>
-                            </div>
-
-                            <!-- تفعيل الحساب -->
-                            <div class="col-md-6">
-                                <div class="form-check form-switch">
-                                    <input class="form-check-input" type="checkbox" name="is_active" value="1" 
-                                           id="is_active" {{ old('is_active', true) ? 'checked' : '' }}>
-                                    <label class="form-check-label" for="is_active">
-                                        تفعيل الحساب
-                                    </label>
-                                </div>
-                            </div>
-
-                            <!-- الأدوار -->
-                            <div class="col-12">
-                                <label class="form-label mt-3">الأدوار (Roles)</label>
-                                <select class="form-select @error('roles') is-invalid @enderror" name="roles[]" multiple>
-                                    @foreach ($roles as $role)
-                                        <option value="{{ $role->name }}" 
-                                                {{ in_array($role->name, old('roles', [])) ? 'selected' : '' }}>
-                                            {{ $role->name }}
-                                        </option>
-                                    @endforeach
-                                </select>
-                                @error('roles')
-                                    <div class="invalid-feedback">{{ $message }}</div>
-                                @enderror
-                                <div class="form-text">اضغط Ctrl (أو Cmd على Mac) لاختيار أكثر من دور</div>
-                            </div>
+            <div class="domain-panel mb-3">
+                <div class="domain-panel__head">
+                    <span class="domain-panel__head-icon"><i class="fe fe-user"></i></span>
+                    <h2 class="domain-panel__title">المعلومات الأساسية</h2>
+                </div>
+                <div class="domain-panel__body">
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label class="domain-form-label" for="user-name">الاسم الكامل <span class="text-danger">*</span></label>
+                            <input type="text" id="user-name" class="form-control form-control-sm @error('name') is-invalid @enderror"
+                                name="name" value="{{ old('name') }}" required>
+                            @error('name')<div class="invalid-feedback">{{ $message }}</div>@enderror
                         </div>
-
-                        <div class="text-end mt-4">
-                            <a href="{{ route('users.index') }}" class="btn btn-secondary px-4 me-2">
-                                إلغاء
-                            </a>
-                            <button type="submit" class="btn btn-primary px-4">
-                                <i class="fas fa-save me-2"></i>حفظ بيانات المستخدم
-                            </button>
+                        <div class="col-md-6">
+                            <label class="domain-form-label" for="user-username">اسم المستخدم</label>
+                            <input type="text" id="user-username" class="form-control form-control-sm @error('username') is-invalid @enderror"
+                                name="username" value="{{ old('username') }}" dir="ltr">
+                            @error('username')<div class="invalid-feedback">{{ $message }}</div>@enderror
                         </div>
-
-                    </form>
+                        <div class="col-md-6">
+                            <label class="domain-form-label" for="user-email">البريد الإلكتروني <span class="text-danger">*</span></label>
+                            <input type="email" id="user-email" class="form-control form-control-sm @error('email') is-invalid @enderror"
+                                name="email" value="{{ old('email') }}" required dir="ltr">
+                            @error('email')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                        </div>
+                        @php
+                            $phoneForm = \App\Support\PhoneField::valuesForForm(
+                                old('country_code'),
+                                old('phone')
+                            );
+                        @endphp
+                        <div class="col-md-6">
+                            <x-phone-country-fields
+                                label="رقم الهاتف / واتساب"
+                                country-code-id="user-country-code"
+                                phone-id="user-phone"
+                                :selected-country-code="$phoneForm['country_code']"
+                                :phone-value="$phoneForm['phone']"
+                                :phone-error="$errors->first('phone')"
+                                :country-error="$errors->first('country_code')"
+                            />
+                        </div>
+                    </div>
                 </div>
             </div>
 
-        </div>
+            <x-user-address-fields title="العنوان / بيانات العمل" />
+
+            <div class="row g-3">
+                <div class="col-lg-4">
+                    <div class="domain-panel h-100">
+                        <div class="domain-panel__head">
+                            <span class="domain-panel__head-icon"><i class="fe fe-image"></i></span>
+                            <h2 class="domain-panel__title">صورة المستخدم</h2>
+                        </div>
+                        <div class="domain-panel__body">
+                            <div class="domain-user-photo">
+                                <label for="photo-input" class="domain-user-photo__preview">
+                                    <img id="photo-preview" src="{{ asset('assets/images/faces/default-avatar.jpg') }}"
+                                        alt="صورة المستخدم">
+                                    <span class="domain-user-photo__overlay"><i class="fe fe-camera"></i></span>
+                                </label>
+                                <input type="file" name="photo" id="photo-input" accept="image/*" class="d-none">
+                                <p class="text-muted small mb-0 mt-2">PNG أو JPG — حتى 2 ميجابايت</p>
+                                @error('photo')<div class="text-danger small mt-1">{{ $message }}</div>@enderror
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-lg-8">
+                    <div class="domain-panel h-100">
+                        <div class="domain-panel__head">
+                            <span class="domain-panel__head-icon"><i class="fe fe-settings"></i></span>
+                            <h2 class="domain-panel__title">الحالة والأدوار</h2>
+                        </div>
+                        <div class="domain-panel__body">
+                            <div class="row g-3">
+                                <div class="col-md-6">
+                                    <label class="domain-form-label" for="user-status">حالة المستخدم</label>
+                                    <select id="user-status" class="form-select form-select-sm @error('status') is-invalid @enderror" name="status">
+                                        <option value="active" @selected(old('status', 'active') === 'active')>نشط</option>
+                                        <option value="inactive" @selected(old('status') === 'inactive')>غير نشط</option>
+                                        <option value="banned" @selected(old('status') === 'banned')>محظور</option>
+                                    </select>
+                                    @error('status')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                                </div>
+                                <div class="col-md-6 d-flex align-items-end">
+                                    <div class="form-check form-switch mb-2">
+                                        <input class="form-check-input" type="checkbox" name="is_active" value="1"
+                                            id="is_active" @checked(old('is_active', true))>
+                                        <label class="form-check-label" for="is_active">تفعيل الحساب</label>
+                                    </div>
+                                </div>
+                                <div class="col-12">
+                                    <label class="domain-form-label">الأدوار</label>
+                                    <div class="domain-role-grid">
+                                        @foreach($roles as $role)
+                                        <label class="domain-role-chip">
+                                            <input type="checkbox" name="roles[]" value="{{ $role->name }}"
+                                                @checked(in_array($role->name, old('roles', []), true))>
+                                            <span>{{ $role->name }}</span>
+                                        </label>
+                                        @endforeach
+                                    </div>
+                                    @error('roles')<div class="text-danger small mt-1">{{ $message }}</div>@enderror
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="domain-form-actions">
+                <a href="{{ route('users.index') }}" class="btn btn-light btn-sm px-4">إلغاء</a>
+                <button type="submit" class="btn btn-primary btn-sm px-4">
+                    <i class="fe fe-save me-1"></i> حفظ بيانات المستخدم
+                </button>
+            </div>
+        </form>
     </div>
-@stop
+</div>
+@endsection
 
-@section('script')
-    <script>
-        function previewPhoto(input) {
-            if (input.files && input.files[0]) {
-                var reader = new FileReader();
-                reader.onload = function(e) {
-                    document.getElementById('photo-preview').src = e.target.result;
-                };
-                reader.readAsDataURL(input.files[0]);
-            }
-        }
-
-        // تفعيل Select2 للأدوار (اختياري)
-        $(document).ready(function() {
-            $('select[name="roles[]"]').select2({
-                placeholder: "اختر الأدوار",
-                allowClear: true,
-                dir: "rtl"
-            });
-        });
-    </script>
-@stop
+@push('scripts')
+<script>
+document.getElementById('photo-input')?.addEventListener('change', function() {
+    if (!this.files?.[0]) return;
+    const reader = new FileReader();
+    reader.onload = (e) => {
+        document.getElementById('photo-preview').src = e.target.result;
+    };
+    reader.readAsDataURL(this.files[0]);
+});
+</script>
+@endpush

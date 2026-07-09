@@ -1,25 +1,220 @@
+@php
+    $activeTab = request('tab', 'pages');
+    $pagesCount = count($pages ?? []);
+    $globalOgReady = !empty($global['default_og_image_url'] ?? null) ? 'جاهز' : 'افتراضي';
+    $robotsEnabled = (($global['robots']['enabled'] ?? true) && ($global['sitemap']['enabled'] ?? true)) ? 'مفعّل' : 'مخصص';
+@endphp
+
 @extends('admin.layouts.master')
 
 @section('page-title')
 إعدادات SEO
 @stop
 
+@push('styles')
+@include('admin.partials.domain-ui-styles')
+<style>
+.seo-settings-hero {
+    background:
+        radial-gradient(circle at top left, rgba(var(--bs-success-rgb), 0.16), transparent 30%),
+        radial-gradient(circle at top right, rgba(var(--bs-primary-rgb), 0.18), transparent 26%),
+        linear-gradient(135deg, #ffffff 0%, #f7f9ff 100%);
+    border: 1px solid rgba(var(--bs-primary-rgb), 0.08);
+    border-radius: 1.25rem;
+    padding: 1.5rem;
+    margin: 1.5rem 0;
+    box-shadow: 0 18px 45px rgba(15, 23, 42, 0.06);
+}
+.seo-settings-hero__eyebrow {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.45rem;
+    padding: 0.35rem 0.75rem;
+    border-radius: 999px;
+    background: rgba(var(--bs-primary-rgb), 0.08);
+    color: var(--bs-primary);
+    font-size: 0.8rem;
+    font-weight: 600;
+    margin-bottom: 0.8rem;
+}
+.seo-settings-hero__title {
+    font-size: 1.8rem;
+    font-weight: 700;
+    margin-bottom: 0.5rem;
+}
+.seo-settings-hero__text {
+    max-width: 760px;
+    color: #6b7280;
+    margin-bottom: 0;
+}
+.seo-settings-kpi-grid {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 1rem;
+    margin-bottom: 1rem;
+}
+.seo-settings-kpi {
+    background: #fff;
+    border-radius: 1rem;
+    border: 1px solid rgba(15, 23, 42, 0.06);
+    box-shadow: 0 10px 25px rgba(15, 23, 42, 0.05);
+    padding: 1rem 1.1rem;
+    display: flex;
+    gap: 0.85rem;
+    align-items: center;
+}
+.seo-settings-kpi__icon {
+    width: 2.75rem;
+    height: 2.75rem;
+    border-radius: 0.9rem;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.15rem;
+    flex-shrink: 0;
+}
+.seo-settings-kpi--primary .seo-settings-kpi__icon { background: rgba(var(--bs-primary-rgb), 0.12); color: var(--bs-primary); }
+.seo-settings-kpi--success .seo-settings-kpi__icon { background: rgba(var(--bs-success-rgb), 0.12); color: var(--bs-success); }
+.seo-settings-kpi--warning .seo-settings-kpi__icon { background: rgba(var(--bs-warning-rgb), 0.15); color: #b36b00; }
+.seo-settings-kpi--info .seo-settings-kpi__icon { background: rgba(var(--bs-info-rgb), 0.15); color: #0c7bb3; }
+.seo-settings-kpi__label {
+    color: #6b7280;
+    font-size: 0.83rem;
+    margin-bottom: 0.2rem;
+}
+.seo-settings-kpi__value {
+    font-size: 1.22rem;
+    font-weight: 700;
+    color: #0f172a;
+    line-height: 1.1;
+}
+.seo-settings-shell {
+    background: #fff;
+    border: 1px solid rgba(15, 23, 42, 0.06);
+    border-radius: 1.2rem;
+    box-shadow: 0 18px 40px rgba(15, 23, 42, 0.05);
+    overflow: hidden;
+}
+.seo-settings-shell__header {
+    padding: 1rem 1.25rem;
+    border-bottom: 1px solid rgba(15, 23, 42, 0.06);
+    background: linear-gradient(180deg, rgba(var(--bs-primary-rgb), 0.03), rgba(255,255,255,0));
+}
+.seo-settings-shell__title {
+    font-size: 1rem;
+    font-weight: 700;
+    margin-bottom: 0.2rem;
+}
+.seo-settings-shell__text {
+    color: #6b7280;
+    font-size: 0.87rem;
+    margin-bottom: 0;
+}
+.seo-settings-tabs {
+    padding: 0 1rem;
+    margin: 0;
+    border-bottom: 1px solid rgba(15, 23, 42, 0.06);
+    background: #fff;
+}
+.seo-settings-tabs .nav-link {
+    border: 0;
+    border-radius: 0;
+    padding: 1rem 1rem 0.85rem;
+    color: #6b7280;
+    font-weight: 600;
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.45rem;
+}
+.seo-settings-tabs .nav-link.active {
+    color: var(--bs-primary);
+    background: transparent;
+}
+.seo-settings-tabs .nav-link.active::after {
+    content: "";
+    position: absolute;
+    inset-inline: 0;
+    bottom: -1px;
+    height: 3px;
+    border-radius: 999px 999px 0 0;
+    background: var(--bs-primary);
+}
+.seo-settings-content {
+    padding: 1.25rem;
+    background: linear-gradient(180deg, rgba(var(--bs-primary-rgb), 0.02), rgba(255,255,255,0));
+}
+.seo-settings-content .seo-page-nav .nav-link {
+    --bs-nav-pills-link-active-color: #0f172a;
+    --bs-nav-pills-link-active-bg: rgba(var(--bs-primary-rgb), 0.08);
+    border-radius: 0;
+    border-bottom: 1px solid var(--bs-border-color);
+    padding: 0.85rem 1rem;
+    background: #fff;
+    color: #0f172a;
+    text-align: right;
+}
+.seo-settings-content .seo-page-nav .nav-link.active {
+    background: rgba(var(--bs-primary-rgb), 0.08);
+    border-inline-start: 3px solid var(--bs-primary);
+    color: var(--bs-primary);
+}
+.seo-settings-content .seo-page-nav .nav-link small {
+    color: #64748b !important;
+}
+.seo-settings-content .seo-page-nav .nav-link.active small {
+    color: #475569 !important;
+}
+.seo-settings-content .seo-page-nav {
+    background: #fff;
+}
+.seo-settings-content .seo-page-nav .nav-link:hover {
+    background: #f8fbff;
+}
+.seo-preview-google__title {
+    font-size: 1.1rem;
+    line-height: 1.3;
+}
+@media (max-width: 1199.98px) {
+    .seo-settings-kpi-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+}
+@media (max-width: 991.98px) {
+    .seo-settings-kpi-grid {
+        grid-template-columns: 1fr;
+    }
+    .seo-settings-tabs {
+        overflow-x: auto;
+        flex-wrap: nowrap;
+    }
+}
+</style>
+@endpush
+
 @section('content')
 <div class="main-content app-content">
     <div class="container-fluid">
-        <div class="d-md-flex d-block align-items-center justify-content-between my-4 page-header-breadcrumb">
-            <div>
-                <h4 class="mb-0">إعدادات SEO — الصفحات العامة</h4>
-                <nav>
-                    <ol class="breadcrumb mb-0">
-                        <li class="breadcrumb-item"><a href="{{ route('admin.dashboard') }}">الرئيسية</a></li>
-                        <li class="breadcrumb-item active" aria-current="page">SEO</li>
-                    </ol>
-                </nav>
+        <div class="seo-settings-hero">
+            <div class="d-md-flex justify-content-between align-items-start flex-wrap gap-3">
+                <div>
+                    <span class="seo-settings-hero__eyebrow">
+                        <i class="bi bi-search"></i> إعدادات SEO
+                    </span>
+                    <h1 class="seo-settings-hero__title">لوحة تحسين الظهور في محركات البحث</h1>
+                    <p class="seo-settings-hero__text">
+                        أدر عناوين الصفحات والوصف والـ Open Graph وملفات `robots` و`sitemap` من واجهة أوضح وبهوية بصرية متناسقة مع بقية صفحات الإدارة.
+                    </p>
+                </div>
+                <div class="d-flex flex-wrap gap-2">
+                    <a href="{{ url('/') }}" target="_blank" class="btn btn-primary btn-sm">
+                        <i class="fas fa-external-link-alt me-1"></i> معاينة الموقع
+                    </a>
+                    <a href="{{ route('admin.settings.index') }}" class="btn btn-light btn-sm">
+                        <i class="bi bi-gear me-1"></i> إعدادات الموقع
+                    </a>
+                </div>
             </div>
-            <a href="{{ url('/') }}" target="_blank" class="btn btn-outline-primary btn-sm">
-                <i class="fas fa-external-link-alt"></i> معاينة الموقع
-            </a>
         </div>
 
         @if (session('success'))
@@ -39,231 +234,87 @@
             </div>
         @endif
 
-        <form action="{{ route('admin.homepage.seo.update') }}" method="post" enctype="multipart/form-data" id="seoSettingsForm">
-            @csrf
-            @method('PUT')
-
-            <div class="row g-4">
-                <div class="col-lg-3">
-                    <div class="card custom-card sticky-top" style="top: 90px;">
-                        <div class="card-header">
-                            <div class="card-title mb-0">الصفحات</div>
-                        </div>
-                        <div class="card-body p-0">
-                            <div class="nav flex-column nav-pills seo-page-nav" id="seoPageTabs" role="tablist">
-                                @foreach ($pages as $routeName => $label)
-                                    <button class="nav-link text-start {{ $loop->first ? 'active' : '' }}"
-                                        id="tab-btn-{{ md5($routeName) }}"
-                                        data-bs-toggle="pill"
-                                        data-bs-target="#tab-pane-{{ md5($routeName) }}"
-                                        type="button"
-                                        role="tab">
-                                        {{ $label }}
-                                        <small class="d-block text-muted">{{ $routeName }}</small>
-                                    </button>
-                                @endforeach
-                            </div>
-                        </div>
-                    </div>
+        <div class="seo-settings-kpi-grid">
+            <div class="seo-settings-kpi seo-settings-kpi--primary">
+                <span class="seo-settings-kpi__icon"><i class="bi bi-files"></i></span>
+                <div>
+                    <div class="seo-settings-kpi__label">الصفحات القابلة للتخصيص</div>
+                    <div class="seo-settings-kpi__value">{{ $pagesCount }}</div>
                 </div>
-
-                <div class="col-lg-9">
-                    <div class="tab-content" id="seoPageTabsContent">
-                        @foreach ($pages as $routeName => $label)
-                            @php
-                                $cfg = $configs[$routeName] ?? [];
-                                $paneId = 'tab-pane-' . md5($routeName);
-                            @endphp
-                            <div class="tab-pane fade {{ $loop->first ? 'show active' : '' }}" id="{{ $paneId }}" role="tabpanel">
-                                <div class="card custom-card">
-                                    <div class="card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
-                                        <div class="card-title mb-0">{{ $label }}</div>
-                                        <button type="submit"
-                                            formaction="{{ route('admin.homepage.seo.reset') }}"
-                                            formmethod="post"
-                                            name="route"
-                                            value="{{ $routeName }}"
-                                            class="btn btn-sm btn-outline-warning"
-                                            onclick="return confirm('استعادة القيم الافتراضية لهذه الصفحة؟');">
-                                            <i class="fas fa-undo"></i> استعادة الافتراضي
-                                        </button>
-                                    </div>
-                                    <div class="card-body">
-                                        <div class="row g-3">
-                                            <div class="col-md-6">
-                                                <label class="form-label">عنوان الصفحة (Title)</label>
-                                                <input type="text"
-                                                    name="pages[{{ $routeName }}][meta_title]"
-                                                    class="form-control seo-count-title"
-                                                    maxlength="70"
-                                                    value="{{ old("pages.{$routeName}.meta_title", $cfg['meta_title'] ?? '') }}"
-                                                    data-preview-id="{{ md5($routeName) }}">
-                                                <small class="text-muted seo-char-count" data-max="70">0 / 70</small>
-                                            </div>
-                                            <div class="col-md-6">
-                                                <label class="form-label">Robots</label>
-                                                <select name="pages[{{ $routeName }}][robots]" class="form-select">
-                                                    @foreach (['index,follow', 'noindex,follow', 'index,nofollow', 'noindex,nofollow'] as $robots)
-                                                        <option value="{{ $robots }}" @selected(old("pages.{$routeName}.robots", $cfg['robots'] ?? 'index,follow') === $robots)>{{ $robots }}</option>
-                                                    @endforeach
-                                                </select>
-                                            </div>
-                                            <div class="col-12">
-                                                <label class="form-label">الوصف (Meta Description)</label>
-                                                <textarea name="pages[{{ $routeName }}][meta_description]"
-                                                    class="form-control seo-count-desc"
-                                                    rows="3"
-                                                    maxlength="320"
-                                                    data-preview-id="{{ md5($routeName) }}">{{ old("pages.{$routeName}.meta_description", $cfg['meta_description'] ?? '') }}</textarea>
-                                                <small class="text-muted seo-char-count" data-max="160">0 / 160 (موصى به)</small>
-                                            </div>
-                                            <div class="col-12">
-                                                <label class="form-label">كلمات مفتاحية (اختياري)</label>
-                                                <input type="text"
-                                                    name="pages[{{ $routeName }}][meta_keywords]"
-                                                    class="form-control"
-                                                    value="{{ old("pages.{$routeName}.meta_keywords", $cfg['meta_keywords'] ?? '') }}">
-                                            </div>
-                                            <div class="col-12">
-                                                <label class="form-label">Canonical (اختياري — اتركه فارغاً للرابط الحالي)</label>
-                                                <input type="url"
-                                                    name="pages[{{ $routeName }}][canonical]"
-                                                    class="form-control"
-                                                    placeholder="{{ config('app.url') }}"
-                                                    value="{{ old("pages.{$routeName}.canonical", $cfg['canonical'] ?? '') }}">
-                                            </div>
-                                        </div>
-
-                                        <hr class="my-4">
-
-                                        <h6 class="mb-3"><i class="fab fa-facebook text-primary"></i> Open Graph</h6>
-                                        <div class="row g-3 mb-4">
-                                            <div class="col-md-6">
-                                                <label class="form-label">OG Title</label>
-                                                <input type="text" name="pages[{{ $routeName }}][og_title]" class="form-control"
-                                                    value="{{ old("pages.{$routeName}.og_title", $cfg['og_title'] ?? '') }}">
-                                            </div>
-                                            <div class="col-md-6">
-                                                <label class="form-label">OG Type</label>
-                                                <input type="text" name="pages[{{ $routeName }}][og_type]" class="form-control"
-                                                    value="{{ old("pages.{$routeName}.og_type", $cfg['og_type'] ?? 'website') }}">
-                                            </div>
-                                            <div class="col-12">
-                                                <label class="form-label">OG Description</label>
-                                                <textarea name="pages[{{ $routeName }}][og_description]" class="form-control" rows="2">{{ old("pages.{$routeName}.og_description", $cfg['og_description'] ?? '') }}</textarea>
-                                            </div>
-                                            <div class="col-md-6">
-                                                <label class="form-label">صورة OG (1200×630 موصى بها)</label>
-                                                <input type="file" name="og_image_{{ $routeName }}" class="form-control" accept="image/*">
-                                                @if (!empty($cfg['og_image_url']))
-                                                    <div class="mt-2">
-                                                        <img src="{{ $cfg['og_image_url'] }}" alt="" class="img-thumbnail" style="max-height: 120px;">
-                                                    </div>
-                                                    <div class="form-check mt-2">
-                                                        <input class="form-check-input" type="checkbox" name="remove_og_image_{{ $routeName }}" value="1" id="remove_og_{{ md5($routeName) }}">
-                                                        <label class="form-check-label" for="remove_og_{{ md5($routeName) }}">حذف الصورة الحالية</label>
-                                                    </div>
-                                                @endif
-                                            </div>
-                                        </div>
-
-                                        <h6 class="mb-3"><i class="fab fa-twitter text-info"></i> Twitter Card</h6>
-                                        <div class="row g-3 mb-4">
-                                            <div class="col-md-6">
-                                                <label class="form-label">Twitter Title</label>
-                                                <input type="text" name="pages[{{ $routeName }}][twitter_title]" class="form-control"
-                                                    value="{{ old("pages.{$routeName}.twitter_title", $cfg['twitter_title'] ?? '') }}">
-                                            </div>
-                                            <div class="col-md-6">
-                                                <label class="form-label">Twitter Card</label>
-                                                <input type="text" name="pages[{{ $routeName }}][twitter_card]" class="form-control"
-                                                    value="{{ old("pages.{$routeName}.twitter_card", $cfg['twitter_card'] ?? 'summary_large_image') }}">
-                                            </div>
-                                            <div class="col-12">
-                                                <label class="form-label">Twitter Description</label>
-                                                <textarea name="pages[{{ $routeName }}][twitter_description]" class="form-control" rows="2">{{ old("pages.{$routeName}.twitter_description", $cfg['twitter_description'] ?? '') }}</textarea>
-                                            </div>
-                                        </div>
-
-                                        <h6 class="mb-3"><i class="fas fa-eye"></i> معاينة</h6>
-                                        <div class="row g-3">
-                                            <div class="col-md-6">
-                                                <div class="seo-preview-google p-3 rounded border">
-                                                    <div class="seo-preview-google__url text-success small">{{ config('app.url') }}</div>
-                                                    <div class="seo-preview-google__title fw-bold text-primary seo-preview-title-{{ md5($routeName) }}">
-                                                        {{ $cfg['meta_title'] ?? 'عنوان الصفحة' }}
-                                                    </div>
-                                                    <div class="seo-preview-google__desc small text-muted seo-preview-desc-{{ md5($routeName) }}">
-                                                        {{ Str::limit($cfg['meta_description'] ?? '', 160) }}
-                                                    </div>
-                                                </div>
-                                            </div>
-                                            <div class="col-md-6">
-                                                <div class="seo-preview-social p-3 rounded border">
-                                                    @if (!empty($cfg['og_image_url']))
-                                                        <img src="{{ $cfg['og_image_url'] }}" alt="" class="w-100 rounded mb-2" style="max-height: 140px; object-fit: cover;">
-                                                    @endif
-                                                    <div class="small text-muted">{{ config('seo.organization.name') }}</div>
-                                                    <div class="fw-bold seo-preview-title-{{ md5($routeName) }}">{{ $cfg['og_title'] ?? $cfg['meta_title'] ?? '' }}</div>
-                                                    <div class="small seo-preview-desc-{{ md5($routeName) }}">{{ Str::limit($cfg['og_description'] ?? $cfg['meta_description'] ?? '', 100) }}</div>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        @endforeach
-                    </div>
-
-                    <div class="mt-4">
-                        <button type="submit" class="btn btn-primary">
-                            <i class="fas fa-save"></i> حفظ جميع إعدادات SEO
-                        </button>
+            </div>
+            <div class="seo-settings-kpi seo-settings-kpi--success">
+                <span class="seo-settings-kpi__icon"><i class="bi bi-grid"></i></span>
+                <div>
+                    <div class="seo-settings-kpi__label">القسم النشط</div>
+                    <div class="seo-settings-kpi__value">
+                        {{ $activeTab === 'pages' ? 'الصفحات' : ($activeTab === 'general' ? 'عام' : ($activeTab === 'blog' ? 'المدونة' : 'Robots')) }}
                     </div>
                 </div>
             </div>
-        </form>
+            <div class="seo-settings-kpi seo-settings-kpi--warning">
+                <span class="seo-settings-kpi__icon"><i class="bi bi-image"></i></span>
+                <div>
+                    <div class="seo-settings-kpi__label">صورة OG الافتراضية</div>
+                    <div class="seo-settings-kpi__value">{{ $globalOgReady }}</div>
+                </div>
+            </div>
+            <div class="seo-settings-kpi seo-settings-kpi--info">
+                <span class="seo-settings-kpi__icon"><i class="bi bi-shield-check"></i></span>
+                <div>
+                    <div class="seo-settings-kpi__label">Robots / Sitemap</div>
+                    <div class="seo-settings-kpi__value">{{ $robotsEnabled }}</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="seo-settings-shell">
+            <div class="seo-settings-shell__header">
+                <h2 class="seo-settings-shell__title">مركز إدارة الـ SEO</h2>
+                <p class="seo-settings-shell__text">اختر القسم المناسب ثم عدّل الحقول من نفس الواجهة مع تنظيم بصري أوضح.</p>
+            </div>
+
+            <ul class="nav nav-tabs seo-settings-tabs" role="tablist">
+                <li class="nav-item">
+                    <button class="nav-link {{ $activeTab === 'pages' ? 'active' : '' }}" data-bs-toggle="tab" data-bs-target="#seo-main-pages" type="button">
+                        <i class="bi bi-files"></i> الصفحات
+                    </button>
+                </li>
+                <li class="nav-item">
+                    <button class="nav-link {{ $activeTab === 'general' ? 'active' : '' }}" data-bs-toggle="tab" data-bs-target="#seo-main-general" type="button">
+                        <i class="bi bi-sliders"></i> عام
+                    </button>
+                </li>
+                <li class="nav-item">
+                    <button class="nav-link {{ $activeTab === 'blog' ? 'active' : '' }}" data-bs-toggle="tab" data-bs-target="#seo-main-blog" type="button">
+                        <i class="bi bi-journal-text"></i> المدونة
+                    </button>
+                </li>
+                <li class="nav-item">
+                    <button class="nav-link {{ $activeTab === 'robots' ? 'active' : '' }}" data-bs-toggle="tab" data-bs-target="#seo-main-robots" type="button">
+                        <i class="bi bi-diagram-3"></i> Robots & Sitemap
+                    </button>
+                </li>
+            </ul>
+
+            <div class="tab-content seo-settings-content">
+                <div class="tab-pane fade {{ $activeTab === 'pages' ? 'show active' : '' }}" id="seo-main-pages">
+                    @include('admin.homepage.seo.partials.pages-tab')
+                </div>
+                <div class="tab-pane fade {{ $activeTab === 'general' ? 'show active' : '' }}" id="seo-main-general">
+                    @include('admin.homepage.seo.partials.global-general-tab')
+                </div>
+                <div class="tab-pane fade {{ $activeTab === 'blog' ? 'show active' : '' }}" id="seo-main-blog">
+                    @include('admin.homepage.seo.partials.global-blog-tab')
+                </div>
+                <div class="tab-pane fade {{ $activeTab === 'robots' ? 'show active' : '' }}" id="seo-main-robots">
+                    @include('admin.homepage.seo.partials.global-robots-tab')
+                </div>
+            </div>
+        </div>
     </div>
 </div>
-
-<style>
-.seo-page-nav .nav-link { border-radius: 0; border-bottom: 1px solid var(--bs-border-color); padding: 0.85rem 1rem; }
-.seo-page-nav .nav-link.active { background: rgba(var(--bs-primary-rgb), 0.08); border-inline-start: 3px solid var(--bs-primary); }
-.seo-preview-google__title { font-size: 1.1rem; line-height: 1.3; }
-</style>
 @endsection
 
 @section('scripts')
-<script>
-document.addEventListener('DOMContentLoaded', function () {
-    function updateCount(el) {
-        var wrap = el.closest('.col-md-6, .col-12');
-        if (!wrap) return;
-        var counter = wrap.querySelector('.seo-char-count');
-        if (!counter) return;
-        var max = parseInt(counter.getAttribute('data-max'), 10) || 160;
-        var len = el.value.length;
-        counter.textContent = len + ' / ' + max + (max === 160 ? ' (موصى به)' : '');
-        counter.classList.toggle('text-danger', len > max);
-    }
-
-    document.querySelectorAll('.seo-count-title, .seo-count-desc').forEach(function (el) {
-        updateCount(el);
-        el.addEventListener('input', function () {
-            updateCount(el);
-            var id = el.getAttribute('data-preview-id');
-            if (!id) return;
-            var isTitle = el.classList.contains('seo-count-title');
-            document.querySelectorAll('.seo-preview-title-' + id).forEach(function (node) {
-                if (isTitle) node.textContent = el.value || 'عنوان الصفحة';
-            });
-            if (!isTitle) {
-                document.querySelectorAll('.seo-preview-desc-' + id).forEach(function (node) {
-                    node.textContent = el.value.substring(0, 160) || '';
-                });
-            }
-        });
-    });
-});
-</script>
+@include('admin.homepage.seo.partials.pages-tab-scripts')
 @endsection

@@ -56,11 +56,12 @@ class BlogPostSeoService
                 'locale' => $post->og_locale ?: 'ar_AR',
             ],
             'twitter' => [
-                'card' => $post->twitter_card ?: 'summary_large_image',
+                'card' => $post->twitter_card ?: app(GlobalSeoService::class)->twitterCardDefault(),
                 'title' => $twitterTitle,
                 'description' => $twitterDescription,
                 'image' => $twitterImage,
                 'creator' => $post->twitter_creator,
+                'site' => app(GlobalSeoService::class)->twitterSite(),
             ],
             'article' => [
                 'published_time' => $published?->toIso8601String(),
@@ -299,9 +300,7 @@ class BlogPostSeoService
 
     protected function defaultOgImage(): string
     {
-        $logo = config('seo.default_og_image', 'frontend/assets/images/logo.png');
-
-        return asset($logo);
+        return app(GlobalSeoService::class)->defaultOgImageUrl();
     }
 
     /**
@@ -316,10 +315,10 @@ class BlogPostSeoService
         $published,
         $modified
     ): array {
-        $org = config('seo.organization', []);
+        $org = app(GlobalSeoService::class)->organization();
         $orgUrl = rtrim((string) ($org['url'] ?? config('app.url', url('/'))), '/');
-        $logoPath = $org['logo'] ?? 'frontend/assets/images/logo.png';
-        $logoUrl = str_starts_with($logoPath, 'http') ? $logoPath : asset($logoPath);
+        $logoUrl = app(PageSeoService::class)->resolveImageUrl($org['logo'] ?? null)
+            ?? app(GlobalSeoService::class)->defaultOgImageUrl();
 
         $authorName = trim((string) ($post->schema_author_name ?: $post->author?->name ?: 'كلاودسوفت'));
         $authorUrl = $post->schema_author_url ?: ($post->author ? $orgUrl : null);
@@ -389,7 +388,7 @@ class BlogPostSeoService
             return $post->breadcrumb_schema;
         }
 
-        $orgUrl = rtrim((string) (config('seo.organization.url') ?? config('app.url', url('/'))), '/');
+        $orgUrl = rtrim((string) (app(GlobalSeoService::class)->organization()['url'] ?? config('app.url', url('/'))), '/');
         $items = [
             [
                 '@type' => 'ListItem',
@@ -408,18 +407,24 @@ class BlogPostSeoService
             ];
         }
 
-        $position = count($items) + 1;
-        if ($post->category?->name && Route::has('frontend.blog')) {
+        if ($post->category?->name && Route::has('frontend.blog.category') && $post->category?->slug) {
+            $categoryUrl = route('frontend.blog.category', $post->category->slug);
+        } elseif ($post->category?->name && Route::has('frontend.blog')) {
             $categoryUrl = route('frontend.blog');
-            if (! empty($post->category->slug)) {
-                $categoryUrl .= '?category='.urlencode($post->category->slug);
-            }
+        } else {
+            $categoryUrl = null;
+        }
+
+        if ($categoryUrl) {
+            $position = count($items) + 1;
             $items[] = [
                 '@type' => 'ListItem',
                 'position' => $position++,
                 'name' => $post->category->name,
                 'item' => $categoryUrl,
             ];
+        } else {
+            $position = count($items) + 1;
         }
 
         $items[] = [

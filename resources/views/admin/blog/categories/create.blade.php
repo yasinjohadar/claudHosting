@@ -5,7 +5,7 @@
 <div class="d-md-flex d-block align-items-center justify-content-between my-4 page-header-breadcrumb">
 <div><h4 class="mb-0">إضافة تصنيف جديد</h4></div>
 <div class="ms-auto"><a href="{{ route('admin.blog.categories.index') }}" class="btn btn-secondary"><i class="bi bi-arrow-right me-2"></i>رجوع</a></div></div>
-<form action="{{ route('admin.blog.categories.store') }}" method="POST">@csrf
+<form action="{{ route('admin.blog.categories.store') }}" method="POST" enctype="multipart/form-data">@csrf
 <div class="row"><div class="col-lg-8">
 <div class="card custom-card mb-4"><div class="card-header"><div class="card-title">معلومات التصنيف</div></div>
 <div class="card-body">
@@ -29,15 +29,7 @@
 <div class="mb-3"><label class="form-label">الترتيب</label>
 <input type="number" name="order" class="form-control" value="{{ old('order', 0) }}" min="0"></div>
 </div></div>
-<div class="card custom-card"><div class="card-header"><div class="card-title">إعدادات SEO</div></div>
-<div class="card-body">
-<div class="mb-3"><label class="form-label">عنوان SEO</label>
-<input type="text" name="meta_title" class="form-control" value="{{ old('meta_title') }}"></div>
-<div class="mb-3"><label class="form-label">وصف SEO</label>
-<textarea name="meta_description" rows="2" class="form-control">{{ old('meta_description') }}</textarea></div>
-<div class="mb-3"><label class="form-label">الكلمات المفتاحية</label>
-<input type="text" name="meta_keywords" class="form-control" value="{{ old('meta_keywords') }}"></div>
-</div></div>
+@include('admin.partials.seo-archive-panel', ['model' => null, 'archiveType' => 'category'])
 </div>
 <div class="col-lg-4">
 <div class="card custom-card"><div class="card-body">

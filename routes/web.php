@@ -47,11 +47,12 @@ use App\Http\Controllers\Admin\Domain\DomainHubController;
 use App\Http\Controllers\Admin\Domain\DomainSearchController;
 use App\Http\Controllers\Admin\Domain\DomainSettingsController;
 use App\Http\Controllers\Admin\InvoiceController;
-use App\Http\Controllers\Admin\MailSettingsController;
+use App\Http\Controllers\Admin\EmailSettingController;
 use App\Http\Controllers\Admin\MailTemplateController;
 use App\Http\Controllers\Admin\Namecom\NamecomDomainController;
 use App\Http\Controllers\Admin\Namecom\NamecomSettingsController;
-use App\Http\Controllers\Admin\PaymentController;
+use App\Http\Controllers\Admin\PasswordResetMessageSettingsController;
+use App\Http\Controllers\Admin\PhoneOtpSettingsController;
 use App\Http\Controllers\Admin\PackageOrderRequestController;
 use App\Http\Controllers\Admin\OfferedServiceController;
 use App\Http\Controllers\Admin\ProductController;
@@ -64,8 +65,14 @@ use App\Http\Controllers\Admin\TicketController;
 use App\Http\Controllers\Admin\UserController;
 use App\Http\Controllers\Admin\WhatsAppMessageController;
 use App\Http\Controllers\Admin\WhatsAppSettingsController;
-use App\Http\Controllers\Admin\WhatsAppWebController;
-use App\Http\Controllers\Admin\WhatsAppWebSettingsController;
+use App\Http\Controllers\Admin\EvolutionChatsController;
+use App\Http\Controllers\Admin\EvolutionContactsController;
+use App\Http\Controllers\Admin\EvolutionGroupCompareController;
+use App\Http\Controllers\Admin\EvolutionGroupsController;
+use App\Http\Controllers\Admin\EvolutionInstanceController;
+use App\Http\Controllers\Admin\EvolutionSendController;
+use App\Http\Controllers\Admin\EvolutionSettingsController;
+use App\Http\Controllers\Admin\EvolutionWebhookAdminController;
 use App\Http\Controllers\Admin\Whm\WhmAccountController;
 use App\Http\Controllers\Admin\Whm\WhmServerStatusController;
 use App\Http\Controllers\Admin\Whm\WhmSettingsController;
@@ -113,14 +120,21 @@ Route::post('login', [App\Http\Controllers\Auth\LoginController::class, 'login']
 Route::post('logout', [App\Http\Controllers\Auth\LoginController::class, 'logout'])->name('logout');
 Route::get('register', [App\Http\Controllers\Auth\RegisterController::class, 'showRegistrationForm'])->name('register');
 Route::post('register', [App\Http\Controllers\Auth\RegisterController::class, 'register']);
-Route::get('password/reset', [App\Http\Controllers\Auth\ForgotPasswordController::class, 'showLinkRequestForm'])->name('password.request');
-Route::post('password/email', [App\Http\Controllers\Auth\ForgotPasswordController::class, 'sendResetLinkEmail'])->name('password.email');
+Route::get('password/reset', [App\Http\Controllers\Auth\PasswordResetLinkController::class, 'create'])->name('password.request');
+Route::post('password/email', [App\Http\Controllers\Auth\PasswordResetLinkController::class, 'store'])->name('password.email');
+Route::post('password/otp/send', [App\Http\Controllers\Auth\PhonePasswordResetOtpController::class, 'send'])->name('password.otp.send');
+Route::post('password/otp/verify', [App\Http\Controllers\Auth\PhonePasswordResetOtpController::class, 'verify'])->name('password.otp.verify');
+Route::get('phone-login', [App\Http\Controllers\Auth\PhoneLoginController::class, 'create'])->name('phone-login');
+Route::post('phone-login/send-otp', [App\Http\Controllers\Auth\PhoneLoginController::class, 'sendOtp'])->name('phone-login.send-otp');
+Route::post('phone-login/verify', [App\Http\Controllers\Auth\PhoneLoginController::class, 'verifyAndLogin'])->name('phone-login.verify');
+Route::get('phone-otp/verify', [App\Http\Controllers\Auth\PhoneOtpController::class, 'showVerify'])->name('phone-otp.verify');
+Route::post('phone-otp/send', [App\Http\Controllers\Auth\PhoneOtpController::class, 'send'])->name('phone-otp.send');
+Route::post('phone-otp/verify', [App\Http\Controllers\Auth\PhoneOtpController::class, 'verify'])->name('phone-otp.verify.submit');
 Route::get('password/reset/{token}', [App\Http\Controllers\Auth\ResetPasswordController::class, 'showResetForm'])->name('password.reset');
 Route::post('password/reset', [App\Http\Controllers\Auth\ResetPasswordController::class, 'reset'])->name('password.update');
 
-// WhatsApp Webhook (public - no auth) for Meta to verify and send events
-Route::get('/api/webhooks/whatsapp', [App\Http\Controllers\Api\WhatsAppWebhookController::class, 'verify']);
-Route::post('/api/webhooks/whatsapp', [App\Http\Controllers\Api\WhatsAppWebhookController::class, 'handle']);
+// Evolution API Webhook (public - no auth)
+Route::post('/api/webhooks/evolution/{instance?}', [App\Http\Controllers\Api\EvolutionWebhookController::class, 'handle']);
 
 Route::get('/client/impersonate/{token}', [\App\Http\Controllers\Client\ClientImpersonationController::class, 'consume'])
     ->name('client.impersonate');
@@ -142,6 +156,10 @@ Route::middleware(['auth'])->group(function () {
         Route::get('/invoices/{invoice}/pay', [\App\Http\Controllers\Client\ClientPaymentController::class, 'payForm'])->name('invoices.pay');
         Route::post('/invoices/{invoice}/pay', [\App\Http\Controllers\Client\ClientPaymentController::class, 'payStore'])->name('invoices.pay.store');
         Route::get('/payments', [\App\Http\Controllers\Client\ClientPaymentController::class, 'index'])->name('payments.index');
+        Route::get('/profile', [\App\Http\Controllers\Client\ClientProfileController::class, 'show'])->name('profile.show');
+        Route::get('/profile/edit', [\App\Http\Controllers\Client\ClientProfileController::class, 'edit'])->name('profile.edit');
+        Route::match(['put', 'post'], '/profile', [\App\Http\Controllers\Client\ClientProfileController::class, 'update'])->name('profile.update');
+        Route::put('/profile/password', [\App\Http\Controllers\Client\ClientProfileController::class, 'updatePassword'])->name('profile.password');
         Route::prefix('coolify/projects')->name('coolify.projects.')->group(function () {
             Route::get('/{uuid}', [\App\Http\Controllers\Client\ClientCoolifyProjectController::class, 'show'])->name('show');
             Route::post('/{uuid}/applications/{appUuid}/deploy', [\App\Http\Controllers\Client\ClientCoolifyProjectController::class, 'deployApplication'])->name('applications.deploy');
@@ -227,6 +245,8 @@ Route::middleware(['auth', 'admin.panel'])->group(function () {
         Route::resource('offered-services', OfferedServiceController::class)
             ->parameters(['offered-services' => 'service']);
 
+        Route::get('customer-services/search/customers', [CustomerServiceController::class, 'searchCustomers'])
+            ->name('customer-services.search-customers');
         Route::resource('customer-services', CustomerServiceController::class)
             ->parameters(['customer-services' => 'customerService']);
         Route::post('customer-services/{customerService}/create-invoice', [CustomerServiceController::class, 'createInvoice'])
@@ -257,12 +277,35 @@ Route::middleware(['auth', 'admin.panel'])->group(function () {
         // إعدادات الموقع (تواصل، سوشيال، عام)
         Route::get('/settings', [SettingController::class, 'index'])->name('settings.index');
         Route::put('/settings', [SettingController::class, 'update'])->name('settings.update');
-        Route::prefix('mail-settings')->name('mail-settings.')->group(function () {
-            Route::get('/', [MailSettingsController::class, 'index'])->name('index');
-            Route::post('/', [MailSettingsController::class, 'update'])->name('update');
-            Route::post('/test', [MailSettingsController::class, 'testConnection'])->name('test');
+        Route::prefix('settings/email')->name('settings.email.')->group(function () {
+            Route::get('/', [EmailSettingController::class, 'index'])->name('index');
+            Route::get('/create', [EmailSettingController::class, 'create'])->name('create');
+            Route::post('/', [EmailSettingController::class, 'store'])->name('store');
+            Route::post('/test-temp', [EmailSettingController::class, 'testTemp'])->name('test-temp');
+            Route::post('/test-connection-temp', [EmailSettingController::class, 'testConnectionTemp'])->name('test-connection-temp');
+            Route::get('/provider/{provider}', [EmailSettingController::class, 'getProviderPreset'])->name('provider.preset');
+            Route::get('/{emailSetting}/edit', [EmailSettingController::class, 'edit'])->name('edit');
+            Route::put('/{emailSetting}', [EmailSettingController::class, 'update'])->name('update');
+            Route::delete('/{emailSetting}', [EmailSettingController::class, 'destroy'])->name('destroy');
+            Route::post('/{emailSetting}/activate', [EmailSettingController::class, 'activate'])->name('activate');
+            Route::post('/{emailSetting}/test-connection', [EmailSettingController::class, 'testConnection'])->name('test-connection');
+            Route::post('/{emailSetting}/test', [EmailSettingController::class, 'test'])->name('test');
         });
+        Route::redirect('/mail-settings', '/admin/settings/email')->name('mail-settings.index');
+        Route::redirect('/mail-settings/', '/admin/settings/email');
         Route::resource('mail-templates', MailTemplateController::class)->except(['show']);
+
+        Route::prefix('settings/password-reset-message')->name('settings.password-reset-message.')->group(function () {
+            Route::get('/', [PasswordResetMessageSettingsController::class, 'edit'])->name('edit');
+            Route::put('/', [PasswordResetMessageSettingsController::class, 'update'])->name('update');
+            Route::post('/restore-defaults', [PasswordResetMessageSettingsController::class, 'restoreDefaults'])->name('restore-defaults');
+        });
+
+        Route::prefix('settings/phone-otp')->name('settings.phone-otp.')->group(function () {
+            Route::get('/', [PhoneOtpSettingsController::class, 'edit'])->name('edit');
+            Route::put('/', [PhoneOtpSettingsController::class, 'update'])->name('update');
+            Route::post('/restore-defaults', [PhoneOtpSettingsController::class, 'restoreDefaults'])->name('restore-defaults');
+        });
 
         Route::prefix('homepage')->name('homepage.')->group(function () {
             Route::get('/hero', [\App\Http\Controllers\Admin\HeroSettingsController::class, 'index'])->name('hero.index');
@@ -856,6 +899,11 @@ Route::middleware(['auth', 'admin.panel'])->group(function () {
             Route::get('/', [WhatsAppSettingsController::class, 'index'])->name('index');
             Route::post('/', [WhatsAppSettingsController::class, 'update'])->name('update');
             Route::post('/test-connection', [WhatsAppSettingsController::class, 'testConnection'])->name('test-connection');
+            Route::post('/auto-reply/preview', [WhatsAppSettingsController::class, 'autoReplyPreview'])->name('auto-reply.preview');
+            Route::post('/auto-reply/test-send', [WhatsAppSettingsController::class, 'autoReplyTestSend'])->name('auto-reply.test-send');
+            Route::get('/queue-worker/status', [WhatsAppSettingsController::class, 'queueWorkerStatus'])->name('queue-worker.status');
+            Route::post('/queue-worker/start', [WhatsAppSettingsController::class, 'queueWorkerStart'])->name('queue-worker.start');
+            Route::post('/queue-worker/stop', [WhatsAppSettingsController::class, 'queueWorkerStop'])->name('queue-worker.stop');
         });
         Route::prefix('whatsapp-messages')->middleware(['role:admin'])->name('whatsapp-messages.')->group(function () {
             Route::get('/', [WhatsAppMessageController::class, 'index'])->name('index');
@@ -867,17 +915,58 @@ Route::middleware(['auth', 'admin.panel'])->group(function () {
             Route::post('/{message}/retry', [WhatsAppMessageController::class, 'retry'])->name('retry');
             Route::get('/{message}', [WhatsAppMessageController::class, 'show'])->name('show');
         });
-        Route::prefix('whatsapp-web')->middleware(['role:admin'])->name('whatsapp-web.')->group(function () {
-            Route::get('/connect', [WhatsAppWebController::class, 'connect'])->name('connect');
-            Route::post('/start-connection', [WhatsAppWebController::class, 'startConnection'])->name('start-connection');
-            Route::get('/qr/{sessionId}', [WhatsAppWebController::class, 'getQrCode'])->name('qr');
-            Route::get('/status/{sessionId}', [WhatsAppWebController::class, 'getStatus'])->name('status');
-            Route::post('/disconnect/{sessionId}', [WhatsAppWebController::class, 'disconnect'])->name('disconnect');
-        });
-        Route::prefix('whatsapp-web-settings')->middleware(['role:admin'])->name('whatsapp-web-settings.')->group(function () {
-            Route::get('/', [WhatsAppWebSettingsController::class, 'index'])->name('index');
-            Route::post('/', [WhatsAppWebSettingsController::class, 'update'])->name('update');
-            Route::post('/test-connection', [WhatsAppWebSettingsController::class, 'testConnection'])->name('test-connection');
+        // ========== Evolution API ==========
+        Route::prefix('evolution-api')->middleware(['role:admin'])->name('evolution-api.')->group(function () {
+            Route::get('/', fn () => redirect()->route('admin.evolution-api.settings.index'))->name('home');
+            Route::get('settings', [EvolutionSettingsController::class, 'index'])->name('settings.index');
+            Route::post('settings', [EvolutionSettingsController::class, 'update'])->name('settings.update');
+            Route::post('settings/test-connection', [EvolutionSettingsController::class, 'testConnection'])->name('settings.test-connection');
+
+            Route::get('instances', [EvolutionInstanceController::class, 'index'])->name('instances.index');
+            Route::post('instances/test-connection', [EvolutionInstanceController::class, 'testConnection'])->name('instances.test-connection');
+            Route::post('instances/connection', [EvolutionInstanceController::class, 'saveConnection'])->name('instances.connection');
+            Route::post('instances/register-manual', [EvolutionInstanceController::class, 'registerManual'])->name('instances.register-manual');
+            Route::post('instances/register-bulk', [EvolutionInstanceController::class, 'registerBulk'])->name('instances.register-bulk');
+            Route::post('instances', [EvolutionInstanceController::class, 'store'])->name('instances.store');
+            Route::post('instances/link', [EvolutionInstanceController::class, 'link'])->name('instances.link');
+            Route::post('instances/sync', [EvolutionInstanceController::class, 'sync'])->name('instances.sync');
+            Route::get('instances/{instanceName}/connect', [EvolutionInstanceController::class, 'connect'])->name('instances.connect');
+            Route::get('instances/{instanceName}/qr', [EvolutionInstanceController::class, 'fetchQr'])->name('instances.qr');
+            Route::get('instances/{instanceName}/status', [EvolutionInstanceController::class, 'status'])->name('instances.status');
+            Route::post('instances/{instanceName}/restart', [EvolutionInstanceController::class, 'restart'])->name('instances.restart');
+            Route::post('instances/{instanceName}/toggle-rotation', [EvolutionInstanceController::class, 'toggleRotation'])->name('instances.toggle-rotation');
+            Route::post('instances/{instanceName}/set-default', [EvolutionInstanceController::class, 'setDefault'])->name('instances.set-default');
+            Route::post('instances/{instanceName}/logout', [EvolutionInstanceController::class, 'logout'])->name('instances.logout');
+            Route::delete('instances/{instanceName}', [EvolutionInstanceController::class, 'destroy'])->name('instances.destroy');
+
+            Route::get('send/text', [EvolutionSendController::class, 'textForm'])->name('send.text');
+            Route::post('send/text', [EvolutionSendController::class, 'sendText'])->name('send.text.store');
+            Route::get('send/media', [EvolutionSendController::class, 'mediaForm'])->name('send.media');
+            Route::post('send/media', [EvolutionSendController::class, 'sendMedia'])->name('send.media.store');
+            Route::get('send/{type}', [EvolutionSendController::class, 'advancedForm'])->name('send.advanced');
+            Route::post('send/{type}', [EvolutionSendController::class, 'sendAdvanced'])->name('send.advanced.store');
+
+            Route::get('groups', [EvolutionGroupsController::class, 'index'])->name('groups.index');
+            Route::get('groups/show', [EvolutionGroupsController::class, 'show'])->name('groups.show');
+            Route::get('groups/members', [EvolutionGroupsController::class, 'members'])->name('groups.members');
+            Route::get('groups/compare', [EvolutionGroupCompareController::class, 'index'])->name('groups.compare');
+            Route::get('groups/compare/export', [EvolutionGroupCompareController::class, 'export'])->name('groups.compare.export');
+            Route::post('groups/compare/message-missing', [EvolutionGroupCompareController::class, 'messageMissing'])->name('groups.compare.message-missing');
+            Route::get('groups/compare/campaigns', [EvolutionGroupCompareController::class, 'campaigns'])->name('groups.compare.campaigns');
+            Route::get('groups/compare/campaigns/{broadcast}', [EvolutionGroupCompareController::class, 'showCampaign'])->name('groups.compare.campaigns.show');
+            Route::post('groups/send', [EvolutionGroupsController::class, 'sendMessage'])->name('groups.send');
+            Route::post('groups/send-member', [EvolutionGroupsController::class, 'sendMemberMessage'])->name('groups.send-member');
+
+            Route::get('contacts', [EvolutionContactsController::class, 'index'])->name('contacts.index');
+            Route::post('contacts/sync', [EvolutionContactsController::class, 'sync'])->name('contacts.sync');
+
+            Route::get('chats', [EvolutionChatsController::class, 'index'])->name('chats.index');
+
+            Route::get('messages', [EvolutionSendController::class, 'messagesIndex'])->name('messages.index');
+
+            Route::get('webhook', [EvolutionWebhookAdminController::class, 'index'])->name('webhook.index');
+            Route::post('webhook/url', [EvolutionWebhookAdminController::class, 'saveUrl'])->name('webhook.save-url');
+            Route::post('webhook/activate', [EvolutionWebhookAdminController::class, 'activate'])->name('webhook.activate');
         });
     });
 

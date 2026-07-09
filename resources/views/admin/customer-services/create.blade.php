@@ -4,31 +4,52 @@
 تسجيل خدمة لعميل
 @stop
 
+@push('styles')
+@include('admin.partials.domain-ui-styles')
+@endpush
+
 @section('content')
 <div class="main-content app-content">
     <div class="container-fluid">
-        <div class="d-md-flex d-block align-items-center justify-content-between my-4 page-header-breadcrumb">
-            <div>
-                <h4 class="mb-0">تسجيل خدمة لعميل</h4>
-                <nav>
-                    <ol class="breadcrumb mb-0">
-                        <li class="breadcrumb-item"><a href="{{ route('admin.customer-services.index') }}">خدمات العملاء</a></li>
-                        <li class="breadcrumb-item active">إضافة</li>
-                    </ol>
-                </nav>
-            </div>
-            <div class="ms-auto">
-                <a href="{{ route('admin.customer-services.index') }}" class="btn btn-light">العودة</a>
+        <div class="domain-page-hero">
+            <div class="d-md-flex justify-content-between align-items-start flex-wrap gap-3">
+                <div>
+                    <nav class="domain-page-hero__breadcrumb mb-2">
+                        <a href="{{ route('admin.dashboard') }}">لوحة التحكم</a>
+                        <span class="text-muted mx-1">/</span>
+                        <a href="{{ route('admin.customer-services.index') }}">خدمات العملاء</a>
+                        <span class="text-muted mx-1">/</span>
+                        <span>تسجيل</span>
+                    </nav>
+                    <h1 class="domain-page-hero__title">تسجيل خدمة لعميل</h1>
+                    <p class="text-muted small mb-0">ربط خدمة من الكتالوج بحساب عميل — الأسعار والتواريخ والحالة.</p>
+                </div>
+                <div class="d-flex flex-wrap gap-2">
+                    <a href="{{ route('admin.customer-services.index') }}" class="btn btn-light btn-sm">
+                        <i class="fe fe-arrow-right me-1"></i> العودة للقائمة
+                    </a>
+                </div>
             </div>
         </div>
 
+        @if($errors->any())
+        <div class="alert alert-danger py-2">
+            <ul class="mb-0 ps-3">
+                @foreach($errors->all() as $e)<li>{{ $e }}</li>@endforeach
+            </ul>
+        </div>
+        @endif
+
         <form action="{{ route('admin.customer-services.store') }}" method="POST">
             @csrf
-            <div class="row g-4">
+            <div class="row g-3">
                 <div class="col-xl-8">
-                    <div class="card custom-card">
-                        <div class="card-header"><div class="card-title">بيانات الخدمة</div></div>
-                        <div class="card-body">
+                    <div class="domain-panel">
+                        <div class="domain-panel__head">
+                            <span class="domain-panel__head-icon"><i class="fe fe-briefcase"></i></span>
+                            <h2 class="domain-panel__title">بيانات الخدمة</h2>
+                        </div>
+                        <div class="domain-panel__body">
                             @include('admin.customer-services.partials.form', [
                                 'customers' => $customers,
                                 'catalogServices' => $catalogServices,
@@ -36,26 +57,36 @@
                                 'selectedOfferedServiceId' => $selectedOfferedServiceId,
                             ])
                         </div>
-                        <div class="card-footer d-flex gap-2">
-                            <button type="submit" class="btn btn-primary">حفظ</button>
-                            <a href="{{ route('admin.customer-services.index') }}" class="btn btn-light">إلغاء</a>
-                        </div>
                     </div>
                 </div>
                 <div class="col-xl-4">
-                    <div class="card custom-card">
-                        <div class="card-body">
-                            <p class="text-muted small">بعد الحفظ يمكنك إنشاء فاتورة مرتبطة من صفحة التفاصيل.</p>
+                    <div class="domain-panel h-100">
+                        <div class="domain-panel__head">
+                            <span class="domain-panel__head-icon"><i class="fe fe-info"></i></span>
+                            <h2 class="domain-panel__title">معلومات</h2>
+                        </div>
+                        <div class="domain-panel__body">
+                            <p class="text-muted small mb-3">بعد الحفظ يمكنك إنشاء فاتورة مرتبطة من صفحة التفاصيل.</p>
+                            <div class="alert alert-info py-2 small mb-0">
+                                <i class="fe fe-file-text me-1"></i>
+                                اختر الخدمة من الكتالوج لتعبئة السعر والعملة تلقائياً.
+                            </div>
                         </div>
                     </div>
                 </div>
+            </div>
+            <div class="domain-form-actions">
+                <a href="{{ route('admin.customer-services.index') }}" class="btn btn-light btn-sm px-4">إلغاء</a>
+                <button type="submit" class="btn btn-primary btn-sm px-4">
+                    <i class="fe fe-save me-1"></i> حفظ
+                </button>
             </div>
         </form>
     </div>
 </div>
 @endsection
 
-@section('scripts')
+@push('scripts')
 <script>
 document.addEventListener('DOMContentLoaded', function () {
     const select = document.getElementById('offered_service_id');
@@ -79,4 +110,4 @@ document.addEventListener('DOMContentLoaded', function () {
     if (select.value) select.dispatchEvent(new Event('change'));
 });
 </script>
-@endsection
+@endpush

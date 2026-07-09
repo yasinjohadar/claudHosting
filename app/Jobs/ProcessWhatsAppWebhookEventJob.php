@@ -2,10 +2,10 @@
 
 namespace App\Jobs;
 
-use App\Events\WhatsAppMessageReceived;
 use App\Models\WhatsAppContact;
 use App\Models\WhatsAppMessage;
 use App\Models\WhatsAppWebhookEvent;
+use App\Services\WhatsApp\AutoReply\WhatsAppAutoReplyService;
 use App\Services\WhatsApp\WebhookParser;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
@@ -18,6 +18,8 @@ class ProcessWhatsAppWebhookEventJob implements ShouldQueue
 {
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
 
+    public string $queue = 'whatsapp';
+
     public int $tries = 3;
     public int $backoff = 5;
 
@@ -28,15 +30,15 @@ class ProcessWhatsAppWebhookEventJob implements ShouldQueue
     /**
      * Execute the job.
      */
-    public function handle(WebhookParser $parser): void
+    public function handle(WebhookParser $parser, WhatsAppAutoReplyService $autoReplyService): void
     {
         try {
-            $payload = $webhookEvent->payload;
+            $payload = $this->webhookEvent->payload;
             $parsed = $parser->parse($payload);
 
             // Process inbound messages
             foreach ($parsed['messages'] as $messageDTO) {
-                $this->processInboundMessage($messageDTO);
+                $this->processInboundMessage($messageDTO, $autoReplyService);
             }
 
             // Process status updates
@@ -66,25 +68,63 @@ class ProcessWhatsAppWebhookEventJob implements ShouldQueue
     /**
      * Process inbound message
      */
-    protected function processInboundMessage($messageDTO): void
+    protected function processInboundMessage($messageDTO, WhatsAppAutoReplyService $autoReplyService): void
     {
         // Find or create contact
         $contact = WhatsAppContact::findOrCreateByWaId($messageDTO->from);
         $contact->updateLastSeen();
 
-        // Create message record
-        $message = WhatsAppMessage::create([
-            'direction' => WhatsAppMessage::DIRECTION_INBOUND,
-            'contact_id' => $contact->id,
-            'meta_message_id' => $messageDTO->messageId,
-            'type' => $messageDTO->type,
-            'body' => $messageDTO->textBody,
-            'status' => WhatsAppMessage::STATUS_DELIVERED, // Inbound messages are considered delivered
-            'payload' => $messageDTO->metadata,
-        ]);
+        $instanceName = (string) ($this->webhookEvent->payload['instance'] ?? '');
+        $payload = $messageDTO->metadata ?? [];
+        $record = is_array($payload['provider_payload'] ?? null) ? $payload['provider_payload'] : [];
+        $key = is_array($record['key'] ?? null) ? $record['key'] : [];
+        $remoteJid = (string) ($key['remoteJid'] ?? '');
+        $remoteJidAlt = (string) ($key['remoteJidAlt'] ?? '');
 
-        // Dispatch event
-        event(new WhatsAppMessageReceived($message));
+        if ($instanceName !== '') {
+            $payload['evolution_instance_name'] = $instanceName;
+        }
+        $instanceUuid = (string) (data_get($record, 'instanceId') ?? data_get($this->webhookEvent->payload, 'data.instanceId') ?? '');
+        if ($instanceUuid !== '') {
+            $payload['evolution_instance_uuid'] = $instanceUuid;
+        }
+        if ($remoteJid !== '') {
+            $payload['evolution_remote_jid'] = $remoteJid;
+        }
+        if ($remoteJidAlt !== '') {
+            $payload['evolution_remote_jid_alt'] = $remoteJidAlt;
+        }
+        $payload['evolution_reply_jid'] = $messageDTO->from !== ''
+            ? $messageDTO->from
+            : ($remoteJidAlt !== '' ? $remoteJidAlt : $remoteJid);
+
+        // Avoid duplicate inbound record creation on webhook retries
+        $message = WhatsAppMessage::firstOrCreate(
+            [
+                'direction' => WhatsAppMessage::DIRECTION_INBOUND,
+                'meta_message_id' => $messageDTO->messageId,
+            ],
+            [
+                'contact_id' => $contact->id,
+                'type' => $messageDTO->type,
+                'body' => $messageDTO->textBody,
+                'status' => WhatsAppMessage::STATUS_DELIVERED,
+                'payload' => $payload,
+            ]
+        );
+
+        if (!$message->wasRecentlyCreated) {
+            return;
+        }
+
+        try {
+            $autoReplyService->scheduleForReply($message);
+        } catch (\Throwable $e) {
+            Log::channel('whatsapp')->error('AutoReply: schedule failed after inbound', [
+                'message_id' => $message->id,
+                'error' => $e->getMessage(),
+            ]);
+        }
 
         Log::channel('whatsapp')->info('Inbound message processed', [
             'message_id' => $message->id,
@@ -114,6 +154,10 @@ class ProcessWhatsAppWebhookEventJob implements ShouldQueue
             'delivered' => WhatsAppMessage::STATUS_DELIVERED,
             'read' => WhatsAppMessage::STATUS_READ,
             'failed' => WhatsAppMessage::STATUS_FAILED,
+            'message_sent' => WhatsAppMessage::STATUS_SENT,
+            'message_delivered' => WhatsAppMessage::STATUS_DELIVERED,
+            'message_read' => WhatsAppMessage::STATUS_READ,
+            'message_failed' => WhatsAppMessage::STATUS_FAILED,
         ];
 
         $newStatus = $statusMap[strtolower($statusDTO->status)] ?? WhatsAppMessage::STATUS_SENT;

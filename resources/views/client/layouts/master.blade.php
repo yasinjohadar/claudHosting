@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en" dir="ltr" data-nav-layout="vertical" data-theme-mode="light" data-header-styles="light"
+<html lang="ar" dir="rtl" data-nav-layout="vertical" data-theme-mode="light" data-header-styles="light"
     data-menu-styles="light" data-toggled="close">
 
 <head>
@@ -15,6 +15,7 @@
     <meta name="keywords" content="لوحة العميل">
 
     @include('admin.layouts.head')
+    <link rel="stylesheet" href="{{ asset('assets/css/client-portal.css') }}?v={{ @filemtime(public_path('assets/css/client-portal.css')) ?: '1' }}">
     @yield('css')
 </head>
 

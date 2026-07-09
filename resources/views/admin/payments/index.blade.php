@@ -4,170 +4,146 @@
 المدفوعات
 @stop
 
+@push('styles')
+@include('admin.partials.domain-ui-styles')
+@endpush
+
 @section('content')
 <div class="main-content app-content">
     <div class="container-fluid">
-        <div class="d-md-flex d-block align-items-center justify-content-between my-4 page-header-breadcrumb">
-            <div>
-                <h4 class="mb-0">المدفوعات</h4>
-                <nav>
-                    <ol class="breadcrumb mb-0">
-                        <li class="breadcrumb-item"><a href="{{ route('admin.dashboard') }}">الرئيسية</a></li>
-                        <li class="breadcrumb-item active">المدفوعات</li>
-                    </ol>
-                </nav>
-            </div>
-            <div class="ms-auto">
-                <a href="{{ route('admin.payments.index', ['status' => 'Pending']) }}" class="btn btn-warning">
-                    <i class="fe fe-clock"></i> مدفوعات معلّقة ({{ $stats['pending_count'] }})
-                </a>
+        <div class="domain-page-hero">
+            <div class="d-md-flex justify-content-between align-items-start flex-wrap gap-3">
+                <div>
+                    <nav class="domain-page-hero__breadcrumb mb-2">
+                        <a href="{{ route('admin.dashboard') }}">لوحة التحكم</a>
+                        <span class="text-muted mx-1">/</span>
+                        <span>المدفوعات</span>
+                    </nav>
+                    <h1 class="domain-page-hero__title">المدفوعات</h1>
+                    <p class="text-muted small mb-0">متابعة وتأكيد المدفوعات — البحث، التصفية، والمراجعة.</p>
+                </div>
+                <div class="d-flex flex-wrap gap-2">
+                    <a href="{{ route('admin.payments.index', ['status' => 'Pending']) }}" class="btn btn-warning btn-sm">
+                        <i class="fe fe-clock me-1"></i> معلّقة ({{ $stats['pending_count'] ?? 0 }})
+                    </a>
+                    <a href="{{ route('admin.invoices.index') }}" class="btn btn-light btn-sm">
+                        <i class="fe fe-file-text me-1"></i> الفواتير
+                    </a>
+                </div>
             </div>
         </div>
 
         @if(session('success'))
-            <div class="alert alert-success alert-dismissible fade show">{{ session('success') }}<button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>
+        <div class="alert alert-success py-2">{{ session('success') }}</div>
         @endif
         @if(session('error'))
-            <div class="alert alert-danger alert-dismissible fade show">{{ session('error') }}<button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>
+        <div class="alert alert-danger py-2">{{ session('error') }}</div>
         @endif
 
-        <div class="row g-3 mb-4">
-            <div class="col-md-3">
-                <div class="card custom-card">
-                    <div class="card-body">
-                        <p class="text-muted mb-1 small">إجمالي المدفوع (مكتمل)</p>
-                        <h4 class="mb-0 text-success">{{ number_format($stats['total_completed'], 2) }} ر.س</h4>
-                        <small class="text-muted">{{ $stats['completed_count'] }} عملية</small>
-                    </div>
+        <div class="domain-kpi-grid">
+            <div class="domain-kpi domain-kpi--success">
+                <span class="domain-kpi__icon"><i class="fe fe-check-circle"></i></span>
+                <div>
+                    <div class="domain-kpi__label">إجمالي المدفوع (مكتمل)</div>
+                    <div class="domain-kpi__value" dir="ltr">{{ number_format($stats['total_completed'] ?? 0, 2) }} ر.س</div>
+                    <div class="domain-kpi__sub">{{ $stats['completed_count'] ?? 0 }} عملية</div>
                 </div>
             </div>
-            <div class="col-md-3">
-                <div class="card custom-card">
-                    <div class="card-body">
-                        <p class="text-muted mb-1 small">معلّق للمراجعة</p>
-                        <h4 class="mb-0 text-warning">{{ number_format($stats['pending_amount'], 2) }} ر.س</h4>
-                        <small class="text-muted">{{ $stats['pending_count'] }} عملية</small>
-                    </div>
+            <div class="domain-kpi domain-kpi--warning">
+                <span class="domain-kpi__icon"><i class="fe fe-clock"></i></span>
+                <div>
+                    <div class="domain-kpi__label">معلّق للمراجعة</div>
+                    <div class="domain-kpi__value" dir="ltr">{{ number_format($stats['pending_amount'] ?? 0, 2) }} ر.س</div>
+                    <div class="domain-kpi__sub">{{ $stats['pending_count'] ?? 0 }} عملية</div>
                 </div>
             </div>
-            <div class="col-md-3">
-                <div class="card custom-card">
-                    <div class="card-body">
-                        <p class="text-muted mb-1 small">مدفوع هذا الشهر</p>
-                        <h4 class="mb-0">{{ number_format($stats['month_completed'], 2) }} ر.س</h4>
-                        <small class="text-muted">{{ $stats['month_count'] }} عملية</small>
-                    </div>
+            <div class="domain-kpi domain-kpi--info">
+                <span class="domain-kpi__icon"><i class="fe fe-calendar"></i></span>
+                <div>
+                    <div class="domain-kpi__label">مدفوع هذا الشهر</div>
+                    <div class="domain-kpi__value" dir="ltr">{{ number_format($stats['month_completed'] ?? 0, 2) }} ر.س</div>
+                    <div class="domain-kpi__sub">{{ $stats['month_count'] ?? 0 }} عملية</div>
                 </div>
             </div>
-            <div class="col-md-3">
-                <div class="card custom-card">
-                    <div class="card-body">
-                        <p class="text-muted mb-1 small">مدفوع اليوم</p>
-                        <h4 class="mb-0">{{ number_format($stats['today_completed'], 2) }} ر.س</h4>
-                    </div>
+            <div class="domain-kpi domain-kpi--primary">
+                <span class="domain-kpi__icon"><i class="fe fe-sun"></i></span>
+                <div>
+                    <div class="domain-kpi__label">مدفوع اليوم</div>
+                    <div class="domain-kpi__value" dir="ltr">{{ number_format($stats['today_completed'] ?? 0, 2) }} ر.س</div>
                 </div>
             </div>
         </div>
 
-        <div class="card custom-card mb-4">
-            <div class="card-body">
-                <form method="GET" class="row g-3 align-items-end">
-                    <div class="col-md-2">
-                        <label class="form-label">الحالة</label>
-                        <select name="status" class="form-select">
+        <div class="domain-panel domain-search-panel mb-3">
+            <div class="domain-panel__head">
+                <span class="domain-panel__head-icon"><i class="fe fe-filter"></i></span>
+                <h2 class="domain-panel__title">بحث وتصفية</h2>
+            </div>
+            <div class="domain-panel__body py-2">
+                <form method="GET" id="payments-filter-form" class="domain-filter-row">
+                    <div class="domain-filter-field domain-filter-field--search">
+                        <label class="domain-filter-field__label" for="payment-search">بحث</label>
+                        <div class="input-group input-group-sm">
+                            <span class="input-group-text"><i class="fe fe-search"></i></span>
+                            <input type="search" id="payment-search" name="search" class="form-control"
+                                value="{{ request('search') }}" placeholder="عميل، بريد، معاملة، فاتورة" autocomplete="off">
+                        </div>
+                    </div>
+                    <div class="domain-filter-field domain-filter-field--compact">
+                        <label class="domain-filter-field__label">الحالة</label>
+                        <select name="status" class="form-select form-select-sm">
                             <option value="">الكل</option>
                             <option value="Completed" @selected(request('status') === 'Completed')>مكتمل</option>
                             <option value="Pending" @selected(request('status') === 'Pending')>قيد الانتظار</option>
                             <option value="Cancelled" @selected(request('status') === 'Cancelled')>ملغى</option>
+                            <option value="Failed" @selected(request('status') === 'Failed')>فشل</option>
+                            <option value="Refunded" @selected(request('status') === 'Refunded')>مسترد</option>
                         </select>
                     </div>
-                    <div class="col-md-2">
-                        <label class="form-label">العميل</label>
-                        <select name="customer_id" class="form-select">
-                            <option value="">الكل</option>
-                            @foreach($customers as $c)
-                                <option value="{{ $c->id }}" @selected(request('customer_id') == $c->id)>{{ $c->fullname }}</option>
-                            @endforeach
-                        </select>
-                    </div>
-                    <div class="col-md-2">
-                        <label class="form-label">المصدر</label>
-                        <select name="initiated_by" class="form-select">
+                    <div class="domain-filter-field domain-filter-field--compact">
+                        <label class="domain-filter-field__label">المصدر</label>
+                        <select name="initiated_by" class="form-select form-select-sm">
                             <option value="">الكل</option>
                             <option value="client" @selected(request('initiated_by') === 'client')>العميل</option>
                             <option value="admin" @selected(request('initiated_by') === 'admin')>الإدارة</option>
                         </select>
                     </div>
-                    <div class="col-md-2">
-                        <label class="form-label">من تاريخ</label>
-                        <input type="date" name="date_from" class="form-control" value="{{ request('date_from') }}">
+                    <div class="domain-filter-field domain-filter-field--compact">
+                        <label class="domain-filter-field__label">من تاريخ</label>
+                        <input type="date" name="date_from" class="form-control form-control-sm" value="{{ request('date_from') }}">
                     </div>
-                    <div class="col-md-2">
-                        <label class="form-label">إلى تاريخ</label>
-                        <input type="date" name="date_to" class="form-control" value="{{ request('date_to') }}">
+                    <div class="domain-filter-field domain-filter-field--compact">
+                        <label class="domain-filter-field__label">إلى تاريخ</label>
+                        <input type="date" name="date_to" class="form-control form-control-sm" value="{{ request('date_to') }}">
                     </div>
-                    <div class="col-md-2">
-                        <label class="form-label">بحث</label>
-                        <input type="text" name="search" class="form-control" value="{{ request('search') }}" placeholder="رقم معاملة / فاتورة">
-                    </div>
-                    <div class="col-12">
-                        <button type="submit" class="btn btn-primary">تصفية</button>
-                        <a href="{{ route('admin.payments.index') }}" class="btn btn-light">إعادة ضبط</a>
+                    <div class="domain-filter-field domain-filter-field--actions">
+                        <label class="domain-filter-field__label d-none d-xl-block">&nbsp;</label>
+                        <div class="domain-filter-inline-actions">
+                            <button type="submit" class="btn btn-primary btn-sm">تطبيق</button>
+                            <button type="button" id="payments-filter-reset" class="btn btn-light btn-sm">مسح</button>
+                        </div>
                     </div>
                 </form>
             </div>
         </div>
 
-        <div class="card custom-card">
-            <div class="card-header"><div class="card-title">قائمة المدفوعات</div></div>
-            <div class="card-body p-0">
-                <div class="table-responsive">
-                    <table class="table table-hover mb-0">
-                        <thead class="table-light">
-                            <tr>
-                                <th>#</th>
-                                <th>التاريخ</th>
-                                <th>العميل</th>
-                                <th>الفاتورة</th>
-                                <th>المبلغ</th>
-                                <th>الطريقة</th>
-                                <th>المصدر</th>
-                                <th>الحالة</th>
-                                <th></th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            @forelse($payments as $payment)
-                                <tr>
-                                    <td>{{ $payment->id }}</td>
-                                    <td>{{ $payment->date?->format('Y-m-d H:i') ?? '—' }}</td>
-                                    <td>{{ $payment->customer?->fullname ?? '—' }}</td>
-                                    <td>
-                                        @if($payment->invoice)
-                                            <a href="{{ route('admin.invoices.show', $payment->invoice_id) }}">{{ $payment->invoice->invoice_number }}</a>
-                                        @else
-                                            —
-                                        @endif
-                                    </td>
-                                    <td>{{ number_format($payment->amount, 2) }} ر.س</td>
-                                    <td>{{ $payment->payment_method_name }}</td>
-                                    <td>{{ $payment->initiated_by_label }}</td>
-                                    <td><span class="badge bg-{{ $payment->status_color }}-transparent">{{ $payment->status_name }}</span></td>
-                                    <td>
-                                        <a href="{{ route('admin.payments.show', $payment) }}" class="btn btn-icon btn-sm btn-info-transparent rounded-pill"><i class="ri-eye-line"></i></a>
-                                    </td>
-                                </tr>
-                            @empty
-                                <tr><td colspan="9" class="text-center text-muted py-4">لا توجد مدفوعات.</td></tr>
-                            @endforelse
-                        </tbody>
-                    </table>
-                </div>
+        <div class="domain-dns-panel payments-list-panel">
+            <div class="domain-dns-panel__head">
+                <h2 class="domain-dns-panel__title">
+                    <i class="fe fe-credit-card text-primary"></i> قائمة المدفوعات
+                </h2>
+                <span class="domain-dns-count" id="payments-count">{{ $payments->total() }} عملية</span>
             </div>
-            @if($payments->hasPages())
-                <div class="card-footer">{{ $payments->links() }}</div>
-            @endif
+            <div id="payments-list-loading" class="users-list-loading" aria-hidden="true">
+                <span class="spinner-border spinner-border-sm text-primary" role="status"></span>
+                <span>جاري التحميل…</span>
+            </div>
+            <div id="payments-list-body">
+                @include('admin.payments.partials.list-results')
+            </div>
         </div>
     </div>
 </div>
+
+@include('admin.payments.partials.ajax-filters-script')
 @endsection

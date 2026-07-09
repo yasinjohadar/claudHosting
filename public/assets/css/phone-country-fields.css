@@ -1,0 +1,309 @@
+.phone-country-block {
+    margin-bottom: 0;
+    position: relative;
+    z-index: 1;
+}
+
+.phone-country-block:has(.phone-country-picker.is-open) {
+    z-index: 9998;
+}
+
+.phone-country-block--auth {
+    margin-bottom: 18px;
+}
+
+.phone-country-label {
+    display: block;
+    margin-bottom: 8px;
+    font-weight: 600;
+    color: #334155;
+    font-size: 0.82rem;
+}
+
+.phone-country-block--admin .phone-country-label {
+    font-size: 0.78rem;
+    font-weight: 600;
+    color: #475569;
+    margin-bottom: 6px;
+}
+
+.phone-row {
+    display: grid;
+    grid-template-columns: minmax(10rem, 0.95fr) minmax(0, 1.05fr);
+    gap: 12px;
+    align-items: start;
+}
+
+.phone-country-block--admin .phone-row {
+    gap: 10px;
+}
+
+.phone-field-wrap {
+    position: relative;
+    min-width: 0;
+    overflow: visible;
+}
+
+.phone-field-wrap input[type="tel"] {
+    width: 100%;
+}
+
+.phone-country-block--auth .phone-field-wrap input[type="tel"] {
+    padding: 13px 14px;
+    border: 1.5px solid #e2e8f0;
+    border-radius: 12px;
+    font-family: inherit;
+    font-size: 0.92rem;
+    background: #f8fafc;
+    color: #0f172a;
+    transition: border-color 0.2s, box-shadow 0.2s, background 0.2s;
+    padding-left: 16px;
+    text-align: left;
+    direction: ltr;
+}
+
+.phone-country-block--admin .phone-field-wrap input[type="tel"] {
+    text-align: left;
+    direction: ltr;
+}
+
+.phone-country-block--auth .phone-field-wrap input[type="tel"]:focus {
+    background: #fff;
+    border-color: #6366f1;
+    box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.15);
+    outline: none;
+}
+
+.phone-field-wrap.is-invalid input[type="tel"],
+.phone-country-picker.is-invalid .phone-country-picker__trigger {
+    border-color: #f87171 !important;
+}
+
+.phone-country-block--auth .phone-field-wrap.is-invalid input[type="tel"] {
+    background: #fef2f2;
+}
+
+.phone-country-hint {
+    margin-top: 8px;
+    font-size: 0.76rem;
+    color: #64748b;
+    line-height: 1.5;
+}
+
+.phone-country-hint--warn {
+    margin-top: 10px;
+    padding: 12px 14px;
+    background: linear-gradient(135deg, #fffbeb, #fef3c7);
+    border-radius: 12px;
+    border: 1px solid #fde68a;
+    font-size: 0.78rem;
+    color: #92400e;
+}
+
+.phone-country-error {
+    display: block;
+    margin-top: 4px;
+    font-size: 0.75rem;
+    color: #dc2626;
+}
+
+.phone-country-flag {
+    width: 20px;
+    height: 14px;
+    object-fit: cover;
+    border-radius: 2px;
+    box-shadow: 0 0 0 1px rgba(15, 23, 42, 0.08);
+    flex-shrink: 0;
+}
+
+/* Custom country picker */
+.phone-country-picker {
+    position: relative;
+    width: 100%;
+}
+
+.phone-country-picker__trigger {
+    position: relative;
+    width: 100%;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    border: 1px solid #dee2e6;
+    background: #fff;
+    color: #0f172a;
+    cursor: pointer;
+    text-align: left;
+    direction: ltr;
+    transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.phone-country-picker--admin .phone-country-picker__trigger {
+    min-height: 31px;
+    padding: 4px 28px 4px 8px;
+    border-radius: 0.35rem;
+    font-size: 0.8125rem;
+}
+
+.phone-country-picker--auth .phone-country-picker__trigger {
+    padding: 13px 36px 13px 14px;
+    border: 1.5px solid #e2e8f0;
+    border-radius: 12px;
+    font-size: 0.92rem;
+    background: #f8fafc;
+}
+
+.phone-country-picker.is-open .phone-country-picker__trigger,
+.phone-country-picker__trigger:focus {
+    outline: none;
+    border-color: #86b7fe;
+    box-shadow: 0 0 0 0.2rem rgba(13, 110, 253, 0.15);
+}
+
+.phone-country-picker--auth.is-open .phone-country-picker__trigger,
+.phone-country-picker--auth .phone-country-picker__trigger:focus {
+    background: #fff;
+    border-color: #6366f1;
+    box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.15);
+}
+
+.phone-country-picker__trigger-text {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    min-width: 0;
+    flex: 1;
+}
+
+.phone-country-picker__trigger-code {
+    font-weight: 700;
+    color: #0f172a;
+    flex-shrink: 0;
+}
+
+.phone-country-picker__trigger-name {
+    color: #475569;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.phone-country-picker__chevron {
+    position: absolute;
+    left: 10px;
+    top: 50%;
+    width: 8px;
+    height: 8px;
+    border-right: 2px solid #64748b;
+    border-bottom: 2px solid #64748b;
+    transform: translateY(-65%) rotate(45deg);
+    pointer-events: none;
+}
+
+.phone-country-picker--auth .phone-country-picker__chevron {
+    left: 14px;
+}
+
+.phone-country-picker__panel {
+    position: absolute;
+    top: calc(100% + 4px);
+    right: 0;
+    left: 0;
+    z-index: 9999;
+    background: #fff;
+    border: 1px solid #e2e8f0;
+    border-radius: 10px;
+    box-shadow: 0 12px 32px rgba(15, 23, 42, 0.14);
+    overflow: hidden;
+}
+
+.phone-country-picker__panel.is-fixed {
+    position: fixed;
+    right: auto;
+    z-index: 9999;
+}
+
+/* السماح للقائمة بالظهور فوق البطاقات في لوحة التحكم */
+.domain-panel:has(.phone-country-picker.is-open),
+.domain-panel__body:has(.phone-country-picker.is-open) {
+    overflow: visible;
+}
+
+.domain-panel:has(.phone-country-picker.is-open) {
+    position: relative;
+    z-index: 200;
+}
+
+.phone-country-picker__search-wrap {
+    padding: 8px;
+    border-bottom: 1px solid #f1f5f9;
+    background: #f8fafc;
+}
+
+.phone-country-picker__search {
+    width: 100%;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    padding: 8px 10px;
+    font-size: 0.8125rem;
+    direction: rtl;
+    background: #fff;
+}
+
+.phone-country-picker__search:focus {
+    outline: none;
+    border-color: #86b7fe;
+    box-shadow: 0 0 0 0.15rem rgba(13, 110, 253, 0.12);
+}
+
+.phone-country-picker__list {
+    list-style: none;
+    margin: 0;
+    padding: 6px;
+    max-height: 220px;
+    overflow-y: auto;
+}
+
+.phone-country-picker__option {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 10px;
+    border-radius: 8px;
+    cursor: pointer;
+    direction: ltr;
+    text-align: left;
+    color: #0f172a;
+    font-size: 0.8125rem;
+}
+
+.phone-country-picker__option:hover,
+.phone-country-picker__option.is-selected {
+    background: #eff6ff;
+}
+
+.phone-country-picker__option-code {
+    font-weight: 700;
+    min-width: 2.75rem;
+    flex-shrink: 0;
+}
+
+.phone-country-picker__option-name {
+    color: #475569;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.phone-country-picker__empty {
+    margin: 0;
+    padding: 12px;
+    text-align: center;
+    font-size: 0.78rem;
+    color: #94a3b8;
+}
+
+@media (max-width: 520px) {
+    .phone-row {
+        grid-template-columns: 1fr;
+    }
+}

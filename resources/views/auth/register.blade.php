@@ -4,7 +4,7 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="csrf-token" content="{{ csrf_token() }}">
-    <title>إنشاء حساب جديد - استضافة كلاودسوفت</title>
+    <title>إنشاء حساب جديد - كلاودسوفت</title>
     <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <style>
         :root {
@@ -288,17 +288,17 @@
     <div class="login-wrapper">
         <div class="login-graphic">
             <div class="graphic-content">
-                <img src="{{ asset('frontend/assets/images/logo.png') }}" alt="استضافة كلاودسوفت" class="graphic-logo" width="80" height="80" style="margin-bottom: 24px;">
+                <img src="{{ asset('frontend/assets/images/logo.png') }}" alt="كلاودسوفت" class="graphic-logo" width="80" height="80" style="margin-bottom: 24px;">
                 <h2>انضم إلينا</h2>
-                <p>أنشئ حسابك لتتمكن من طلب الباقات ومتابعة خدماتك — استضافة كلاودسوفت</p>
+                <p>أنشئ حسابك لتتمكن من طلب الباقات ومتابعة خدماتك</p>
             </div>
         </div>
 
         <div class="login-container">
             <div class="logo">
-                <img src="{{ asset('frontend/assets/images/logo.png') }}" alt="شعار استضافة كلاودسوفت">
+                <img src="{{ asset('frontend/assets/images/logo.png') }}" alt="كلاودسوفت">
                 <div>
-                    <h1>استضافة كلاودسوفت</h1>
+                    <h1>كلاودسوفت - لوحة التحكم</h1>
                     <p>إنشاء حساب جديد</p>
                 </div>
             </div>
@@ -352,7 +352,7 @@
             </form>
 
             <div class="footer">
-                <p>&copy; {{ date('Y') }} استضافة كلاودسوفت. جميع الحقوق محفوظة.</p>
+                <p>&copy; {{ date('Y') }} كلاودسوفت. جميع الحقوق محفوظة.</p>
             </div>
         </div>
     </div>

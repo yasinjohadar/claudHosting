@@ -10,13 +10,7 @@
                     <!-- Start::header-element -->
                     <div class="header-element">
                         <div class="horizontal-logo">
-                            <a href="index.html" class="header-logo">
-                          <img src="{{ asset('assets/images/brand-logos/desktop-logo.png') }}" alt="logo" class="desktop-logo">
-                            <img src="{{ asset('assets/images/brand-logos/toggle-logo.png') }}" alt="logo" class="toggle-logo">
-                            <img src="{{ asset('assets/images/brand-logos/desktop-white.png') }}" alt="logo" class="desktop-white">
-                            <img src="{{ asset('assets/images/brand-logos/toggle-white.png') }}" alt="logo" class="toggle-white">
-
-                            </a>
+                            @include('partials.app-brand', ['brandContext' => 'header'])
                         </div>
                     </div>
                     <!-- End::header-element -->
@@ -184,7 +178,12 @@
                                 </div>
                             </li>
                             <li>
-                                <a class="dropdown-item d-flex" href="{{ route('profile.show') }}">
+                                @php
+                                    $profileRoute = request()->is('client*') || request()->routeIs('client.*')
+                                        ? 'client.profile.show'
+                                        : 'profile.show';
+                                @endphp
+                                <a class="dropdown-item d-flex" href="{{ route($profileRoute) }}">
                                     <i class="bx bx-user-circle fs-18 me-2 op-7"></i>الملف الشخصي
                                 </a>
                             </li>

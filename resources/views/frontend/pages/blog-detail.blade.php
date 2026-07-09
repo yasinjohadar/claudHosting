@@ -22,7 +22,7 @@
                         </div>
                         <div style="display:flex; gap:10px; flex-wrap:wrap; margin-bottom:15px;">
                             @if($post->category)
-                            <span class="bd-category"><i class="fas fa-folder"></i> {{ $post->category->name }}</span>
+                            <a href="{{ $post->category->url }}" class="bd-category"><i class="fas fa-folder"></i> {{ $post->category->name }}</a>
                             @endif
                             <span class="bd-date"><i class="fas fa-calendar-alt"></i> {{ $post->published_at?->translatedFormat('d F Y') ?? $post->created_at->format('Y-m-d') }}</span>
                             @if($post->reading_time)
@@ -50,7 +50,7 @@
                         <div class="bd-tags">
                             <span class="bd-tag-label"><i class="fas fa-tags"></i> الوسوم:</span>
                             @foreach($post->tags as $tag)
-                            <a href="{{ route('frontend.blog') }}?tag={{ $tag->slug }}" class="bd-tag">{{ $tag->name }}</a>
+                            <a href="{{ $tag->url }}" class="bd-tag">{{ $tag->name }}</a>
                             @endforeach
                         </div>
                         @endif

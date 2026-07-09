@@ -4,57 +4,84 @@
 الفواتير
 @stop
 
-@section('css')
-@include('client.partials.portal-ui-styles')
-@endsection
-
 @section('content')
+@php
+    $invoiceList = $invoices instanceof \Illuminate\Pagination\LengthAwarePaginator
+        ? $invoices->getCollection()
+        : collect($invoices);
+    $invoiceCount = $invoices instanceof \Illuminate\Pagination\LengthAwarePaginator
+        ? $invoices->total()
+        : $invoiceList->count();
+    $unpaidCount = $invoiceList->where('status', 'Unpaid')->count();
+    $paidCount = $invoiceList->where('status', 'Paid')->count();
+@endphp
 <div class="main-content app-content">
     <div class="container-fluid">
-        <div class="client-portal-hero d-md-flex align-items-center justify-content-between flex-wrap gap-3 my-4">
+        <div class="client-portal-hero d-md-flex align-items-center justify-content-between flex-wrap gap-3">
             <div>
-                <h4 class="mb-1 fw-semibold">فواتيري</h4>
-                <nav>
-                    <ol class="breadcrumb mb-0 small">
-                        <li class="breadcrumb-item"><a href="{{ route('client.dashboard') }}">الرئيسية</a></li>
-                        <li class="breadcrumb-item active" aria-current="page">الفواتير</li>
-                    </ol>
+                <nav class="client-portal-breadcrumb mb-2">
+                    <a href="{{ route('client.dashboard') }}">الرئيسية</a>
+                    <span class="text-muted mx-1">/</span>
+                    <span>الفواتير</span>
                 </nav>
+                <h4 class="mb-1">فواتيري</h4>
+                <p class="text-muted small mb-0">عرض الفواتير والسداد من مكان واحد.</p>
             </div>
-            @if($hasCustomerProfile && ($invoices instanceof \Illuminate\Pagination\LengthAwarePaginator ? $invoices->total() : $invoices->count()) > 0)
-                <span class="client-stat-pill">
-                    <i class="fe fe-file-text text-info"></i>
-                    {{ $invoices instanceof \Illuminate\Pagination\LengthAwarePaginator ? $invoices->total() : $invoices->count() }} فاتورة
+            <div class="d-flex flex-wrap gap-2">
+                @if($hasCustomerProfile && $invoiceCount > 0)
+                <span class="client-stat-pill text-primary">
+                    <i class="fe fe-file-text"></i>{{ $invoiceCount }} فاتورة
                 </span>
-            @endif
+                <span class="client-stat-pill">
+                    <i class="fe fe-check-circle text-success"></i>{{ $paidCount }} مدفوعة
+                </span>
+                <span class="client-stat-pill">
+                    <i class="fe fe-alert-circle text-danger"></i>{{ $unpaidCount }} غير مدفوعة
+                </span>
+                @endif
+            </div>
         </div>
 
         @if(!$hasCustomerProfile)
-            <div class="alert alert-warning border-0 shadow-sm d-flex align-items-start gap-2">
-                <i class="fe fe-alert-triangle fs-18 mt-1"></i>
-                <div>
-                    <strong>الحساب غير مربوط بعد</strong>
-                    <p class="mb-0 small">تواصل مع الدعم لربط حسابك بملف العميل وعرض الفواتير.</p>
-                </div>
+        <div class="client-portal-alert client-portal-alert--warn mb-3">
+            <span class="client-portal-alert__icon"><i class="fe fe-alert-triangle"></i></span>
+            <div>
+                <strong>الحساب غير مربوط بعد</strong>
+                <p class="mb-0 small">تواصل مع الدعم لربط حسابك بملف العميل وعرض الفواتير.</p>
             </div>
+        </div>
         @endif
 
-        <div class="card custom-card client-service-panel border-0">
-            <div class="card-body p-0">
+        <div class="client-services-shell">
+            <div class="client-services-panel-head">
+                <h2 class="client-services-panel-head__title">
+                    <i class="fe fe-file-text"></i> قائمة الفواتير
+                </h2>
+                <span class="client-services-panel-head__meta">{{ $invoiceCount }} فاتورة</span>
+            </div>
+
+            @if($invoiceList->isEmpty())
+                @include('client.partials.services-empty', [
+                    'icon' => 'fe-file-text',
+                    'message' => $hasCustomerProfile
+                        ? 'لا توجد فواتير مسجّلة لحسابك.'
+                        : 'لا تتوفر فواتير لعرضها.',
+                ])
+            @else
                 <div class="table-responsive">
-                    <table class="table table-hover mb-0 client-invoice-table">
-                        <thead class="table-light">
+                    <table class="table client-services-table client-invoice-table mb-0">
+                        <thead>
                             <tr>
                                 <th>رقم الفاتورة</th>
                                 <th>التاريخ</th>
                                 <th>الاستحقاق</th>
                                 <th>المبلغ</th>
                                 <th>الحالة</th>
-                                <th class="text-center">إجراء</th>
+                                <th class="text-end">إجراء</th>
                             </tr>
                         </thead>
                         <tbody>
-                            @forelse($invoices as $inv)
+                            @foreach($invoices as $inv)
                                 <tr>
                                     <td>
                                         <span class="fw-semibold">{{ $inv->invoice_number }}</span>
@@ -62,7 +89,7 @@
                                     <td class="text-muted">{{ $inv->date?->format('Y-m-d') ?? '—' }}</td>
                                     <td class="text-muted">{{ $inv->duedate?->format('Y-m-d') ?? '—' }}</td>
                                     <td>
-                                        <span class="fw-medium">{{ number_format($inv->total ?? 0, 2) }}</span>
+                                        <span class="fw-semibold">{{ number_format($inv->total ?? 0, 2) }}</span>
                                         <span class="text-muted small">{{ $inv->currency }}</span>
                                     </td>
                                     <td>
@@ -76,34 +103,20 @@
                                             <span class="badge bg-warning-transparent">{{ $inv->status_name }}</span>
                                         @endif
                                     </td>
-                                    <td class="text-center">
-                                        <a href="{{ route('client.invoices.show', $inv) }}" class="btn btn-sm btn-primary-light rounded-pill px-3">
+                                    <td class="text-end">
+                                        <a href="{{ route('client.invoices.show', $inv) }}" class="btn btn-primary btn-sm rounded-pill px-3">
                                             عرض
                                         </a>
                                     </td>
                                 </tr>
-                            @empty
-                                <tr>
-                                    <td colspan="6">
-                                        <div class="client-empty-state py-5">
-                                            <i class="fe fe-file-text"></i>
-                                            <p class="mb-0">
-                                                @if($hasCustomerProfile)
-                                                    لا توجد فواتير مسجّلة لحسابك.
-                                                @else
-                                                    لا تتوفر فواتير لعرضها.
-                                                @endif
-                                            </p>
-                                        </div>
-                                    </td>
-                                </tr>
-                            @endforelse
+                            @endforeach
                         </tbody>
                     </table>
                 </div>
-            </div>
+            @endif
+
             @if($hasCustomerProfile && $invoices instanceof \Illuminate\Contracts\Pagination\LengthAwarePaginator && $invoices->hasPages())
-                <div class="card-footer bg-transparent border-top">
+                <div class="client-portal-pagination">
                     {{ $invoices->links() }}
                 </div>
             @endif
@@ -111,4 +124,3 @@
     </div>
 </div>
 @endsection
-

@@ -19,8 +19,22 @@ class User extends Authenticatable
      */
     protected $fillable = [
         'name',
+        'username',
         'email',
+        'phone',
+        'country_code',
+        'companyname',
+        'address1',
+        'address2',
+        'city',
+        'state',
+        'postcode',
+        'country',
         'password',
+        'status',
+        'is_active',
+        'photo',
+        'created_by',
     ];
 
     /**
@@ -81,6 +95,15 @@ class User extends Authenticatable
     public function clientCoolifyTeam()
     {
         return $this->hasOne(ClientCoolifyTeam::class);
+    }
+
+    public function photoUrl(): string
+    {
+        if (empty($this->photo)) {
+            return asset('assets/images/faces/default-avatar.jpg');
+        }
+
+        return asset('storage/'.$this->photo);
     }
 
     public function isAdminPanelUser(): bool

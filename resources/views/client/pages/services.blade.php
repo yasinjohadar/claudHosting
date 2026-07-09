@@ -4,10 +4,6 @@
 الخدمات
 @stop
 
-@section('css')
-@include('client.partials.portal-ui-styles')
-@endsection
-
 @section('content')
 @php
     $domainCount = $domains->count();
@@ -18,9 +14,9 @@
 @endphp
 <div class="main-content app-content">
     <div class="container-fluid">
-        <div class="client-portal-hero d-md-flex align-items-center justify-content-between flex-wrap gap-3 my-4">
+        <div class="client-portal-hero d-md-flex align-items-center justify-content-between flex-wrap gap-3">
             <div>
-                <h4 class="mb-1 fw-semibold">خدماتي</h4>
+                <h4 class="mb-1">خدماتي</h4>
                 <p class="text-muted small mb-0">كل الخدمات المرتبطة بحسابك في مكان واحد.</p>
             </div>
             <div class="d-flex flex-wrap gap-2">
@@ -36,193 +32,207 @@
             </div>
         </div>
 
-        <div class="card custom-card client-services-card">
-            <div class="card-header client-services-card__header">
-                <ul class="nav nav-tabs client-services-tabs card-header-tabs flex-nowrap overflow-auto" id="servicesTabs" role="tablist">
+        <div class="client-services-shell">
+            <div class="client-services-toolbar">
+                <ul class="nav client-services-tabs" id="servicesTabs" role="tablist">
                     <li class="nav-item" role="presentation">
-                        <button class="nav-link active" id="tab-domains-btn" data-bs-toggle="tab" data-bs-target="#pane-domains"
-                            type="button" role="tab" aria-controls="pane-domains" aria-selected="true" data-hash="domains">
-                            <i class="fe fe-globe me-1"></i>النطاقات
-                            <span class="badge bg-primary-transparent ms-1">{{ $domainCount }}</span>
+                        <button class="nav-link active client-services-tab client-services-tab--domains" id="tab-domains-btn"
+                            data-bs-toggle="tab" data-bs-target="#pane-domains" type="button" role="tab"
+                            aria-controls="pane-domains" aria-selected="true" data-hash="domains">
+                            <span class="client-services-tab__icon"><i class="fe fe-globe"></i></span>
+                            <span class="client-services-tab__text">
+                                <span class="client-services-tab__label">النطاقات</span>
+                                <span class="client-services-tab__count">{{ $domainCount }}</span>
+                            </span>
                         </button>
                     </li>
                     <li class="nav-item" role="presentation">
-                        <button class="nav-link" id="tab-projects-btn" data-bs-toggle="tab" data-bs-target="#pane-projects"
-                            type="button" role="tab" aria-controls="pane-projects" aria-selected="false" data-hash="projects">
-                            <i class="fe fe-layers me-1"></i>Coolify
-                            <span class="badge bg-secondary-transparent ms-1">{{ $projectCount }}</span>
+                        <button class="nav-link client-services-tab client-services-tab--coolify" id="tab-projects-btn"
+                            data-bs-toggle="tab" data-bs-target="#pane-projects" type="button" role="tab"
+                            aria-controls="pane-projects" aria-selected="false" data-hash="projects">
+                            <span class="client-services-tab__icon"><i class="fe fe-layers"></i></span>
+                            <span class="client-services-tab__text">
+                                <span class="client-services-tab__label">Coolify</span>
+                                <span class="client-services-tab__count">{{ $projectCount }}</span>
+                            </span>
                         </button>
                     </li>
                     <li class="nav-item" role="presentation">
-                        <button class="nav-link" id="tab-wordpress-btn" data-bs-toggle="tab" data-bs-target="#pane-wordpress"
-                            type="button" role="tab" aria-controls="pane-wordpress" aria-selected="false" data-hash="wordpress">
-                            <i class="fe fe-layout me-1"></i>WordPress
-                            <span class="badge bg-info-transparent ms-1">{{ $wordpressCount }}</span>
+                        <button class="nav-link client-services-tab client-services-tab--wordpress" id="tab-wordpress-btn"
+                            data-bs-toggle="tab" data-bs-target="#pane-wordpress" type="button" role="tab"
+                            aria-controls="pane-wordpress" aria-selected="false" data-hash="wordpress">
+                            <span class="client-services-tab__icon"><i class="fe fe-layout"></i></span>
+                            <span class="client-services-tab__text">
+                                <span class="client-services-tab__label">WordPress</span>
+                                <span class="client-services-tab__count">{{ $wordpressCount }}</span>
+                            </span>
                         </button>
                     </li>
                     <li class="nav-item" role="presentation">
-                        <button class="nav-link" id="tab-hosting-btn" data-bs-toggle="tab" data-bs-target="#pane-hosting"
-                            type="button" role="tab" aria-controls="pane-hosting" aria-selected="false" data-hash="hosting">
-                            <i class="fe fe-server me-1"></i>cPanel
-                            <span class="badge bg-warning-transparent ms-1">{{ $hostingCount }}</span>
+                        <button class="nav-link client-services-tab client-services-tab--hosting" id="tab-hosting-btn"
+                            data-bs-toggle="tab" data-bs-target="#pane-hosting" type="button" role="tab"
+                            aria-controls="pane-hosting" aria-selected="false" data-hash="hosting">
+                            <span class="client-services-tab__icon"><i class="fe fe-server"></i></span>
+                            <span class="client-services-tab__text">
+                                <span class="client-services-tab__label">cPanel</span>
+                                <span class="client-services-tab__count">{{ $hostingCount }}</span>
+                            </span>
                         </button>
                     </li>
                 </ul>
             </div>
-            <div class="card-body p-0">
-                <div class="tab-content" id="servicesTabContent">
-                    {{-- النطاقات --}}
-                    <div class="tab-pane fade show active" id="pane-domains" role="tabpanel" aria-labelledby="tab-domains-btn" tabindex="0">
-                        <div class="table-responsive">
-                            <table class="table table-hover client-services-table mb-0">
-                                <thead>
-                                    <tr>
-                                        <th>النطاق</th>
-                                        <th>المصادر</th>
-                                        <th>الانتهاء</th>
-                                        <th class="text-end">الحالة</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    @forelse($domains as $row)
-                                        <tr>
-                                            <td class="fw-semibold" dir="ltr">{{ $row['display_name'] ?? $row['name'] }}</td>
-                                            <td>
-                                                @foreach($row['sources'] ?? [] as $src)
-                                                    <span class="badge {{ $src['badge'] ?? 'bg-secondary-transparent' }} me-1">{{ $src['label'] }}</span>
-                                                @endforeach
-                                            </td>
-                                            <td class="text-muted">{{ $row['expires_formatted'] ?? '—' }}</td>
-                                            <td class="text-end">
-                                                <span class="badge {{ $row['status_badge'] ?? 'bg-secondary-transparent' }}">{{ $row['status_label'] ?? '—' }}</span>
-                                            </td>
-                                        </tr>
-                                    @empty
-                                        <tr>
-                                            <td colspan="4" class="client-empty-state">لا توجد نطاقات مرتبطة بحسابك.</td>
-                                        </tr>
-                                    @endforelse
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
 
-                    {{-- Coolify --}}
-                    <div class="tab-pane fade" id="pane-projects" role="tabpanel" aria-labelledby="tab-projects-btn" tabindex="0">
-                        <div class="table-responsive">
-                            <table class="table table-hover client-services-table mb-0">
-                                <thead>
-                                    <tr>
-                                        <th>المشروع</th>
-                                        <th>المعرّف</th>
-                                        <th class="text-end">الحالة</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    @forelse($projects as $proj)
-                                        <tr>
-                                            <td class="fw-semibold">
-                                                <a href="{{ route('client.coolify.projects.show', $proj['uuid']) }}" class="text-decoration-none">
-                                                    {{ $proj['name'] }}
-                                                </a>
-                                            </td>
-                                            <td><span class="client-uuid-chip" dir="ltr" title="{{ $proj['uuid'] }}">{{ $proj['uuid'] }}</span></td>
-                                            <td class="text-end"><span class="badge bg-success-transparent">مرتبط</span></td>
-                                        </tr>
-                                    @empty
-                                        <tr>
-                                            <td colspan="3" class="client-empty-state">لا توجد مشاريع Coolify مرتبطة بحسابك.</td>
-                                        </tr>
-                                    @endforelse
-                                </tbody>
-                            </table>
-                        </div>
+            <div class="tab-content client-services-panels" id="servicesTabContent">
+                <div class="tab-pane fade show active" id="pane-domains" role="tabpanel" aria-labelledby="tab-domains-btn" tabindex="0">
+                    <div class="client-services-panel-head">
+                        <h2 class="client-services-panel-head__title"><i class="fe fe-globe"></i> النطاقات المرتبطة</h2>
+                        <span class="client-services-panel-head__meta">{{ $domainCount }} نطاق</span>
                     </div>
+                    @if($domains->isEmpty())
+                        @include('client.partials.services-empty', ['icon' => 'fe-globe', 'message' => 'لا توجد نطاقات مرتبطة بحسابك.'])
+                    @else
+                        <div class="client-services-grid client-services-grid--cols-4">
+                            <div class="client-services-grid__row client-services-grid__row--head">
+                                <div class="client-services-grid__cell">النطاق</div>
+                                <div class="client-services-grid__cell">المصادر</div>
+                                <div class="client-services-grid__cell">الانتهاء</div>
+                                <div class="client-services-grid__cell">الحالة</div>
+                            </div>
+                            @foreach($domains as $row)
+                                <div class="client-services-grid__row">
+                                    <div class="client-services-grid__cell client-services-grid__cell--ltr fw-semibold">{{ $row['display_name'] ?? $row['name'] }}</div>
+                                    <div class="client-services-grid__cell">
+                                        @foreach($row['sources'] ?? [] as $src)
+                                            <span class="badge {{ $src['badge'] ?? 'bg-secondary-transparent' }} me-1">{{ $src['label'] }}</span>
+                                        @endforeach
+                                    </div>
+                                    <div class="client-services-grid__cell text-muted">{{ $row['expires_formatted'] ?? '—' }}</div>
+                                    <div class="client-services-grid__cell">
+                                        <span class="badge {{ $row['status_badge'] ?? 'bg-secondary-transparent' }}">{{ $row['status_label'] ?? '—' }}</span>
+                                    </div>
+                                </div>
+                            @endforeach
+                        </div>
+                    @endif
+                </div>
 
-                    {{-- WordPress --}}
-                    <div class="tab-pane fade" id="pane-wordpress" role="tabpanel" aria-labelledby="tab-wordpress-btn" tabindex="0">
-                        <div class="table-responsive">
-                            <table class="table table-hover client-services-table mb-0">
-                                <thead>
-                                    <tr>
-                                        <th>الاسم</th>
-                                        <th>الرابط</th>
-                                        <th>الحالة</th>
-                                        <th class="text-end">إجراء</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    @forelse($wordpressSites as $site)
-                                        <tr>
-                                            <td class="fw-semibold">{{ $site->display_name }}</td>
-                                            <td dir="ltr">
-                                                @if($site->public_url)
-                                                <a href="{{ $site->public_url }}" target="_blank" rel="noopener" class="small">{{ $site->slug }}</a>
-                                                @else
-                                                <code class="small">{{ $site->slug }}</code>
-                                                @endif
-                                            </td>
-                                            <td>
-                                                <span class="badge bg-{{ $site->status === 'running' ? 'success' : 'secondary' }}-transparent">
-                                                    {{ \App\Models\CoolifyWordpressSite::STATUSES[$site->status] ?? $site->status }}
-                                                </span>
-                                            </td>
-                                            <td class="text-end">
-                                                <a href="{{ route('client.wordpress-sites.show', $site->uuid) }}" class="btn btn-primary btn-sm">إدارة</a>
-                                            </td>
-                                        </tr>
-                                    @empty
-                                        <tr>
-                                            <td colspan="4" class="client-empty-state">لا توجد مواقع WordPress مخصصة لحسابك.</td>
-                                        </tr>
-                                    @endforelse
-                                </tbody>
-                            </table>
-                        </div>
+                <div class="tab-pane fade" id="pane-projects" role="tabpanel" aria-labelledby="tab-projects-btn" tabindex="0">
+                    <div class="client-services-panel-head">
+                        <h2 class="client-services-panel-head__title"><i class="fe fe-layers"></i> مشاريع Coolify</h2>
+                        <span class="client-services-panel-head__meta">{{ $projectCount }} مشروع</span>
                     </div>
+                    @if(empty($projects))
+                        @include('client.partials.services-empty', ['icon' => 'fe-layers', 'message' => 'لا توجد مشاريع Coolify مرتبطة بحسابك.'])
+                    @else
+                        <div class="client-services-grid client-services-grid--cols-3">
+                            <div class="client-services-grid__row client-services-grid__row--head">
+                                <div class="client-services-grid__cell">المشروع</div>
+                                <div class="client-services-grid__cell">المعرّف</div>
+                                <div class="client-services-grid__cell">الحالة</div>
+                            </div>
+                            @foreach($projects as $proj)
+                                <div class="client-services-grid__row">
+                                    <div class="client-services-grid__cell fw-semibold">
+                                        <a href="{{ route('client.coolify.projects.show', $proj['uuid']) }}" class="client-services-link">
+                                            {{ $proj['name'] }}
+                                        </a>
+                                    </div>
+                                    <div class="client-services-grid__cell client-services-grid__cell--ltr">
+                                        <span class="client-uuid-chip" title="{{ $proj['uuid'] }}">{{ $proj['uuid'] }}</span>
+                                    </div>
+                                    <div class="client-services-grid__cell">
+                                        <span class="badge bg-success-transparent">مرتبط</span>
+                                    </div>
+                                </div>
+                            @endforeach
+                        </div>
+                    @endif
+                </div>
 
-                    {{-- cPanel --}}
-                    <div class="tab-pane fade" id="pane-hosting" role="tabpanel" aria-labelledby="tab-hosting-btn" tabindex="0">
-                        <div class="table-responsive">
-                            <table class="table table-hover client-services-table mb-0">
-                                <thead>
-                                    <tr>
-                                        <th>النطاق</th>
-                                        <th>المستخدم</th>
-                                        <th>الباقة</th>
-                                <th>البريد</th>
-                                <th>نهاية الاشتراك</th>
-                                <th class="text-end">الحالة</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    @forelse($hosting as $acc)
-                                        <tr>
-                                            <td dir="ltr">
-                                                @if($url = $acc->site_url)
-                                                    <a href="{{ $url }}" target="_blank" rel="noopener" class="fw-semibold text-decoration-none">{{ $acc->domain }}</a>
-                                                @else
-                                                    <span class="fw-semibold">{{ $acc->domain ?? '—' }}</span>
-                                                @endif
-                                            </td>
-                                            <td dir="ltr"><code class="text-muted">{{ $acc->username }}</code></td>
-                                            <td>{{ $acc->package ?: '—' }}</td>
-                                            <td class="text-muted small" dir="ltr">{{ $acc->display_email ?? '—' }}</td>
-                                            <td class="text-end">
-                                                <span class="badge bg-{{ $acc->status === 'active' ? 'success' : 'warning' }}-transparent">
-                                                    {{ $acc->status_label }}
-                                                </span>
-                                            </td>
-                                        </tr>
-                                    @empty
-                                        <tr>
-                                            <td colspan="6" class="client-empty-state">لا توجد حسابات استضافة مرتبطة بحسابك.</td>
-                                        </tr>
-                                    @endforelse
-                                </tbody>
-                            </table>
-                        </div>
+                <div class="tab-pane fade" id="pane-wordpress" role="tabpanel" aria-labelledby="tab-wordpress-btn" tabindex="0">
+                    <div class="client-services-panel-head">
+                        <h2 class="client-services-panel-head__title"><i class="fe fe-layout"></i> مواقع WordPress</h2>
+                        <span class="client-services-panel-head__meta">{{ $wordpressCount }} موقع</span>
                     </div>
+                    @if($wordpressSites->isEmpty())
+                        @include('client.partials.services-empty', ['icon' => 'fe-layout', 'message' => 'لا توجد مواقع WordPress مخصصة لحسابك.'])
+                    @else
+                        <div class="client-services-grid client-services-grid--cols-4">
+                            <div class="client-services-grid__row client-services-grid__row--head">
+                                <div class="client-services-grid__cell">الاسم</div>
+                                <div class="client-services-grid__cell">الرابط</div>
+                                <div class="client-services-grid__cell">الحالة</div>
+                                <div class="client-services-grid__cell">إجراء</div>
+                            </div>
+                            @foreach($wordpressSites as $site)
+                                <div class="client-services-grid__row">
+                                    <div class="client-services-grid__cell fw-semibold">{{ $site->display_name }}</div>
+                                    <div class="client-services-grid__cell client-services-grid__cell--ltr">
+                                        @if($site->public_url)
+                                            <a href="{{ $site->public_url }}" target="_blank" rel="noopener" class="client-services-link small">{{ $site->slug }}</a>
+                                        @else
+                                            <code class="small">{{ $site->slug }}</code>
+                                        @endif
+                                    </div>
+                                    <div class="client-services-grid__cell">
+                                        <span class="badge bg-{{ $site->status === 'running' ? 'success' : 'secondary' }}-transparent">
+                                            {{ \App\Models\CoolifyWordpressSite::STATUSES[$site->status] ?? $site->status }}
+                                        </span>
+                                    </div>
+                                    <div class="client-services-grid__cell">
+                                        <a href="{{ route('client.wordpress-sites.show', $site->uuid) }}" class="btn btn-primary btn-sm rounded-pill px-3">إدارة</a>
+                                    </div>
+                                </div>
+                            @endforeach
+                        </div>
+                    @endif
+                </div>
+
+                <div class="tab-pane fade" id="pane-hosting" role="tabpanel" aria-labelledby="tab-hosting-btn" tabindex="0">
+                    <div class="client-services-panel-head">
+                        <h2 class="client-services-panel-head__title"><i class="fe fe-server"></i> حسابات cPanel</h2>
+                        <span class="client-services-panel-head__meta">{{ $hostingCount }} حساب</span>
+                    </div>
+                    @if($hosting->isEmpty())
+                        @include('client.partials.services-empty', ['icon' => 'fe-server', 'message' => 'لا توجد حسابات استضافة مرتبطة بحسابك.'])
+                    @else
+                        <div class="client-services-grid client-services-grid--cols-6">
+                            <div class="client-services-grid__row client-services-grid__row--head">
+                                <div class="client-services-grid__cell">النطاق</div>
+                                <div class="client-services-grid__cell">المستخدم</div>
+                                <div class="client-services-grid__cell">الباقة</div>
+                                <div class="client-services-grid__cell">البريد</div>
+                                <div class="client-services-grid__cell">نهاية الاشتراك</div>
+                                <div class="client-services-grid__cell">الحالة</div>
+                            </div>
+                            @foreach($hosting as $acc)
+                                <div class="client-services-grid__row">
+                                    <div class="client-services-grid__cell client-services-grid__cell--ltr">
+                                        @if($url = $acc->site_url)
+                                            <a href="{{ $url }}" target="_blank" rel="noopener" class="client-services-link fw-semibold">{{ $acc->domain }}</a>
+                                        @else
+                                            <span class="fw-semibold">{{ $acc->domain ?? '—' }}</span>
+                                        @endif
+                                    </div>
+                                    <div class="client-services-grid__cell client-services-grid__cell--ltr">
+                                        <code class="text-muted">{{ $acc->username }}</code>
+                                    </div>
+                                    <div class="client-services-grid__cell">{{ $acc->package ?: '—' }}</div>
+                                    <div class="client-services-grid__cell client-services-grid__cell--ltr text-muted small">
+                                        {{ $acc->display_email ?? '—' }}
+                                    </div>
+                                    <div class="client-services-grid__cell text-muted small">
+                                        {{ $acc->subscription_ends_at?->translatedFormat('j M Y') ?? '—' }}
+                                    </div>
+                                    <div class="client-services-grid__cell">
+                                        <span class="badge bg-{{ $acc->status === 'active' ? 'success' : 'warning' }}-transparent">
+                                            {{ $acc->status_label }}
+                                        </span>
+                                    </div>
+                                </div>
+                            @endforeach
+                        </div>
+                    @endif
                 </div>
             </div>
         </div>
@@ -265,4 +275,3 @@ document.addEventListener('DOMContentLoaded', function () {
 });
 </script>
 @endpush
-

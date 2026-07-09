@@ -4,12 +4,17 @@
 <!-- Choices JS -->
 <script src="{{ asset('assets/libs/choices.js/public/assets/scripts/choices.min.js') }}"></script>
 
+<script>
+    window.__BOOTSTRAP_RTL_CSS__ = @json(asset('assets/libs/bootstrap/css/bootstrap.rtl.min.css'));
+    window.__BOOTSTRAP_LTR_CSS__ = @json(asset('assets/libs/bootstrap/css/bootstrap.min.css'));
+</script>
+
 <!-- Main Theme Js -->
 <script src="{{ asset('assets/js/main.js') }}"></script>
 
-<!-- Bootstrap Css -->
-<link id="style" href="{{ asset('assets/libs/bootstrap/css/bootstrap.min.css') }}" rel="stylesheet">
-<link id="style" href="{{ asset('assets/libs/bootstrap/css/bootstrap.rtl.min.css') }}" rel="stylesheet">
+<!-- Bootstrap Css — RTL فقط -->
+<link id="style" href="{{ asset('assets/libs/bootstrap/css/bootstrap.rtl.min.css') }}" rel="stylesheet"
+    data-rtl-href="{{ asset('assets/libs/bootstrap/css/bootstrap.rtl.min.css') }}">
 
 <!-- Style Css -->
 <link href="{{ asset('assets/css/styles.min.css') }}" rel="stylesheet">
@@ -34,8 +39,10 @@
 <link rel="stylesheet" href="{{ asset('assets/libs/jsvectormap/css/jsvectormap.min.css') }}">
 
 <!-- Custom Css -->
+<link rel="stylesheet" href="{{ asset('assets/css/app-brand.css') }}?v={{ @filemtime(public_path('assets/css/app-brand.css')) ?: '1' }}">
 <link rel="stylesheet" href="{{ asset('assets/css/custom.css') }}?v={{ @filemtime(public_path('assets/css/custom.css')) ?: '1' }}">
 <link rel="stylesheet" href="{{ asset('assets/css/admin-sidebar.css') }}?v={{ @filemtime(public_path('assets/css/admin-sidebar.css')) ?: '1' }}">
+<link rel="stylesheet" href="{{ asset('assets/css/admin-switcher.css') }}?v={{ @filemtime(public_path('assets/css/admin-switcher.css')) ?: '1' }}">
 <link rel="stylesheet" href="{{ asset('assets/css/admin-dashboard.css') }}?v={{ @filemtime(public_path('assets/css/admin-dashboard.css')) ?: '1' }}">
 
 @stack('styles')

@@ -31,24 +31,43 @@ class WhatsAppMessageController extends Controller
      */
     public function index(Request $request)
     {
+        $messages = $this->paginateMessages($request);
+        $stats = $this->messageStats();
+
+        if ($request->ajax() || $request->boolean('ajax')) {
+            return response()->json([
+                'html' => view('admin.pages.whatsapp-messages.partials.list-results', compact('messages'))->render(),
+                'total' => $messages->total(),
+            ]);
+        }
+
+        return view('admin.pages.whatsapp-messages.index', compact('messages', 'stats'));
+    }
+
+    protected function paginateMessages(Request $request)
+    {
+        return $this->buildMessagesQuery($request)
+            ->orderByDesc('created_at')
+            ->paginate(20)
+            ->withQueryString();
+    }
+
+    protected function buildMessagesQuery(Request $request)
+    {
         $query = WhatsAppMessage::with('contact');
 
-        // Filter by direction
         if ($request->filled('direction')) {
             $query->where('direction', $request->direction);
         }
 
-        // Filter by status
         if ($request->filled('status')) {
             $query->where('status', $request->status);
         }
 
-        // Filter by type
         if ($request->filled('type')) {
             $query->where('type', $request->type);
         }
 
-        // Filter by date
         if ($request->filled('date_from')) {
             $query->whereDate('created_at', '>=', $request->date_from);
         }
@@ -57,21 +76,32 @@ class WhatsAppMessageController extends Controller
             $query->whereDate('created_at', '<=', $request->date_to);
         }
 
-        // Search
         if ($request->filled('search')) {
             $search = $request->search;
             $query->where(function ($q) use ($search) {
                 $q->where('body', 'like', "%{$search}%")
-                  ->orWhereHas('contact', function ($contactQuery) use ($search) {
-                      $contactQuery->where('wa_id', 'like', "%{$search}%")
-                                   ->orWhere('name', 'like', "%{$search}%");
-                  });
+                    ->orWhereHas('contact', function ($contactQuery) use ($search) {
+                        $contactQuery->where('wa_id', 'like', "%{$search}%")
+                            ->orWhere('name', 'like', "%{$search}%");
+                    });
             });
         }
 
-        $messages = $query->orderBy('created_at', 'desc')->paginate(20);
+        return $query;
+    }
 
-        return view('admin.pages.whatsapp-messages.index', compact('messages'));
+    /**
+     * @return array<string, int>
+     */
+    protected function messageStats(): array
+    {
+        return [
+            'total' => WhatsAppMessage::count(),
+            'inbound' => WhatsAppMessage::inbound()->count(),
+            'outbound' => WhatsAppMessage::outbound()->count(),
+            'failed' => WhatsAppMessage::where('status', WhatsAppMessage::STATUS_FAILED)->count(),
+            'today' => WhatsAppMessage::whereDate('created_at', today())->count(),
+        ];
     }
 
     /**
@@ -213,7 +243,7 @@ class WhatsAppMessageController extends Controller
 
             // Get provider settings and send message directly (synchronous)
             $settings = $this->settingsService->getSettings();
-            $provider = $settings['whatsapp_provider'] ?? 'meta';
+            $provider = $settings['whatsapp_provider'] ?? 'evolution';
             $config = $this->settingsService->getProviderConfig();
 
             // Create provider instance
@@ -425,7 +455,7 @@ class WhatsAppMessageController extends Controller
 
             // Get provider settings
             $settings = $this->settingsService->getSettings();
-            $provider = $settings['whatsapp_provider'] ?? 'meta';
+            $provider = $settings['whatsapp_provider'] ?? 'evolution';
             $config = $this->settingsService->getProviderConfig();
 
             // Create provider instance

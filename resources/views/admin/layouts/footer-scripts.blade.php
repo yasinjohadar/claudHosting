@@ -46,3 +46,5 @@
 
 <!-- Custom JS -->
 <script src="{{ asset('assets/js/custom.js') }}"></script>
+
+<script src="{{ asset('assets/js/app-rtl-lock.js') }}?v={{ @filemtime(public_path('assets/js/app-rtl-lock.js')) ?: '1' }}"></script>

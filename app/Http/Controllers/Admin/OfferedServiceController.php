@@ -18,6 +18,27 @@ class OfferedServiceController extends Controller
 
     public function index(Request $request)
     {
+        $services = $this->paginateOfferedServices($request);
+        $serviceTypes = ServiceType::ordered()->get();
+        $stats = $this->offeredServiceStats();
+
+        if ($request->ajax() || $request->boolean('ajax')) {
+            return response()->json([
+                'html' => view('admin.offered-services.partials.list-results', compact('services'))->render(),
+                'total' => $services->total(),
+            ]);
+        }
+
+        return view('admin.offered-services.index', compact('services', 'serviceTypes', 'stats'));
+    }
+
+    protected function paginateOfferedServices(Request $request)
+    {
+        return $this->buildOfferedServicesQuery($request)->paginate(15)->withQueryString();
+    }
+
+    protected function buildOfferedServicesQuery(Request $request)
+    {
         $query = OfferedService::with('serviceType')->ordered();
 
         if ($request->filled('service_type_id')) {
@@ -33,17 +54,27 @@ class OfferedServiceController extends Controller
         }
 
         if ($request->filled('search')) {
-            $search = $request->search;
+            $search = '%'.trim((string) $request->search).'%';
             $query->where(function ($q) use ($search) {
-                $q->where('name', 'like', "%{$search}%")
-                    ->orWhere('description', 'like', "%{$search}%");
+                $q->where('name', 'like', $search)
+                    ->orWhere('description', 'like', $search);
             });
         }
 
-        $services = $query->paginate(15)->withQueryString();
-        $serviceTypes = ServiceType::ordered()->get();
+        return $query;
+    }
 
-        return view('admin.offered-services.index', compact('services', 'serviceTypes'));
+    /**
+     * @return array<string, int>
+     */
+    protected function offeredServiceStats(): array
+    {
+        return [
+            'total' => OfferedService::count(),
+            'active' => OfferedService::where('is_active', true)->count(),
+            'inactive' => OfferedService::where('is_active', false)->count(),
+            'types' => ServiceType::count(),
+        ];
     }
 
     public function create()
@@ -71,6 +102,7 @@ class OfferedServiceController extends Controller
     public function show(OfferedService $service)
     {
         $service->load('serviceType');
+        $service->loadCount('customerServices');
 
         return view('admin.offered-services.show', compact('service'));
     }

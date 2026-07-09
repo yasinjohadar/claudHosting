@@ -3,7 +3,6 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
-use App\Models\Customer;
 use App\Models\Payment;
 use App\Services\Billing\InvoicePaymentService;
 use Illuminate\Http\Request;
@@ -20,9 +19,35 @@ class PaymentController extends Controller
 
     public function index(Request $request)
     {
-        $query = Payment::with(['invoice', 'customer', 'recordedBy'])
+        $payments = $this->paginatePayments($request);
+        $stats = $this->paymentService->statistics([
+            'date_from' => $request->date_from,
+            'date_to' => $request->date_to,
+            'customer_id' => $request->customer_id,
+        ]);
+
+        if ($request->ajax() || $request->boolean('ajax')) {
+            return response()->json([
+                'html' => view('admin.payments.partials.list-results', compact('payments'))->render(),
+                'total' => $payments->total(),
+            ]);
+        }
+
+        return view('admin.payments.index', compact('payments', 'stats'));
+    }
+
+    protected function paginatePayments(Request $request)
+    {
+        return $this->buildPaymentsQuery($request)
             ->orderByDesc('date')
-            ->orderByDesc('id');
+            ->orderByDesc('id')
+            ->paginate(20)
+            ->withQueryString();
+    }
+
+    protected function buildPaymentsQuery(Request $request)
+    {
+        $query = Payment::with(['invoice', 'customer', 'recordedBy']);
 
         if ($request->filled('status')) {
             $query->where('status', $request->status);
@@ -49,26 +74,20 @@ class PaymentController extends Controller
         }
 
         if ($request->filled('search')) {
-            $search = $request->search;
+            $search = '%'.trim((string) $request->search).'%';
             $query->where(function ($q) use ($search) {
-                $q->where('transid', 'like', "%{$search}%")
-                    ->orWhereHas('invoice', fn ($iq) => $iq->where('invoice_number', 'like', "%{$search}%"))
+                $q->where('transid', 'like', $search)
+                    ->orWhereHas('invoice', fn ($iq) => $iq->where('invoice_number', 'like', $search))
                     ->orWhereHas('customer', function ($cq) use ($search) {
-                        $cq->where('fullname', 'like', "%{$search}%")
-                            ->orWhere('email', 'like', "%{$search}%");
+                        $cq->where('fullname', 'like', $search)
+                            ->orWhere('firstname', 'like', $search)
+                            ->orWhere('lastname', 'like', $search)
+                            ->orWhere('email', 'like', $search);
                     });
             });
         }
 
-        $payments = $query->paginate(20)->withQueryString();
-        $customers = Customer::orderBy('email')->get(['id', 'fullname', 'email']);
-        $stats = $this->paymentService->statistics([
-            'date_from' => $request->date_from,
-            'date_to' => $request->date_to,
-            'customer_id' => $request->customer_id,
-        ]);
-
-        return view('admin.payments.index', compact('payments', 'customers', 'stats'));
+        return $query;
     }
 
     public function show(Payment $payment)

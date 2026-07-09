@@ -7,6 +7,14 @@
 @section('content')
     @include('frontend.partials.hero-section', ['hero' => $hero ?? null])
 
+    @if (! ($hero['enabled'] ?? false))
+        <section class="section-padding pt-5 pb-0" id="home-fallback-heading">
+            <div class="container text-center">
+                <h1 class="mb-0">{{ app(\App\Services\GlobalSeoService::class)->homepageFallbackH1() }}</h1>
+            </div>
+        </section>
+    @endif
+
     <!-- ============ SKILLS SECTION ============ -->
     <section class="section-padding" id="skills">
         <div class="container">

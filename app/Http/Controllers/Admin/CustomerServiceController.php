@@ -25,7 +25,33 @@ class CustomerServiceController extends Controller
 
     public function index(Request $request)
     {
-        $query = CustomerService::with(['customer', 'offeredService.serviceType']);
+        $records = $this->paginateCustomerServices($request);
+        $customers = Customer::orderBy('fullname')->get(['id', 'fullname', 'email']);
+        $catalogServices = OfferedService::with('serviceType')->active()->ordered()->get();
+        $stats = $this->customerServiceStats();
+
+        if ($request->ajax() || $request->boolean('ajax')) {
+            return response()->json([
+                'html' => view('admin.customer-services.partials.list-results', compact('records'))->render(),
+                'total' => $records->total(),
+            ]);
+        }
+
+        return view('admin.customer-services.index', compact('records', 'customers', 'catalogServices', 'stats'));
+    }
+
+    protected function paginateCustomerServices(Request $request)
+    {
+        return $this->buildCustomerServicesQuery($request)
+            ->orderByDesc('subscribed_at')
+            ->orderByDesc('id')
+            ->paginate(15)
+            ->withQueryString();
+    }
+
+    protected function buildCustomerServicesQuery(Request $request)
+    {
+        $query = CustomerService::with(['customer', 'offeredService.serviceType', 'invoice']);
 
         if ($request->filled('customer_id')) {
             $query->where('customer_id', $request->customer_id);
@@ -40,29 +66,38 @@ class CustomerServiceController extends Controller
         }
 
         if ($request->filled('search')) {
-            $search = $request->search;
+            $search = '%'.trim((string) $request->search).'%';
             $query->where(function ($q) use ($search) {
-                $q->where('name', 'like', "%{$search}%")
+                $q->where('name', 'like', $search)
                     ->orWhereHas('customer', function ($cq) use ($search) {
-                        $cq->where('fullname', 'like', "%{$search}%")
-                            ->orWhere('email', 'like', "%{$search}%");
+                        $cq->where('fullname', 'like', $search)
+                            ->orWhere('email', 'like', $search);
                     });
             });
         }
 
-        $records = $query->orderByDesc('subscribed_at')->orderByDesc('id')->paginate(15)->withQueryString();
-        $customers = Customer::orderBy('fullname')->get(['id', 'fullname', 'email']);
-        $catalogServices = OfferedService::with('serviceType')->active()->ordered()->get();
+        return $query;
+    }
 
-        return view('admin.customer-services.index', compact('records', 'customers', 'catalogServices'));
+    /**
+     * @return array<string, int>
+     */
+    protected function customerServiceStats(): array
+    {
+        return [
+            'total' => CustomerService::count(),
+            'active' => CustomerService::where('status', CustomerService::STATUS_ACTIVE)->count(),
+            'pending' => CustomerService::where('status', CustomerService::STATUS_PENDING)->count(),
+            'overdue' => CustomerService::where('status', CustomerService::STATUS_OVERDUE)->count(),
+        ];
     }
 
     public function create(Request $request)
     {
-        $customers = Customer::orderBy('fullname')->get();
-        $catalogServices = OfferedService::with('serviceType')->active()->ordered()->get();
         $selectedCustomerId = $request->get('customer_id');
         $selectedOfferedServiceId = $request->get('offered_service_id');
+        $customers = $this->resolveCustomersForSelect(old('customer_id', $selectedCustomerId));
+        $catalogServices = OfferedService::with('serviceType')->active()->ordered()->get();
 
         return view('admin.customer-services.create', compact(
             'customers',
@@ -105,7 +140,7 @@ class CustomerServiceController extends Controller
 
     public function edit(CustomerService $customerService)
     {
-        $customers = Customer::orderBy('fullname')->get();
+        $customers = $this->resolveCustomersForSelect(old('customer_id', $customerService->customer_id));
         $catalogServices = OfferedService::with('serviceType')->ordered()->get();
 
         return view('admin.customer-services.edit', [
@@ -113,6 +148,53 @@ class CustomerServiceController extends Controller
             'customers' => $customers,
             'catalogServices' => $catalogServices,
         ]);
+    }
+
+    public function searchCustomers(Request $request)
+    {
+        $term = trim((string) $request->get('q', $request->get('search', '')));
+
+        if (mb_strlen($term) < 2) {
+            return response()->json([]);
+        }
+
+        $like = '%'.$term.'%';
+        $domain = ltrim(strtolower($term), '@');
+
+        $customers = Customer::query()
+            ->where(function ($q) use ($like, $domain) {
+                $q->where('fullname', 'like', $like)
+                    ->orWhere('firstname', 'like', $like)
+                    ->orWhere('lastname', 'like', $like)
+                    ->orWhere('email', 'like', $like);
+
+                if ($domain !== '') {
+                    $q->orWhere('email', 'like', '%@'.$domain.'%');
+                }
+            })
+            ->orderBy('fullname')
+            ->limit(25)
+            ->get(['id', 'fullname', 'email']);
+
+        return response()->json($customers->map(fn (Customer $customer) => [
+            'value' => (string) $customer->id,
+            'label' => trim($customer->fullname).' ('.$customer->email.')',
+            'email' => $customer->email,
+        ]));
+    }
+
+    /**
+     * @return \Illuminate\Support\Collection<int, Customer>
+     */
+    protected function resolveCustomersForSelect($customerId)
+    {
+        if (! $customerId) {
+            return collect();
+        }
+
+        return Customer::query()
+            ->where('id', $customerId)
+            ->get(['id', 'fullname', 'email']);
     }
 
     public function update(Request $request, CustomerService $customerService)
