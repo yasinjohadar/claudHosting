@@ -65,7 +65,7 @@
                 <tr>
                     <td colspan="7">
                         <div class="backup-empty-state">
-                            <i class="fe fe-archive"></i>
+                            <i class="fe fe-hard-drive"></i>
                             <p class="mb-2">لا توجد لقطات بعد</p>
                             <a href="{{ route('admin.coolify.backups.projects.wizard') }}" class="btn btn-sm btn-primary">بدء معالج لقطة</a>
                         </div>

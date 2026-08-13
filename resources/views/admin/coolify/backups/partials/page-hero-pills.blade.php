@@ -11,7 +11,7 @@
 
     @case('projects')
         <span class="backup-hub-pill backup-hub-pill--ok"><i class="fe fe-layers"></i> {{ count($projects ?? []) }} مشروع</span>
-        <span class="backup-hub-pill"><i class="fe fe-archive"></i> {{ $snapshotsTotal ?? 0 }} لقطة</span>
+        <span class="backup-hub-pill"><i class="fe fe-hard-drive"></i> {{ $snapshotsTotal ?? 0 }} لقطة</span>
         @if(($snapshotsRunning ?? 0) > 0)
         <span class="backup-hub-pill"><i class="fe fe-loader"></i> {{ $snapshotsRunning }} قيد التنفيذ</span>
         @endif

@@ -8,6 +8,7 @@ use App\Models\CoolifyWordpressSite;
 use App\Models\Customer;
 use App\Models\User;
 use App\Models\WhmAccount;
+use App\Models\WhmWordpressSite;
 use App\Services\Coolify\CoolifyTeamService;
 use App\Services\CoolifyApiService;
 use App\Services\Domain\DomainCommandCenterService;
@@ -240,13 +241,22 @@ class ClientAssetService
     /**
      * @return Collection<int, array<string, mixed>>
      */
+    /**
+     * نطاقات العميل الموثّقة عبر خدمة «النطاقات» في لوحة الأدمن (سجل ClientDomain) فقط —
+     * بغض النظر عن أي حساب WHM/cPanel قد يملكه نفس النطاق، لأن كل خدمة (نطاق، استضافة، ...) مستقلة عن الأخرى.
+     */
     public function domainsForUser(int $userId, bool $forceRefresh = false): Collection
     {
         $payload = $this->domainCenter->build($forceRefresh);
         $this->domainCenter->attachClientOwnership($payload['rows']);
 
+        $assignedNames = ClientDomain::query()
+            ->where('user_id', $userId)
+            ->pluck('domain_name')
+            ->flip();
+
         return collect($payload['rows'])->filter(
-            fn (array $row) => (int) ($row['user_id'] ?? 0) === $userId
+            fn (array $row) => $assignedNames->has($row['name'] ?? '')
         )->values();
     }
 
@@ -345,16 +355,21 @@ class ClientAssetService
     }
 
     /**
-     * @return array{domains: int, projects: int, hosting: int, team_linked: bool}
+     * @return array{domains: int, projects: int, wordpress_sites: int, hosting: int, team_linked: bool}
      */
     public function portalSummary(int $userId): array
     {
         $team = $this->teamService->teamForUser($userId);
 
+        $whmWp = WhmWordpressSite::query()
+            ->whereHas('account', fn ($q) => $q->where('user_id', $userId)->where('status', '!=', 'terminated'))
+            ->where('status', '!=', WhmWordpressSite::STATUS_MISSING)
+            ->count();
+
         return [
             'domains' => $this->domainsForUser($userId)->count(),
             'projects' => ClientCoolifyProject::where('user_id', $userId)->count(),
-            'wordpress_sites' => CoolifyWordpressSite::where('user_id', $userId)->count(),
+            'wordpress_sites' => CoolifyWordpressSite::where('user_id', $userId)->count() + $whmWp,
             'hosting' => WhmAccount::where('user_id', $userId)->where('status', '!=', 'terminated')->count(),
             'team_linked' => $team !== null && $team->hasApiToken(),
         ];

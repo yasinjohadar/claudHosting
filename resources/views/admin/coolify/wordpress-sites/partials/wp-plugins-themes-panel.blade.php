@@ -15,7 +15,7 @@
         <div class="progress mb-2" style="height: 6px;">
             <div id="wpJobProgressBar" class="progress-bar progress-bar-striped progress-bar-animated w-100"></div>
         </div>
-        <pre id="wpJobOutput" class="wp-pt-job-output mb-0" dir="ltr"></pre>
+        <pre id="wpJobOutput" class="wp-mgmt-console mb-0" dir="ltr" style="max-height:160px;"></pre>
     </div>
 
     <div class="d-flex gap-2 flex-wrap mb-3 align-items-center">

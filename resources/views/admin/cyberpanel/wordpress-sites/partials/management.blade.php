@@ -37,7 +37,7 @@
                 ['id' => 'wpTabCore', 'icon' => 'fe fe-package', 'label' => 'النواة'],
                 ['id' => 'wpTabPlugins', 'icon' => 'fe fe-layers', 'label' => 'إضافات وقوالب'],
                 ['id' => 'wpTabUsers', 'icon' => 'fe fe-users', 'label' => 'المستخدمون'],
-                ['id' => 'wpTabMaint', 'icon' => 'fe fe-tool', 'label' => 'صيانة'],
+                ['id' => 'wpTabMaint', 'icon' => 'fe fe-settings', 'label' => 'صيانة'],
                 ['id' => 'wpTabDatabase', 'icon' => 'fe fe-database', 'label' => 'قاعدة البيانات'],
                 ['id' => 'wpTabLog', 'icon' => 'fe fe-list', 'label' => 'سجل العمليات'],
             ];
@@ -167,7 +167,7 @@
                         <i class="fe fe-check-circle text-success"></i> إيقاف الصيانة
                     </button>
                     <button type="button" class="cp-wp-toggle-btn cp-wp-action" data-action="debugging_on" @disabled(!$wpExec)>
-                        <i class="fe fe-bug text-info"></i> تفعيل التصحيح
+                        <i class="fe fe-code text-info"></i> تفعيل التصحيح
                     </button>
                     <button type="button" class="cp-wp-toggle-btn cp-wp-action" data-action="debugging_off" @disabled(!$wpExec)>
                         <i class="fe fe-x-circle text-secondary"></i> إيقاف التصحيح

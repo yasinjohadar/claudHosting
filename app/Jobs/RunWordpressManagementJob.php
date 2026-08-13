@@ -50,7 +50,7 @@ class RunWordpressManagementJob implements ShouldQueue
 
         $result = [];
         try {
-            $result = $management->runSyncAction($site, $this->action, $this->params, $this->userId);
+            $result = $management->runSyncAction($site, $this->action, $this->params, $this->userId, $this->jobId !== '' ? $this->jobId : null);
             $status = ($result['success'] ?? false) ? 'completed' : 'failed';
             if ($this->action === 'refresh_info') {
                 $output = ($result['success'] ?? false)
@@ -85,6 +85,12 @@ class RunWordpressManagementJob implements ShouldQueue
         if ($status === 'completed' && isset($result['generated_password'])) {
             $wpJob['generated_password'] = $result['generated_password'];
             $wpJob['login'] = $result['login'] ?? null;
+        }
+        if ($status === 'completed' && isset($result['result_file'])) {
+            $wpJob['result_file'] = $result['result_file'];
+        }
+        if (isset($result['operation_id'])) {
+            $wpJob['operation_id'] = $result['operation_id'];
         }
 
         $site->update(['metadata' => array_merge($metadata, ['wp_job' => $wpJob])]);

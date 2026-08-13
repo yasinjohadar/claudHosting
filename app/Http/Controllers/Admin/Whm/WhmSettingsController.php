@@ -55,6 +55,11 @@ class WhmSettingsController extends Controller
             'renewal_amount' => 'nullable|numeric|min:0',
             'invoice_due_days' => 'nullable|integer|min:1|max:90',
             'subscription_years' => 'nullable|integer|min:1|max:10',
+            'ssh_host' => 'nullable|string|max:255',
+            'ssh_user' => 'nullable|string|max:64',
+            'ssh_port' => 'nullable|integer|min:1|max:65535',
+            'ssh_private_key' => 'nullable|string|max:20000',
+            'ssh_private_key_path' => 'nullable|string|max:500',
         ]);
 
         $existing = $this->settings->getFormSettings();
@@ -73,12 +78,28 @@ class WhmSettingsController extends Controller
             'renewal_amount' => $validated['renewal_amount'] ?? 0,
             'invoice_due_days' => $validated['invoice_due_days'] ?? 7,
             'subscription_years' => $validated['subscription_years'] ?? 1,
+            'ssh_host' => $validated['ssh_host'] ?? '',
+            'ssh_user' => $validated['ssh_user'] ?? 'root',
+            'ssh_port' => $validated['ssh_port'] ?? 22,
+            'ssh_private_key' => $validated['ssh_private_key'] ?? null,
+            'ssh_private_key_path' => $validated['ssh_private_key_path'] ?? '',
         ]);
 
         $this->whm->refreshConnection();
 
-        return redirect()->route('admin.whm.settings.index')
+        return redirect()->route('admin.whm.settings.index', ['tab' => $request->input('_whm_tab', 'api')])
             ->with('success', 'تم حفظ إعدادات WHM بنجاح');
+    }
+
+    public function testSsh(Request $request): JsonResponse
+    {
+        $result = app(\App\Services\Whm\WhmSshExecutor::class)->testConnection();
+
+        return response()->json([
+            'success' => (bool) ($result['success'] ?? false),
+            'message' => $result['message'] ?? 'فشل',
+            'output' => $result['output'] ?? null,
+        ]);
     }
 
     public function testConnection(Request $request): JsonResponse

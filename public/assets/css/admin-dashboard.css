@@ -29,6 +29,14 @@
 .admin-dash-welcome h4 {
     font-weight: 800;
     letter-spacing: -0.02em;
+    color: var(--default-text-color, #1e293b);
+}
+
+.admin-dash-welcome__role {
+    color: var(--text-muted, #64748b);
+    font-size: 0.9rem;
+    font-weight: 500;
+    margin-bottom: 0;
 }
 
 .admin-dash-status-pill {
@@ -354,6 +362,127 @@
 .admin-dash-section:last-child {
     margin-bottom: 0.5rem;
 }
+
+.admin-dash-section__head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+    margin-bottom: 0.9rem;
+    flex-wrap: wrap;
+}
+
+.admin-dash-section__hint {
+    font-size: 0.78rem;
+    color: var(--text-muted, #94a3b8);
+    font-weight: 600;
+}
+
+.admin-shortcut-grid {
+    display: grid;
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    gap: 0.85rem;
+}
+
+@media (max-width: 1199px) {
+    .admin-shortcut-grid {
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+    }
+}
+
+@media (max-width: 991px) {
+    .admin-shortcut-grid {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+}
+
+@media (max-width: 767px) {
+    .admin-shortcut-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+}
+
+@media (max-width: 420px) {
+    .admin-shortcut-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+.admin-shortcut-card {
+    --sc-accent: rgb(var(--primary-rgb, 132, 90, 223));
+    --sc-accent-soft: rgba(var(--primary-rgb, 132, 90, 223), 0.12);
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.85rem;
+    padding: 1.1rem 1rem 1rem;
+    min-height: 7.5rem;
+    border-radius: 1rem;
+    border: 1px solid var(--default-border, #e2e8f0);
+    background: var(--custom-white, #fff);
+    box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
+    text-decoration: none !important;
+    color: inherit;
+    transition: transform 0.22s ease, box-shadow 0.22s ease, border-color 0.22s ease;
+}
+
+.admin-shortcut-card:hover,
+.admin-shortcut-card:focus-visible {
+    transform: translateY(-3px);
+    border-color: color-mix(in srgb, var(--sc-accent) 35%, transparent);
+    box-shadow: 0 12px 28px rgba(15, 23, 42, 0.1);
+    outline: none;
+}
+
+.admin-shortcut-card__icon {
+    width: 2.65rem;
+    height: 2.65rem;
+    border-radius: 0.75rem;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--sc-accent-soft);
+    color: var(--sc-accent);
+    font-size: 1.15rem;
+    transition: transform 0.22s ease;
+}
+
+.admin-shortcut-card:hover .admin-shortcut-card__icon,
+.admin-shortcut-card:focus-visible .admin-shortcut-card__icon {
+    transform: scale(1.06);
+}
+
+.admin-shortcut-card__body {
+    display: flex;
+    flex-direction: column;
+    gap: 0.2rem;
+    min-width: 0;
+}
+
+.admin-shortcut-card__title {
+    font-size: 0.95rem;
+    font-weight: 700;
+    color: var(--default-text-color, #0f172a);
+    line-height: 1.3;
+}
+
+.admin-shortcut-card__desc {
+    font-size: 0.78rem;
+    color: var(--text-muted, #64748b);
+    font-weight: 500;
+    line-height: 1.4;
+}
+
+.admin-shortcut-card--primary { --sc-accent: #4f46e5; --sc-accent-soft: rgba(79, 70, 229, 0.12); }
+.admin-shortcut-card--success { --sc-accent: #16a34a; --sc-accent-soft: rgba(22, 163, 74, 0.12); }
+.admin-shortcut-card--warning { --sc-accent: #d97706; --sc-accent-soft: rgba(217, 119, 6, 0.14); }
+.admin-shortcut-card--info { --sc-accent: #0284c7; --sc-accent-soft: rgba(2, 132, 199, 0.12); }
+.admin-shortcut-card--danger { --sc-accent: #dc2626; --sc-accent-soft: rgba(220, 38, 38, 0.12); }
+.admin-shortcut-card--purple { --sc-accent: #9333ea; --sc-accent-soft: rgba(147, 51, 234, 0.12); }
+.admin-shortcut-card--teal { --sc-accent: #0d9488; --sc-accent-soft: rgba(13, 148, 136, 0.12); }
+.admin-shortcut-card--blue { --sc-accent: #2563eb; --sc-accent-soft: rgba(37, 99, 235, 0.12); }
+.admin-shortcut-card--orange { --sc-accent: #ea580c; --sc-accent-soft: rgba(234, 88, 12, 0.14); }
+.admin-shortcut-card--secondary { --sc-accent: #475569; --sc-accent-soft: rgba(71, 85, 105, 0.12); }
 
 .admin-dash-grid {
     display: grid;
@@ -833,6 +962,48 @@
 
 [data-theme-mode=dark] .admin-dash-welcome::after {
     background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.06), transparent);
+}
+
+[data-theme-mode=dark] .admin-dash-welcome {
+    background: linear-gradient(125deg, rgba(var(--primary-rgb, 132, 90, 223), 0.18) 0%, rgba(14, 165, 233, 0.1) 50%, rgba(34, 197, 94, 0.08) 100%);
+    border-color: rgba(255, 255, 255, 0.1);
+}
+
+[data-theme-mode=dark] .admin-dash-welcome h4 {
+    color: var(--card-title-color, #fff);
+}
+
+[data-theme-mode=dark] .admin-dash-welcome__role {
+    color: var(--text-muted, #94a3b8);
+}
+
+[data-theme-mode=dark] .admin-dash-status-pill {
+    background: rgba(255, 255, 255, 0.04);
+    border-color: rgba(255, 255, 255, 0.1);
+}
+
+[data-theme-mode=dark] .admin-shortcut-card {
+    background: rgb(var(--body-bg-rgb, 25, 32, 47));
+    border-color: var(--default-border, rgba(255, 255, 255, 0.1));
+    box-shadow: 0 8px 22px rgba(0, 0, 0, 0.2);
+}
+
+[data-theme-mode=dark] .admin-shortcut-card:hover,
+[data-theme-mode=dark] .admin-shortcut-card:focus-visible {
+    box-shadow: 0 14px 32px rgba(0, 0, 0, 0.35);
+    border-color: rgba(255, 255, 255, 0.16);
+}
+
+[data-theme-mode=dark] .admin-shortcut-card__title {
+    color: var(--default-text-color, rgba(255, 255, 255, 0.9));
+}
+
+[data-theme-mode=dark] .admin-shortcut-card__desc {
+    color: var(--text-muted, #94a3b8);
+}
+
+[data-theme-mode=dark] .admin-dash-section__hint {
+    color: var(--text-muted, #94a3b8);
 }
 
 [data-theme-mode=dark] .admin-kpi-link:hover .admin-kpi-card,

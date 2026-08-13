@@ -30,7 +30,7 @@
                     <i class="fe fe-check-circle text-success"></i>{{ $runningCount }} نشط
                 </span>
                 @endif
-                <a href="{{ route('client.services') }}#wordpress" class="btn btn-light btn-sm rounded-pill">
+                <a href="{{ route('client.services') }}" class="btn btn-light btn-sm rounded-pill">
                     <i class="fe fe-grid me-1"></i>كل الخدمات
                 </a>
             </div>

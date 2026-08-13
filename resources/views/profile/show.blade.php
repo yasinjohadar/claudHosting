@@ -1,119 +1,166 @@
 @extends('admin.layouts.master')
 
-@section('title', 'الملف الشخصي')
-@section('breadcrumb', 'الملف الشخصي')
+@section('page-title')
+الملف الشخصي
+@stop
+
+@push('styles')
+@include('admin.partials.domain-ui-styles')
+@endpush
 
 @section('content')
-<div class="row">
-    <div class="col-md-3">
-        <!-- Profile Image -->
-        <div class="card card-primary card-outline">
-            <div class="card-body box-profile">
-                <div class="text-center">
-                    <img class="profile-user-img img-fluid img-circle"
-                         src="{{ asset('images/user.png') }}"
-                         alt="User profile picture">
+@php
+    $user = $user ?? auth()->user();
+    $activeTab = $errors->has('current_password') || $errors->has('password') ? 'password' : 'settings';
+@endphp
+<div class="main-content app-content">
+    <div class="container-fluid">
+        <div class="domain-page-hero">
+            <div class="d-md-flex justify-content-between align-items-start flex-wrap gap-3">
+                <div>
+                    <nav class="domain-page-hero__breadcrumb mb-2">
+                        <a href="{{ route('admin.dashboard') }}">لوحة التحكم</a>
+                        <span class="text-muted mx-1">/</span>
+                        <span>الملف الشخصي</span>
+                    </nav>
+                    <h1 class="domain-page-hero__title">الملف الشخصي</h1>
+                    <p class="text-muted small mb-0">تحديث بيانات الحساب وكلمة المرور.</p>
                 </div>
-
-                <h3 class="profile-username text-center">{{ auth()->user()->name }}</h3>
-
-                <p class="text-muted text-center">{{ auth()->user()->email }}</p>
-
-                <ul class="list-group list-group-unbordered">
-                    <li class="list-group-item">
-                        <b>تاريخ التسجيل</b> <a class="float-left">{{ auth()->user()->created_at->format('Y-m-d') }}</a>
-                    </li>
-                    <li class="list-group-item">
-                        <b>آخر تحديث</b> <a class="float-left">{{ auth()->user()->updated_at->format('Y-m-d') }}</a>
-                    </li>
-                </ul>
             </div>
-            <!-- /.card-body -->
         </div>
-        <!-- /.card -->
-    </div>
-    <!-- /.col -->
-    <div class="col-md-9">
-        <div class="card">
-            <div class="card-header p-2">
-                <ul class="nav nav-pills">
-                    <li class="nav-item"><a class="nav-link active" href="#settings" data-toggle="tab">الإعدادات</a></li>
-                    <li class="nav-item"><a class="nav-link" href="#password" data-toggle="tab">كلمة المرور</a></li>
-                </ul>
-            </div><!-- /.card-header -->
-            <div class="card-body">
-                <div class="tab-content">
-                    <div class="active tab-pane" id="settings">
-                        <form class="form-horizontal" action="{{ route('profile.update') }}" method="POST">
-                            @csrf
-                            @method('PUT')
-                            <div class="form-group row">
-                                <label for="name" class="col-sm-2 col-form-label">الاسم</label>
-                                <div class="col-sm-10">
-                                    <input type="text" class="form-control" id="name" name="name" value="{{ auth()->user()->name }}" required>
-                                </div>
-                            </div>
-                            <div class="form-group row">
-                                <label for="email" class="col-sm-2 col-form-label">البريد الإلكتروني</label>
-                                <div class="col-sm-10">
-                                    <input type="email" class="form-control" id="email" name="email" value="{{ auth()->user()->email }}" required>
-                                </div>
-                            </div>
-                            <div class="form-group row">
-                                <div class="offset-sm-2 col-sm-10">
-                                    <button type="submit" class="btn btn-danger">تحديث</button>
-                                </div>
-                            </div>
-                        </form>
+
+        @if(session('success'))
+            <div class="alert alert-success py-2">{{ session('success') }}</div>
+        @endif
+        @if(session('error'))
+            <div class="alert alert-danger py-2">{{ session('error') }}</div>
+        @endif
+
+        <div class="row g-3 mb-4">
+            <div class="col-xl-4">
+                <div class="domain-panel h-100">
+                    <div class="domain-panel__head">
+                        <span class="domain-panel__head-icon"><i class="fe fe-user"></i></span>
+                        <h2 class="domain-panel__title">معلومات الحساب</h2>
                     </div>
-                    <!-- /.tab-pane -->
-                    <div class="tab-pane" id="password">
-                        <form class="form-horizontal" action="{{ route('profile.password') }}" method="POST">
-                            @csrf
-                            @method('PUT')
-                            <div class="form-group row">
-                                <label for="current_password" class="col-sm-2 col-form-label">كلمة المرور الحالية</label>
-                                <div class="col-sm-10">
-                                    <input type="password" class="form-control" id="current_password" name="current_password" required>
-                                    @error('current_password')
-                                        <span class="invalid-feedback" role="alert" style="display: block;">
-                                            <strong>{{ $message }}</strong>
-                                        </span>
-                                    @enderror
-                                </div>
-                            </div>
-                            <div class="form-group row">
-                                <label for="password" class="col-sm-2 col-form-label">كلمة المرور الجديدة</label>
-                                <div class="col-sm-10">
-                                    <input type="password" class="form-control" id="password" name="password" required>
-                                    @error('password')
-                                        <span class="invalid-feedback" role="alert" style="display: block;">
-                                            <strong>{{ $message }}</strong>
-                                        </span>
-                                    @enderror
-                                </div>
-                            </div>
-                            <div class="form-group row">
-                                <label for="password_confirmation" class="col-sm-2 col-form-label">تأكيد كلمة المرور</label>
-                                <div class="col-sm-10">
-                                    <input type="password" class="form-control" id="password_confirmation" name="password_confirmation" required>
-                                </div>
-                            </div>
-                            <div class="form-group row">
-                                <div class="offset-sm-2 col-sm-10">
-                                    <button type="submit" class="btn btn-danger">تغيير كلمة المرور</button>
-                                </div>
-                            </div>
-                        </form>
+                    <div class="domain-panel__body text-center">
+                        <div class="mb-3">
+                            <span class="d-inline-flex align-items-center justify-content-center rounded-circle bg-primary-transparent text-primary"
+                                style="width:88px;height:88px;font-size:2rem;font-weight:700;">
+                                {{ mb_substr($user->name, 0, 1) }}
+                            </span>
+                        </div>
+                        <h3 class="h5 mb-1">{{ $user->name }}</h3>
+                        <p class="text-muted small mb-3" dir="ltr">{{ $user->email }}</p>
                     </div>
-                    <!-- /.tab-pane -->
+                    <div class="domain-panel__body p-0 border-top">
+                        <div class="domain-info-row">
+                            <div class="domain-info-row__label">تاريخ التسجيل</div>
+                            <div class="domain-info-row__value">{{ $user->created_at?->format('Y-m-d') ?? '—' }}</div>
+                        </div>
+                        <div class="domain-info-row">
+                            <div class="domain-info-row__label">آخر تحديث</div>
+                            <div class="domain-info-row__value">{{ $user->updated_at?->format('Y-m-d') ?? '—' }}</div>
+                        </div>
+                    </div>
                 </div>
-                <!-- /.tab-content -->
-            </div><!-- /.card-body -->
+            </div>
+
+            <div class="col-xl-8">
+                <div class="domain-panel">
+                    <div class="domain-panel__head domain-panel__head--split">
+                        <div class="domain-panel__head-main">
+                            <span class="domain-panel__head-icon"><i class="fe fe-edit"></i></span>
+                            <h2 class="domain-panel__title">إعدادات الحساب</h2>
+                        </div>
+                        <ul class="nav nav-pills gap-1" role="tablist">
+                            <li class="nav-item" role="presentation">
+                                <button class="nav-link btn btn-sm {{ $activeTab === 'settings' ? 'active' : '' }}"
+                                    id="profile-settings-tab" data-bs-toggle="pill" data-bs-target="#profile-settings"
+                                    type="button" role="tab" aria-controls="profile-settings"
+                                    aria-selected="{{ $activeTab === 'settings' ? 'true' : 'false' }}">
+                                    البيانات
+                                </button>
+                            </li>
+                            <li class="nav-item" role="presentation">
+                                <button class="nav-link btn btn-sm {{ $activeTab === 'password' ? 'active' : '' }}"
+                                    id="profile-password-tab" data-bs-toggle="pill" data-bs-target="#profile-password"
+                                    type="button" role="tab" aria-controls="profile-password"
+                                    aria-selected="{{ $activeTab === 'password' ? 'true' : 'false' }}">
+                                    كلمة المرور
+                                </button>
+                            </li>
+                        </ul>
+                    </div>
+                    <div class="domain-panel__body">
+                        <div class="tab-content">
+                            <div class="tab-pane fade {{ $activeTab === 'settings' ? 'show active' : '' }}"
+                                id="profile-settings" role="tabpanel" aria-labelledby="profile-settings-tab">
+                                <form action="{{ route('profile.update') }}" method="POST">
+                                    @csrf
+                                    @method('PUT')
+                                    <div class="mb-3">
+                                        <label for="name" class="domain-form-label">الاسم <span class="text-danger">*</span></label>
+                                        <input type="text" class="form-control @error('name') is-invalid @enderror"
+                                            id="name" name="name" value="{{ old('name', $user->name) }}" required>
+                                        @error('name')
+                                            <div class="invalid-feedback">{{ $message }}</div>
+                                        @enderror
+                                    </div>
+                                    <div class="mb-4">
+                                        <label for="email" class="domain-form-label">البريد الإلكتروني <span class="text-danger">*</span></label>
+                                        <input type="email" class="form-control @error('email') is-invalid @enderror"
+                                            id="email" name="email" value="{{ old('email', $user->email) }}" dir="ltr" required>
+                                        @error('email')
+                                            <div class="invalid-feedback">{{ $message }}</div>
+                                        @enderror
+                                    </div>
+                                    <div class="domain-form-actions mt-0 px-0 pb-0">
+                                        <button type="submit" class="btn btn-primary btn-sm px-4">
+                                            <i class="fe fe-save me-1"></i> تحديث البيانات
+                                        </button>
+                                    </div>
+                                </form>
+                            </div>
+
+                            <div class="tab-pane fade {{ $activeTab === 'password' ? 'show active' : '' }}"
+                                id="profile-password" role="tabpanel" aria-labelledby="profile-password-tab">
+                                <form action="{{ route('profile.password') }}" method="POST">
+                                    @csrf
+                                    @method('PUT')
+                                    <div class="mb-3">
+                                        <label for="current_password" class="domain-form-label">كلمة المرور الحالية <span class="text-danger">*</span></label>
+                                        <input type="password" class="form-control @error('current_password') is-invalid @enderror"
+                                            id="current_password" name="current_password" required>
+                                        @error('current_password')
+                                            <div class="invalid-feedback">{{ $message }}</div>
+                                        @enderror
+                                    </div>
+                                    <div class="mb-3">
+                                        <label for="password" class="domain-form-label">كلمة المرور الجديدة <span class="text-danger">*</span></label>
+                                        <input type="password" class="form-control @error('password') is-invalid @enderror"
+                                            id="password" name="password" required>
+                                        @error('password')
+                                            <div class="invalid-feedback">{{ $message }}</div>
+                                        @enderror
+                                    </div>
+                                    <div class="mb-4">
+                                        <label for="password_confirmation" class="domain-form-label">تأكيد كلمة المرور <span class="text-danger">*</span></label>
+                                        <input type="password" class="form-control"
+                                            id="password_confirmation" name="password_confirmation" required>
+                                    </div>
+                                    <div class="domain-form-actions mt-0 px-0 pb-0">
+                                        <button type="submit" class="btn btn-primary btn-sm px-4">
+                                            <i class="fe fe-lock me-1"></i> تغيير كلمة المرور
+                                        </button>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
-        <!-- /.card -->
     </div>
-    <!-- /.col -->
 </div>
-<!-- /.row -->
 @endsection

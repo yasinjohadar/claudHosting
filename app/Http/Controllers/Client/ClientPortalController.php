@@ -7,13 +7,15 @@ use App\Models\Invoice;
 use App\Models\WhmAccount;
 use App\Services\Client\ClientAssetService;
 use App\Services\Client\ClientBillingService;
+use App\Services\Whm\Wordpress\WhmWordpressDiscoveryService;
 use Illuminate\View\View;
 
 class ClientPortalController extends Controller
 {
     public function __construct(
         protected ClientAssetService $clientAssets,
-        protected ClientBillingService $billing
+        protected ClientBillingService $billing,
+        protected WhmWordpressDiscoveryService $whmWordpress
     ) {
         $this->middleware('auth');
     }
@@ -42,13 +44,21 @@ class ClientPortalController extends Controller
         $domains = $this->clientAssets->domainsForUser($user->id);
         $projects = $this->clientAssets->coolifyProjectsForUser($user->id);
         $wordpressSites = $this->clientAssets->wordpressSitesForUser($user->id);
+        $whmWordpressSites = $this->whmWordpress->sitesForUser($user->id);
         $hosting = WhmAccount::query()
             ->where('user_id', $user->id)
             ->where('status', '!=', 'terminated')
             ->orderByDesc('joined_at')
             ->get();
 
-        return view('client.pages.services', compact('user', 'domains', 'projects', 'wordpressSites', 'hosting'));
+        return view('client.pages.services', compact(
+            'user',
+            'domains',
+            'projects',
+            'wordpressSites',
+            'whmWordpressSites',
+            'hosting'
+        ));
     }
 
     public function invoices(): View

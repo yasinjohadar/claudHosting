@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\User;
+use App\Models\WhmAccount;
 use App\Services\Client\ClientAssetService;
 use Illuminate\Http\Request;
 
@@ -22,15 +23,28 @@ class CustomerController extends Controller
         $clients = $this->paginateClients($request);
         $configured = app(\App\Services\Whm\WhmApiService::class)->isConfigured();
         $stats = $this->clientStats();
+        $unassignedWhmAccounts = $this->unassignedWhmAccounts();
 
         if ($request->ajax() || $request->boolean('ajax')) {
             return response()->json([
-                'html' => view('admin.customers.partials.list-results', compact('clients'))->render(),
+                'html' => view('admin.customers.partials.list-results', compact('clients', 'unassignedWhmAccounts'))->render(),
                 'total' => $clients->total(),
             ]);
         }
 
-        return view('admin.customers.index', compact('clients', 'configured', 'stats'));
+        return view('admin.customers.index', compact('clients', 'configured', 'stats', 'unassignedWhmAccounts'));
+    }
+
+    /**
+     * @return \Illuminate\Support\Collection<int, WhmAccount>
+     */
+    protected function unassignedWhmAccounts(): \Illuminate\Support\Collection
+    {
+        return WhmAccount::query()
+            ->whereNull('user_id')
+            ->where('status', '!=', 'terminated')
+            ->orderBy('domain')
+            ->get(['id', 'username', 'domain', 'status']);
     }
 
     /**

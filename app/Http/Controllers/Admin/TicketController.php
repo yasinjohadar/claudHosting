@@ -35,6 +35,16 @@ class TicketController extends Controller
             $query->where('department', $request->department);
         }
 
+        if ($request->filled('search')) {
+            $search = $request->search;
+            $query->where(function ($q) use ($search) {
+                $q->where('tid', 'like', "%{$search}%")
+                    ->orWhere('subject', 'like', "%{$search}%")
+                    ->orWhere('name', 'like', "%{$search}%")
+                    ->orWhere('email', 'like', "%{$search}%");
+            });
+        }
+
         if ($request->filled('date_from')) {
             $query->whereDate('date', '>=', $request->date_from);
         }
@@ -43,10 +53,16 @@ class TicketController extends Controller
             $query->whereDate('date', '<=', $request->date_to);
         }
 
-        $tickets = $query->orderBy('date', 'desc')->paginate(10);
-        $customers = Customer::orderBy('fullname')->get();
+        $tickets = $query->orderBy('date', 'desc')->paginate(15)->withQueryString();
 
-        return view('admin.tickets.index', compact('tickets', 'customers'));
+        $stats = [
+            'total' => Ticket::count(),
+            'open' => Ticket::query()->where('status', 'Open')->count(),
+            'awaiting' => Ticket::query()->whereIn('status', ['Customer-Reply', 'In Progress'])->count(),
+            'closed' => Ticket::query()->where('status', 'Closed')->count(),
+        ];
+
+        return view('admin.tickets.index', compact('tickets', 'stats'));
     }
 
     public function create()
@@ -78,7 +94,7 @@ class TicketController extends Controller
 
         try {
             $customer = Customer::findOrFail($request->customer_id);
-            $ticketNumber = $this->generateTicketNumber();
+            $ticketNumber = Ticket::generateTicketNumber();
 
             Ticket::create([
                 'customer_id' => $customer->id,
@@ -263,26 +279,5 @@ class TicketController extends Controller
 
         return redirect()->route('admin.tickets.show', $id)
             ->with('success', 'تم إعادة فتح التذكرة بنجاح');
-    }
-
-    private function generateTicketNumber(): string
-    {
-        $prefix = 'TCK-';
-        $year = date('Y');
-        $month = date('m');
-
-        $lastTicket = Ticket::whereYear('created_at', $year)
-            ->whereMonth('created_at', $month)
-            ->orderBy('created_at', 'desc')
-            ->first();
-
-        if ($lastTicket && $lastTicket->tid) {
-            $lastNumber = (int) substr($lastTicket->tid, -4);
-            $newNumber = str_pad((string) ($lastNumber + 1), 4, '0', STR_PAD_LEFT);
-        } else {
-            $newNumber = '0001';
-        }
-
-        return $prefix.$year.$month.$newNumber;
     }
 }

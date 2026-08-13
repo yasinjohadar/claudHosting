@@ -4,12 +4,18 @@ namespace App\Services\Infrastructure\Netcup;
 
 use App\Services\Infrastructure\InfrastructureSettingsService;
 use App\Services\Infrastructure\Netcup\Concerns\NetcupScpHelpers;
+use Illuminate\Contracts\Cache\LockTimeoutException;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
 
 class NetcupScpClient
 {
     use NetcupScpHelpers;
+
+    public const TOKEN_CACHE_KEY = 'netcup_scp_access_token';
+
+    public const TOKEN_LOCK_KEY = 'netcup_scp_access_token_lock';
 
     protected ?string $lastTokenError = null;
 
@@ -103,7 +109,7 @@ class NetcupScpClient
             };
 
             if ($response->status() === 401) {
-                Cache::forget($this->tokenCacheKey());
+                Cache::forget(self::TOKEN_CACHE_KEY);
                 $token = $this->accessToken(true);
                 if ($token !== null) {
                     return $this->request($method, $path, $query, $json);
@@ -121,6 +127,13 @@ class NetcupScpClient
                     ? (string) ($body['message'] ?? $body['error'] ?? json_encode($body))
                     : 'HTTP '.$response->status();
 
+                Log::warning('Netcup SCP API request failed', [
+                    'method' => $method,
+                    'path' => $path,
+                    'status' => $response->status(),
+                    'message' => $message,
+                ]);
+
                 return ['success' => false, 'message' => $message, 'body' => $body];
             }
 
@@ -137,14 +150,20 @@ class NetcupScpClient
     protected function accessToken(bool $forceRefresh = false): ?string
     {
         if ($forceRefresh) {
-            Cache::forget($this->tokenCacheKey());
+            Cache::forget(self::TOKEN_CACHE_KEY);
         }
 
         $this->lastTokenError = null;
 
-        return Cache::remember($this->tokenCacheKey(), 240, function () {
-            return $this->fetchAccessToken();
-        });
+        try {
+            return Cache::lock(self::TOKEN_LOCK_KEY, 20)->block(10, function () {
+                return Cache::remember(self::TOKEN_CACHE_KEY, 270, function () {
+                    return $this->fetchAccessToken();
+                });
+            });
+        } catch (LockTimeoutException) {
+            return Cache::get(self::TOKEN_CACHE_KEY);
+        }
     }
 
     protected function fetchAccessToken(): ?string
@@ -205,6 +224,12 @@ class NetcupScpClient
                     : 'HTTP '.$response->status();
                 $this->lastTokenError = 'فشل مصادقة Netcup SCP: '.$error;
 
+                Log::warning('Netcup SCP token request failed', [
+                    'grant_type' => $payload['grant_type'] ?? null,
+                    'status' => $response->status(),
+                    'error' => $error,
+                ]);
+
                 return null;
             }
 
@@ -222,6 +247,11 @@ class NetcupScpClient
         } catch (\Throwable $e) {
             $this->lastTokenError = 'فشل مصادقة Netcup SCP: '.$e->getMessage();
 
+            Log::error('Netcup SCP token request exception', [
+                'grant_type' => $payload['grant_type'] ?? null,
+                'message' => $e->getMessage(),
+            ]);
+
             return null;
         }
     }
@@ -237,17 +267,5 @@ class NetcupScpClient
         if (is_array($payload) && ! empty($payload['sub'])) {
             $this->settings->save(['netcup_scp_user_id' => (string) $payload['sub']]);
         }
-    }
-
-    protected function tokenCacheKey(): string
-    {
-        $creds = $this->settings->getCredentials();
-        $fingerprint = implode('|', [
-            $creds['netcup_refresh_token'] ?? '',
-            $creds['netcup_customer_number'] ?? $creds['netcup_client_id'] ?? '',
-            $creds['netcup_api_password'] ?? $creds['netcup_client_secret'] ?? '',
-        ]);
-
-        return 'netcup_scp_token_'.md5($fingerprint);
     }
 }

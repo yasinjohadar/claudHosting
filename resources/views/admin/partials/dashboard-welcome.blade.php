@@ -1,8 +1,8 @@
 <div class="admin-dash-welcome">
     <div class="d-md-flex align-items-center justify-content-between gap-3 position-relative" style="z-index:1">
         <div>
-            <h4 class="mb-1">مرحباً، {{ auth()->user()->name }}</h4>
-            <p class="text-muted mb-2 mb-md-0">أهلاً بعودتك — اختصار سريع لأقسام النظام من لوحة التحكم</p>
+            <h4 class="mb-1">مرحباً {{ auth()->user()->name }}، أهلاً بعودتك!</h4>
+            <p class="admin-dash-welcome__role mb-2 mb-md-0">أنت مسجل الدخول كـ أدمن</p>
             <div class="d-flex flex-wrap gap-2">
                 @if(!empty($coolifyStats['connected']))
                     <span class="admin-dash-status-pill text-success">

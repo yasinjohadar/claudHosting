@@ -26,7 +26,7 @@
     </li>
     <li class="nav-item" role="presentation">
         <button class="nav-link" id="tab-ssh-btn" data-bs-toggle="tab" data-bs-target="#tabSsh" type="button" role="tab">
-            <i class="fe fe-key me-1"></i> SSH
+            <i class="fe fe-lock me-1"></i> SSH
         </button>
     </li>
     <li class="nav-item" role="presentation">

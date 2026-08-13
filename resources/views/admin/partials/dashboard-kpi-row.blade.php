@@ -1,3 +1,9 @@
+@php
+    $unpaidInvoicesCount = $invoicesByStatusData[1] ?? 0;
+    $openTicketsHint = ($urgentTickets?->count() ?? 0) > 0
+        ? (($urgentTickets->count()).' عاجلة')
+        : 'دعم فني';
+@endphp
 <div class="admin-kpi-grid mb-4" id="adminKpiGrid">
     <a href="{{ route('admin.customers.index') }}" class="admin-kpi-link" style="--kpi-i: 0">
         <div class="admin-kpi-card admin-kpi-card--purple">
@@ -6,9 +12,9 @@
             <span class="admin-kpi-card__orb admin-kpi-card__orb--2" aria-hidden="true"></span>
             <div class="admin-kpi-card-inner">
                 <div class="admin-kpi-card__body">
-                    <div class="admin-kpi-label">العملاء</div>
+                    <div class="admin-kpi-label">إجمالي العملاء</div>
                     <div class="admin-kpi-value" data-kpi-count="{{ (int) ($stats['total_customers'] ?? 0) }}">0</div>
-                    <div class="admin-kpi-sub">عميل مسجّل</div>
+                    <div class="admin-kpi-sub">{{ number_format($stats['total_users'] ?? 0) }} مستخدم في النظام</div>
                 </div>
                 <div class="admin-kpi-icon"><i class="fe fe-users"></i></div>
             </div>
@@ -24,7 +30,7 @@
                 <div class="admin-kpi-card__body">
                     <div class="admin-kpi-label">الفواتير</div>
                     <div class="admin-kpi-value" data-kpi-count="{{ (int) ($stats['total_invoices'] ?? 0) }}">0</div>
-                    <div class="admin-kpi-sub">إيراد الشهر: {{ number_format($stats['revenue_monthly'] ?? 0, 2) }}</div>
+                    <div class="admin-kpi-sub">غير مدفوعة: {{ number_format($unpaidInvoicesCount) }} · إيراد الشهر {{ number_format($stats['revenue_monthly'] ?? 0, 0) }}</div>
                 </div>
                 <div class="admin-kpi-icon"><i class="fe fe-file-text"></i></div>
             </div>
@@ -38,7 +44,7 @@
             <span class="admin-kpi-card__orb admin-kpi-card__orb--2" aria-hidden="true"></span>
             <div class="admin-kpi-card-inner">
                 <div class="admin-kpi-card__body">
-                    <div class="admin-kpi-label">Coolify</div>
+                    <div class="admin-kpi-label">تطبيقات Coolify</div>
                     <div class="admin-kpi-value" data-kpi-count="{{ (int) ($coolifyStats['applications'] ?? 0) }}">0</div>
                     <div class="admin-kpi-sub">{{ number_format($coolifyStats['projects'] ?? 0) }} مشروع · {{ number_format($coolifyStats['servers'] ?? 0) }} سيرفر</div>
                 </div>
@@ -56,7 +62,7 @@
                 <div class="admin-kpi-card__body">
                     <div class="admin-kpi-label">التذاكر</div>
                     <div class="admin-kpi-value" data-kpi-count="{{ (int) ($stats['total_tickets'] ?? 0) }}">0</div>
-                    <div class="admin-kpi-sub">تذكرة في النظام</div>
+                    <div class="admin-kpi-sub">{{ $openTicketsHint }}</div>
                 </div>
                 <div class="admin-kpi-icon"><i class="fe fe-message-circle"></i></div>
             </div>

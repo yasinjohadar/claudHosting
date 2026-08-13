@@ -10,6 +10,8 @@
     const wpActionUrl = @json($wpSiteRoutes['wpAction']);
     const wpJobUrl = @json($wpSiteRoutes['wpJob']);
     const wpStatusUrl = @json($wpSiteRoutes['status']);
+    const wpOperationsUrl = @json($wpSiteRoutes['wpOperations'] ?? '');
+    const wpOperationDownloadTemplate = @json($wpSiteRoutes['wpOperationDownload'] ?? '');
     const csrf = @json(csrf_token());
     const quickCommands = @json(config('wordpress_cli.quick_commands', []));
 
@@ -135,7 +137,7 @@
             } else {
                 btn.addEventListener('click', () => {
                     if (!confirm('حذف المستخدم «' + btn.dataset.login + '»؟')) return;
-                    runAction('user_delete', { user_id: btn.dataset.id, confirm_dangerous: '1' });
+                    runAction('user_delete', { user_id: btn.dataset.id, confirm_dangerous: '1', _confirmed: '1' });
                 });
             }
         });
@@ -187,14 +189,17 @@
         if (ov) {
             let updatesHtml = '';
             if (data.core_updates && data.core_updates.length) {
-                updatesHtml = '<p><strong>تحديثات Core:</strong></p><ul class="small">' +
-                    data.core_updates.map(u => `<li>${u.version || u.response || JSON.stringify(u)}</li>`).join('') + '</ul>';
+                updatesHtml = '<div class="wp-mgmt-stat mt-2"><div class="wp-mgmt-stat-label">تحديثات Core</div><ul class="small mb-0 ps-3">' +
+                    data.core_updates.map(u => `<li>${u.version || u.response || JSON.stringify(u)}</li>`).join('') + '</ul></div>';
             }
-            ov.innerHTML = `<p><strong>إصدار WordPress:</strong> <code>${data.core_version || '—'}</code></p>
-                <p><strong>PHP:</strong> <code>${(data.cli && data.cli.php_version) || '—'}</code></p>
-                <p><strong>الحاوية:</strong> <code>${(data.container && data.container.name) || '—'}</code></p>
-                <p><strong>وضع الصيانة:</strong> ${data.maintenance ? 'مفعّل' : 'غير مفعّل'}</p>
-                <p><strong>آخر فحص:</strong> ${data.fetched_at || '—'}</p>${updatesHtml}`;
+            const statChip = (label, value) => `<div class="wp-mgmt-stat"><div class="wp-mgmt-stat-label">${label}</div><div class="wp-mgmt-stat-value" dir="ltr">${value}</div></div>`;
+            ov.innerHTML = `<div class="wp-mgmt-stats">
+                ${statChip('إصدار WordPress', `<span id="wpCoreVersion">${data.core_version || '—'}</span>`)}
+                ${statChip('PHP', (data.cli && data.cli.php_version) || '—')}
+                ${statChip('الحاوية', (data.container && data.container.name) || '—')}
+                ${statChip('وضع الصيانة', data.maintenance ? 'مفعّل' : 'غير مفعّل')}
+                ${statChip('آخر فحص', data.fetched_at || '—')}
+                </div>${updatesHtml}`;
         }
         renderExtensionTable(document.getElementById('wpPluginsTable'), data.plugins, 'plugin');
         renderExtensionTable(document.getElementById('wpThemesTable'), data.themes, 'theme');
@@ -268,6 +273,13 @@
             const ov = document.getElementById('wpOverviewContent');
             if (ov) ov.innerHTML = '<pre class="small mb-0" dir="ltr" style="white-space:pre-wrap">' + output + '</pre>';
         }
+    }
+
+    function renderDbExportDownload(operationId) {
+        const el = document.getElementById('wpDbExportResult');
+        if (!el || !wpOperationDownloadTemplate) return;
+        const url = wpOperationDownloadTemplate.replace('__ID__', operationId);
+        el.innerHTML = `<a href="${url}" class="btn btn-success btn-sm"><i class="fe fe-download me-1"></i> تحميل ملف قاعدة البيانات (.sql.gz)</a>`;
     }
 
     async function fetchInfo(refresh, opts = {}) {
@@ -356,6 +368,9 @@
             const passTarget = job.action === 'user_create' ? 'wpUserCreateResult' : 'wpPassResult';
             showGeneratedPassword(job.login, job.generated_password, passTarget);
         }
+        if (job.action === 'db_export' && job.result_file && job.operation_id) {
+            renderDbExportDownload(job.operation_id);
+        }
         setTablesLoading(false);
         if (job.action === 'refresh_info') {
             fetchInfo(false);
@@ -369,6 +384,10 @@
     }
 
     async function refreshLog() {
+        if (wpOperationsUrl) {
+            loadOperations();
+            return;
+        }
         const r = await fetch(wpStatusUrl, { headers: { 'Accept': 'application/json' } });
         const d = await r.json();
         if (!d.success || !d.wp_management_log) return;
@@ -376,13 +395,105 @@
         if (el) el.textContent = d.wp_management_log.map(e => `[${e.at || ''}] ${e.action || ''} (${e.status || ''})\n${e.output || ''}`).join('\n---\n');
     }
 
+    let operationsLoaded = false;
+    let lastOperationId = 0;
+
+    function operationStatusBadge(op) {
+        const map = {
+            queued: ['bg-secondary', 'قيد الانتظار'],
+            running: ['bg-info', 'قيد التنفيذ'],
+            completed: ['bg-success', 'نجح'],
+            failed: ['bg-danger', 'فشل'],
+        };
+        const [cls, label] = map[op.status] || ['bg-light text-dark', op.status || '—'];
+        return `<span class="badge ${cls}">${label}</span>`;
+    }
+
+    function operationRowHtml(op) {
+        const when = op.finished_at || op.started_at || '';
+        const downloadBtn = op.has_file
+            ? `<button type="button" class="btn btn-outline-primary btn-sm py-0 wp-op-download" data-id="${op.id}">تحميل</button>`
+            : '';
+        const outputBtn = op.output
+            ? `<button type="button" class="btn btn-outline-secondary btn-sm py-0 wp-op-toggle" data-id="${op.id}">الناتج</button>`
+            : '';
+        const output = op.output
+            ? `<pre class="small mt-1 mb-0 d-none" dir="ltr" id="wpOpOutput${op.id}" style="white-space:pre-wrap;max-height:200px;overflow:auto;">${op.output}</pre>`
+            : '';
+        return `<div class="border-bottom py-2" data-op-row="${op.id}">
+            <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
+                <div>
+                    <strong class="small">${op.action_label || op.action}</strong>
+                    ${operationStatusBadge(op)}
+                    <span class="small text-muted">${op.user_name || ''}</span>
+                </div>
+                <div class="d-flex align-items-center gap-2">
+                    <span class="small text-muted" dir="ltr">${when}</span>
+                    ${outputBtn}
+                    ${downloadBtn}
+                </div>
+            </div>
+            ${op.message ? `<div class="small text-muted mt-1">${op.message}</div>` : ''}
+            ${output}
+        </div>`;
+    }
+
+    function bindOperationRowActions(container) {
+        container.querySelectorAll('.wp-op-toggle').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const pre = document.getElementById('wpOpOutput' + btn.dataset.id);
+                if (pre) pre.classList.toggle('d-none');
+            });
+        });
+        container.querySelectorAll('.wp-op-download').forEach(btn => {
+            btn.addEventListener('click', () => {
+                if (!wpOperationDownloadTemplate) return;
+                window.location.href = wpOperationDownloadTemplate.replace('__ID__', btn.dataset.id);
+            });
+        });
+    }
+
+    async function loadOperations(append = false) {
+        if (!wpOperationsUrl) return;
+        const list = document.getElementById('wpOperationsList');
+        if (!list) return;
+        const moreBtn = document.getElementById('wpOperationsLoadMore');
+        try {
+            const url = append && lastOperationId ? `${wpOperationsUrl}?before_id=${lastOperationId}` : wpOperationsUrl;
+            const d = await fetchJson(url, { headers: { 'Accept': 'application/json' } }, 30000);
+            if (!d.success) return;
+            const html = d.operations.map(operationRowHtml).join('');
+            if (append) {
+                list.insertAdjacentHTML('beforeend', html);
+            } else {
+                list.innerHTML = html || '<p class="small text-muted mb-0">لا توجد عمليات مسجّلة بعد.</p>';
+            }
+            bindOperationRowActions(list);
+            if (d.operations.length) {
+                lastOperationId = d.operations[d.operations.length - 1].id;
+            }
+            if (moreBtn) moreBtn.classList.toggle('d-none', !d.has_more);
+            operationsLoaded = true;
+        } catch (e) {
+            if (!append) list.innerHTML = '<p class="small text-danger mb-0">تعذر جلب سجل العمليات.</p>';
+        }
+    }
+
+    document.getElementById('wpOperationsLoadMore')?.addEventListener('click', () => loadOperations(true));
+    document.querySelector('[data-bs-target="#wpTabLog"]')?.addEventListener('shown.bs.tab', () => {
+        if (!operationsLoaded) loadOperations();
+    });
+
     function isDangerousCommand(cmd) {
         return dangerousPatterns.some(p => p.test(cmd));
     }
 
     async function runAction(action, params = {}, confirmMsg = '') {
         if (action !== 'diagnose' && !wpExec) { alert('اضبط مفتاح SSH في إعدادات Coolify أولاً'); return; }
-        if (confirmMsg && !confirm(confirmMsg)) return;
+        if (confirmMsg) {
+            if (!confirm(confirmMsg)) return;
+            params._confirmed = '1';
+        }
         if (params.command && isDangerousCommand(params.command) && !params.confirm_dangerous) {
             if (!confirm('أمر خطير — هل تريد المتابعة؟')) return;
             params.confirm_dangerous = '1';
@@ -708,7 +819,7 @@
         const oldVal = document.getElementById('wpSrOld')?.value || '';
         const newVal = document.getElementById('wpSrNew')?.value || '';
         if (!oldVal || !confirm('تنفيذ search-replace على قاعدة البيانات؟')) return;
-        runAction('search_replace', { old: oldVal, new: newVal, confirm_dangerous: '1' });
+        runAction('search_replace', { old: oldVal, new: newVal, confirm_dangerous: '1', _confirmed: '1' });
     });
     document.getElementById('wpBtnRunCli')?.addEventListener('click', () => {
         const command = document.getElementById('wpCliCommand')?.value?.trim();

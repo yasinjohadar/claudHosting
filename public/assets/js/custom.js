@@ -64,63 +64,65 @@
       },
     ],
   ];
-  const nanoButtons = [];
-  let nanoPickr = null;
-  for (const [theme, config] of nanoThemes) {
-    const button = document.createElement("button");
-    button.innerHTML = theme;
-    nanoButtons.push(button);
+  if (themeContainerPrimary && pickrContainerPrimary) {
+    const nanoButtons = [];
+    let nanoPickr = null;
+    for (const [theme, config] of nanoThemes) {
+      const button = document.createElement("button");
+      button.innerHTML = theme;
+      nanoButtons.push(button);
 
-    button.addEventListener("click", () => {
-      const el = document.createElement("p");
-      pickrContainerPrimary.appendChild(el);
+      button.addEventListener("click", () => {
+        const el = document.createElement("p");
+        pickrContainerPrimary.appendChild(el);
 
-      /* Delete previous instance */
-      if (nanoPickr) {
-        nanoPickr.destroyAndRemove();
-      }
+        /* Delete previous instance */
+        if (nanoPickr) {
+          nanoPickr.destroyAndRemove();
+        }
 
-      /* Apply active class */
-      for (const btn of nanoButtons) {
-        btn.classList[btn === button ? "add" : "remove"]("active");
-      }
+        /* Apply active class */
+        for (const btn of nanoButtons) {
+          btn.classList[btn === button ? "add" : "remove"]("active");
+        }
 
-      /* Create fresh instance */
-      nanoPickr = new Pickr(
-        Object.assign(
-          {
-            el,
-            theme,
-            default: "#0162e8",
-          },
-          config
-        )
-      );
-
-      /* Set events */
-      nanoPickr.on("changestop", (source, instance) => {
-        let color = instance.getColor().toRGBA();
-        let html = document.querySelector("html");
-        html.style.setProperty(
-          "--primary-rgb",
-          `${Math.floor(color[0])}, ${Math.floor(color[1])}, ${Math.floor(
-            color[2]
-          )}`
+        /* Create fresh instance */
+        nanoPickr = new Pickr(
+          Object.assign(
+            {
+              el,
+              theme,
+              default: "#0162e8",
+            },
+            config
+          )
         );
-        /* theme color picker */
-        localStorage.setItem(
-          "primaryRGB",
-          `${Math.floor(color[0])}, ${Math.floor(color[1])}, ${Math.floor(
-            color[2]
-          )}`
-        );
-        updateColors();
+
+        /* Set events */
+        nanoPickr.on("changestop", (source, instance) => {
+          let color = instance.getColor().toRGBA();
+          let html = document.querySelector("html");
+          html.style.setProperty(
+            "--primary-rgb",
+            `${Math.floor(color[0])}, ${Math.floor(color[1])}, ${Math.floor(
+              color[2]
+            )}`
+          );
+          /* theme color picker */
+          localStorage.setItem(
+            "primaryRGB",
+            `${Math.floor(color[0])}, ${Math.floor(color[1])}, ${Math.floor(
+              color[2]
+            )}`
+          );
+          updateColors();
+        });
       });
-    });
 
-    themeContainerPrimary.appendChild(button);
+      themeContainerPrimary.appendChild(button);
+    }
+    nanoButtons[0].click();
   }
-  nanoButtons[0].click();
   /* for theme primary */
 
   /* for theme background */
@@ -146,86 +148,88 @@
       },
     ],
   ];
-  const nanoButtons1 = [];
-  let nanoPickr1 = null;
-  for (const [theme, config] of nanoThemes) {
-    const button = document.createElement("button");
-    button.innerHTML = theme;
-    nanoButtons1.push(button);
+  if (themeContainerBackground && pickrContainerBackground) {
+    const nanoButtons1 = [];
+    let nanoPickr1 = null;
+    for (const [theme, config] of nanoThemes) {
+      const button = document.createElement("button");
+      button.innerHTML = theme;
+      nanoButtons1.push(button);
 
-    button.addEventListener("click", () => {
-      const el = document.createElement("p");
-      pickrContainerBackground.appendChild(el);
+      button.addEventListener("click", () => {
+        const el = document.createElement("p");
+        pickrContainerBackground.appendChild(el);
 
-      /* Delete previous instance */
-      if (nanoPickr1) {
-        nanoPickr1.destroyAndRemove();
-      }
+        /* Delete previous instance */
+        if (nanoPickr1) {
+          nanoPickr1.destroyAndRemove();
+        }
 
-      /* Apply active class */
-      for (const btn of nanoButtons) {
-        btn.classList[btn === button ? "add" : "remove"]("active");
-      }
+        /* Apply active class */
+        for (const btn of nanoButtons) {
+          btn.classList[btn === button ? "add" : "remove"]("active");
+        }
 
-      /* Create fresh instance */
-      nanoPickr1 = new Pickr(
-        Object.assign(
-          {
-            el,
-            theme,
-            default: "#0162e8",
-          },
-          config
-        )
-      );
-
-      /* Set events */
-      nanoPickr1.on("changestop", (source, instance) => {
-        let color = instance.getColor().toRGBA();
-        let html = document.querySelector("html");
-        html.style.setProperty(
-          "--body-bg-rgb",
-          `${color[0]}, ${color[1]}, ${color[2]}`
+        /* Create fresh instance */
+        nanoPickr1 = new Pickr(
+          Object.assign(
+            {
+              el,
+              theme,
+              default: "#0162e8",
+            },
+            config
+          )
         );
-        document
-          .querySelector("html")
-          .style.setProperty(
-            "--body-bg-rgb2",
+
+        /* Set events */
+        nanoPickr1.on("changestop", (source, instance) => {
+          let color = instance.getColor().toRGBA();
+          let html = document.querySelector("html");
+          html.style.setProperty(
+            "--body-bg-rgb",
+            `${color[0]}, ${color[1]}, ${color[2]}`
+          );
+          document
+            .querySelector("html")
+            .style.setProperty(
+              "--body-bg-rgb2",
+              `${color[0] + 14}, ${color[1] + 14}, ${color[2] + 14}`
+            );
+          document
+            .querySelector("html")
+            .style.setProperty(
+              "--light-rgb",
+              `${color[0] + 14}, ${color[1] + 14}, ${color[2] + 14}`
+            );
+          document
+            .querySelector("html")
+            .style.setProperty(
+              "--form-control-bg",
+              `rgb(${color[0] + 14}, ${color[1] + 14}, ${color[2] + 14})`
+            );
+          localStorage.removeItem("bgtheme");
+          updateColors();
+          html.setAttribute("data-theme-mode", "dark");
+          html.setAttribute("data-menu-styles", "dark");
+          html.setAttribute("data-header-styles", "dark");
+          document.querySelector("#switcher-dark-theme").checked = true;
+          document.querySelector('#switcher-menu-dark').checked = true;
+          document.querySelector('#switcher-header-dark').checked = true
+          localStorage.setItem(
+            "bodyBgRGB",
+            `${color[0]}, ${color[1]}, ${color[2]}`
+          );
+          localStorage.setItem(
+            "bodylightRGB",
             `${color[0] + 14}, ${color[1] + 14}, ${color[2] + 14}`
           );
-        document
-          .querySelector("html")
-          .style.setProperty(
-            "--light-rgb",
-            `${color[0] + 14}, ${color[1] + 14}, ${color[2] + 14}`
-          );
-        document
-          .querySelector("html")
-          .style.setProperty(
-            "--form-control-bg",
-            `rgb(${color[0] + 14}, ${color[1] + 14}, ${color[2] + 14})`
-          );
-        localStorage.removeItem("bgtheme");
-        updateColors();
-        html.setAttribute("data-theme-mode", "dark");
-        html.setAttribute("data-menu-styles", "dark");
-        html.setAttribute("data-header-styles", "dark");
-        document.querySelector("#switcher-dark-theme").checked = true;
-        document.querySelector('#switcher-menu-dark').checked = true;
-        document.querySelector('#switcher-header-dark').checked = true
-        localStorage.setItem(
-          "bodyBgRGB",
-          `${color[0]}, ${color[1]}, ${color[2]}`
-        );
-        localStorage.setItem(
-          "bodylightRGB",
-          `${color[0] + 14}, ${color[1] + 14}, ${color[2] + 14}`
-        );
+        });
       });
-    });
-    themeContainerBackground.appendChild(button);
+      themeContainerBackground.appendChild(button);
+    }
+    nanoButtons1[0].click();
   }
-  nanoButtons1[0].click();
   /* for theme background */
 
   /* header theme toggle */

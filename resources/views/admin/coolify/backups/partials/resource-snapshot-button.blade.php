@@ -18,6 +18,6 @@
         <input type="hidden" name="server_uuid" value="{{ $serverUuid }}">
     @endif
     <button type="submit" class="btn btn-sm btn-outline-success">
-        <i class="fe fe-archive"></i> نسخ الآن
+        <i class="fe fe-hard-drive"></i> نسخ الآن
     </button>
 </form>

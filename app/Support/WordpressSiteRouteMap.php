@@ -19,6 +19,10 @@ class WordpressSiteRouteMap
             'wpInfo' => route("{$prefix}.wp-info", $uuid),
             'wpAction' => route("{$prefix}.wp-action", $uuid),
             'wpJob' => route("{$prefix}.wp-job", $uuid),
+            'wpOperations' => $panel === 'admin' ? route('admin.coolify.wordpress-sites.wp-operations', $uuid) : '',
+            'wpOperationDownload' => $panel === 'admin'
+                ? route('admin.coolify.wordpress-sites.wp-operations.download', ['uuid' => $uuid, 'operation' => '__ID__'])
+                : '',
             'filesList' => route("{$prefix}.files.list", $uuid),
             'filesRead' => route("{$prefix}.files.read", $uuid),
             'filesWrite' => route("{$prefix}.files.write", $uuid),

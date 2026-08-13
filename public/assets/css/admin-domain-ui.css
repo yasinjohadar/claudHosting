@@ -1587,6 +1587,8 @@ button.domain-action-btn {
 
 .customer-domain-chip {
     display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
     padding: 0.12rem 0.45rem;
     border-radius: 0.35rem;
     font-size: 0.66rem;
@@ -1595,6 +1597,31 @@ button.domain-action-btn {
     background: var(--default-background, rgba(14, 165, 233, 0.1));
     color: #0284c7;
     border: 1px solid rgba(14, 165, 233, 0.15);
+}
+
+.customer-domain-chip-form {
+    display: inline-flex;
+}
+
+button.customer-domain-chip--unlink {
+    appearance: none;
+    cursor: pointer;
+    transition: background 0.15s, color 0.15s, border-color 0.15s;
+}
+
+button.customer-domain-chip--unlink i {
+    font-size: 0.6rem;
+    opacity: 0.7;
+}
+
+button.customer-domain-chip--unlink:hover {
+    background: rgba(239, 68, 68, 0.12);
+    color: #dc2626;
+    border-color: rgba(239, 68, 68, 0.25);
+}
+
+button.customer-domain-chip--unlink:hover i {
+    opacity: 1;
 }
 
 .customer-actions {
@@ -1948,4 +1975,20 @@ button.domain-action-btn {
 [data-theme-mode=dark] .site-settings-social-card {
     background: rgba(255, 255, 255, 0.03);
     border-color: var(--default-border);
+}
+
+.ticket-rich-content {
+    font-size: 0.94rem;
+    line-height: 1.75;
+}
+.ticket-rich-content p { margin-bottom: 0.65rem; }
+.ticket-rich-content p:last-child { margin-bottom: 0; }
+.ticket-rich-content ul,
+.ticket-rich-content ol { padding-inline-start: 1.25rem; margin-bottom: 0.65rem; }
+.ticket-rich-content img { max-width: 100%; height: auto; border-radius: 0.5rem; }
+.ticket-rich-content pre,
+.ticket-rich-content code {
+    direction: ltr;
+    text-align: left;
+    font-size: 0.86em;
 }

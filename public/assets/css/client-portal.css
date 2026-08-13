@@ -339,6 +339,65 @@
     color: #d97706;
 }
 
+/* ===========================
+   WordPress management: premium inner tabs
+   =========================== */
+.wp-inner-tabs.nav-tabs {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.35rem;
+    padding: 0.35rem;
+    margin: 0 0 1rem;
+    border: 1px solid rgba(20, 184, 166, 0.14);
+    border-radius: 0.9rem;
+    background: rgba(20, 184, 166, 0.06);
+    box-shadow: inset 0 1px 2px rgba(15, 23, 42, 0.04);
+}
+
+.wp-inner-tabs.nav-tabs .nav-item {
+    flex: 0 1 auto;
+}
+
+.wp-inner-tabs.nav-tabs .nav-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    border: 1px solid transparent !important;
+    border-radius: 0.65rem !important;
+    background: transparent;
+    color: var(--text-muted, #64748b);
+    font-weight: 700;
+    font-size: 0.82rem;
+    line-height: 1.3;
+    padding: 0.55rem 0.95rem;
+    white-space: nowrap;
+    transition:
+        background 0.2s ease,
+        color 0.2s ease,
+        border-color 0.2s ease,
+        box-shadow 0.2s ease,
+        transform 0.2s ease;
+}
+
+.wp-inner-tabs.nav-tabs .nav-link:hover {
+    color: var(--default-text-color, #334155);
+    background: rgba(255, 255, 255, 0.55);
+    border-color: rgba(20, 184, 166, 0.16) !important;
+}
+
+.wp-inner-tabs.nav-tabs .nav-link.active {
+    background: var(--custom-white, #fff) !important;
+    color: #0d9488 !important;
+    border-color: rgba(20, 184, 166, 0.3) !important;
+    box-shadow: 0 8px 20px rgba(15, 23, 42, 0.1);
+    transform: translateY(-1px);
+}
+
+.wp-inner-tabs.nav-tabs .nav-link i {
+    font-size: 0.85rem;
+    opacity: 0.85;
+}
+
 .client-services-panels {
     padding: 0;
 }
@@ -411,6 +470,26 @@
         minmax(170px, 1.55fr)
         minmax(115px, 1fr)
         minmax(85px, 0.75fr);
+}
+
+.client-services-grid--cols-7 .client-services-grid__row {
+    grid-template-columns:
+        minmax(120px, 1.1fr)
+        minmax(90px, 0.85fr)
+        minmax(80px, 0.75fr)
+        minmax(160px, 1.4fr)
+        minmax(105px, 0.95fr)
+        minmax(80px, 0.7fr)
+        minmax(140px, 1fr);
+}
+
+.client-services-grid__actions {
+    display: flex;
+    justify-content: flex-end;
+}
+
+.client-services-grid__actions .btn {
+    font-weight: 700;
 }
 
 .client-services-grid__row--head {
@@ -694,6 +773,21 @@
 [data-theme-mode=dark] .client-services-tab.active {
     background: var(--custom-white, #1e293b);
     box-shadow: 0 8px 24px rgba(0, 0, 0, 0.28);
+}
+
+[data-theme-mode=dark] .wp-inner-tabs.nav-tabs {
+    background: rgba(0, 0, 0, 0.18);
+    border-color: rgba(255, 255, 255, 0.07);
+    box-shadow: none;
+}
+
+[data-theme-mode=dark] .wp-inner-tabs.nav-tabs .nav-link:hover {
+    background: rgba(255, 255, 255, 0.05);
+}
+
+[data-theme-mode=dark] .wp-inner-tabs.nav-tabs .nav-link.active {
+    background: var(--custom-white, #1e293b) !important;
+    box-shadow: 0 8px 22px rgba(0, 0, 0, 0.3);
 }
 
 [data-theme-mode=dark] .client-services-panel-head {
@@ -1235,3 +1329,513 @@
     border-color: rgba(255, 255, 255, 0.08);
 }
 
+
+/* ===== Client tickets ===== */
+.client-ticket-progress-mini {
+    height: 6px;
+    border-radius: 999px;
+    background: rgba(var(--primary-rgb, 13, 110, 253), 0.12);
+    overflow: hidden;
+    margin-bottom: 0.2rem;
+}
+.client-ticket-progress-mini__bar {
+    height: 100%;
+    border-radius: inherit;
+    background: linear-gradient(90deg, rgb(var(--primary-rgb, 13, 110, 253)), #38bdf8);
+}
+
+.client-ticket-hints {
+    margin: 0;
+    padding-inline-start: 1.1rem;
+    color: var(--text-muted, #64748b);
+    font-size: 0.86rem;
+    line-height: 1.7;
+}
+
+.client-ticket-show__hero {
+    margin-top: 1rem;
+    margin-bottom: 1rem;
+    padding: 1.35rem 1.35rem 1.1rem;
+    border-radius: 1.1rem;
+    border: 1px solid var(--default-border, #e2e8f0);
+    background: var(--custom-white, #fff);
+    box-shadow: 0 8px 24px rgba(15, 23, 42, 0.04);
+}
+.client-ticket-show__hero-inner {
+    display: flex;
+    justify-content: space-between;
+    gap: 1.25rem;
+    flex-wrap: wrap;
+    align-items: flex-start;
+}
+.client-ticket-show__title {
+    font-size: 1.45rem;
+    font-weight: 800;
+    margin: 0;
+    line-height: 1.35;
+}
+.client-ticket-show__hero-side {
+    display: flex;
+    flex-direction: column;
+    gap: 0.85rem;
+    min-width: 220px;
+}
+
+.client-ticket-steps {
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
+    margin-top: 1.25rem;
+    padding-top: 1rem;
+    border-top: 1px dashed var(--default-border, #e2e8f0);
+    overflow-x: auto;
+}
+.client-ticket-steps__item {
+    display: flex;
+    align-items: center;
+    gap: 0.45rem;
+    white-space: nowrap;
+    color: var(--text-muted, #64748b);
+    font-size: 0.82rem;
+    font-weight: 600;
+}
+.client-ticket-steps__dot {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    display: grid;
+    place-items: center;
+    font-size: 0.75rem;
+    font-weight: 800;
+    background: rgba(148, 163, 184, 0.18);
+    color: #64748b;
+}
+.client-ticket-steps__item.is-done .client-ticket-steps__dot {
+    background: rgba(34, 197, 94, 0.15);
+    color: #16a34a;
+}
+.client-ticket-steps__item.is-current .client-ticket-steps__dot {
+    background: rgba(var(--primary-rgb, 13, 110, 253), 0.15);
+    color: rgb(var(--primary-rgb, 13, 110, 253));
+    box-shadow: 0 0 0 3px rgba(var(--primary-rgb, 13, 110, 253), 0.12);
+}
+.client-ticket-steps__item.is-current,
+.client-ticket-steps__item.is-done {
+    color: var(--default-text-color, #0f172a);
+}
+.client-ticket-steps__line {
+    flex: 1 1 24px;
+    min-width: 18px;
+    height: 2px;
+    background: rgba(148, 163, 184, 0.35);
+}
+.client-ticket-steps__line.is-done {
+    background: rgba(34, 197, 94, 0.55);
+}
+
+.client-ticket-thread {
+    display: flex;
+    flex-direction: column;
+    gap: 0.85rem;
+}
+.client-ticket-thread__item {
+    border: 1px solid var(--default-border, #e2e8f0);
+    border-radius: 0.9rem;
+    padding: 0.9rem 1rem;
+    background: rgba(248, 250, 252, 0.8);
+}
+.client-ticket-thread__item--admin {
+    background: rgba(var(--primary-rgb, 13, 110, 253), 0.05);
+    border-color: rgba(var(--primary-rgb, 13, 110, 253), 0.18);
+}
+.client-ticket-thread__meta {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.45rem;
+    margin-bottom: 0.55rem;
+}
+.client-ticket-thread__body {
+    white-space: pre-wrap;
+    color: var(--default-text-color, #334155);
+    font-size: 0.92rem;
+    line-height: 1.7;
+}
+.client-ticket-reply {
+    border-top: 1px dashed var(--default-border, #e2e8f0);
+    padding-top: 1rem;
+}
+
+@media (max-width: 767px) {
+    .client-ticket-show__hero-side {
+        width: 100%;
+    }
+}
+
+[data-theme-mode=dark] .client-ticket-show__hero,
+[data-theme-mode=dark] .client-ticket-thread__item {
+    background: var(--custom-white, #1e293b);
+    border-color: rgba(255, 255, 255, 0.08);
+}
+[data-theme-mode=dark] .client-ticket-thread__item--admin {
+    background: rgba(var(--primary-rgb, 132, 90, 223), 0.12);
+}
+[data-theme-mode=dark] .client-ticket-steps {
+    border-top-color: rgba(255, 255, 255, 0.08);
+}
+
+.ticket-rich-content {
+    font-size: 0.94rem;
+    line-height: 1.75;
+    color: var(--default-text-color, #334155);
+}
+.ticket-rich-content p { margin-bottom: 0.65rem; }
+.ticket-rich-content p:last-child { margin-bottom: 0; }
+.ticket-rich-content ul,
+.ticket-rich-content ol { padding-inline-start: 1.25rem; margin-bottom: 0.65rem; }
+.ticket-rich-content img { max-width: 100%; height: auto; border-radius: 0.5rem; }
+.ticket-rich-content table { width: 100%; margin-bottom: 0.75rem; }
+.ticket-rich-content pre,
+.ticket-rich-content code {
+    direction: ltr;
+    text-align: left;
+    font-size: 0.86em;
+}
+.client-ticket-thread__body.ticket-rich-content {
+    white-space: normal;
+}
+
+
+/* ===== Lux cPanel manage modal ===== */
+.cpanel-lux-modal .modal-dialog {
+    max-width: 560px;
+}
+.cpanel-lux {
+    border: 0;
+    border-radius: 1.35rem;
+    overflow: hidden;
+    background: #fff;
+    box-shadow: 0 30px 80px rgba(15, 23, 42, 0.22);
+}
+.cpanel-lux__hero {
+    position: relative;
+    padding: 1.35rem 1.4rem 1.2rem;
+    color: #0c4a6e;
+    background:
+        radial-gradient(900px 240px at 100% -10%, rgba(46, 154, 208, 0.28), transparent 58%),
+        radial-gradient(700px 200px at 0% 120%, rgba(0, 87, 184, 0.12), transparent 55%),
+        linear-gradient(145deg, #eef7fc 0%, #d9eef9 48%, #c5e6f6 100%);
+    border-bottom: 1px solid rgba(0, 87, 184, 0.1);
+}
+.cpanel-lux__hero-glow {
+    position: absolute;
+    inset: auto -18% -45% auto;
+    width: 200px;
+    height: 200px;
+    border-radius: 50%;
+    background: rgba(46, 154, 208, 0.22);
+    filter: blur(30px);
+    pointer-events: none;
+}
+.cpanel-lux__hero-top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 0.85rem;
+    position: relative;
+    z-index: 1;
+}
+.cpanel-lux__badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.35rem 0.7rem;
+    border-radius: 999px;
+    background: rgba(0, 87, 184, 0.1);
+    border: 1px solid rgba(0, 87, 184, 0.16);
+    color: #0057B8;
+    font-size: 0.78rem;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+}
+.cpanel-lux__close {
+    width: 36px;
+    height: 36px;
+    border: 0;
+    border-radius: 50%;
+    background: rgba(0, 87, 184, 0.1);
+    color: #0057B8;
+    display: grid;
+    place-items: center;
+}
+.cpanel-lux__close:hover {
+    background: rgba(0, 87, 184, 0.18);
+}
+.cpanel-lux__title {
+    position: relative;
+    z-index: 1;
+    font-size: 1.35rem;
+    font-weight: 800;
+    margin-bottom: 0.35rem;
+    color: #0057B8;
+}
+.cpanel-lux__subtitle {
+    position: relative;
+    z-index: 1;
+    opacity: 1;
+    color: #3d6f94;
+    font-size: 0.86rem;
+    margin-bottom: 1rem !important;
+}
+.cpanel-lux__identity {
+    position: relative;
+    z-index: 1;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.75rem;
+    margin-top: 1rem;
+    padding: 0.85rem 0.95rem;
+    border-radius: 1rem;
+    background: rgba(255, 255, 255, 0.72);
+    border: 1px solid rgba(0, 87, 184, 0.12);
+    backdrop-filter: blur(8px);
+    box-shadow: 0 8px 24px rgba(0, 87, 184, 0.06);
+}
+.cpanel-lux__label {
+    display: block;
+    font-size: 0.72rem;
+    opacity: 1;
+    color: #5b86a8;
+    margin-bottom: 0.15rem;
+}
+.cpanel-lux__identity strong,
+.cpanel-lux__identity code {
+    color: #0f3f73;
+    font-size: 0.95rem;
+}
+.cpanel-lux__identity code {
+    background: rgba(0, 87, 184, 0.1);
+    color: #0057B8;
+    padding: 0.1rem 0.4rem;
+    border-radius: 0.35rem;
+}
+.cpanel-lux__body {
+    padding: 1.15rem 1.25rem 1.35rem;
+    background: linear-gradient(180deg, #f8fafc 0%, #fff 40%);
+}
+.cpanel-lux__alert {
+    border-radius: 0.85rem;
+    padding: 0.7rem 0.9rem;
+    font-size: 0.86rem;
+    margin-bottom: 0.9rem;
+    border: 1px solid transparent;
+}
+.cpanel-lux__alert--success {
+    background: rgba(16, 185, 129, 0.1);
+    border-color: rgba(16, 185, 129, 0.25);
+    color: #047857;
+}
+.cpanel-lux__alert--danger {
+    background: rgba(239, 68, 68, 0.1);
+    border-color: rgba(239, 68, 68, 0.25);
+    color: #b91c1c;
+}
+.cpanel-lux__alert--info {
+    background: rgba(14, 165, 233, 0.1);
+    border-color: rgba(14, 165, 233, 0.25);
+    color: #0369a1;
+}
+.cpanel-lux__card {
+    border-radius: 1.1rem;
+    border: 1px solid #e2e8f0;
+    background: #fff;
+    padding: 1rem;
+    margin-bottom: 0.9rem;
+    box-shadow: 0 10px 30px rgba(15, 23, 42, 0.04);
+}
+.cpanel-lux__card--password {
+    margin-bottom: 0;
+    border-color: rgba(245, 158, 11, 0.28);
+    background: linear-gradient(180deg, #fffbeb 0%, #fff 55%);
+}
+.cpanel-lux__card-head {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.75rem;
+    margin-bottom: 0.85rem;
+}
+.cpanel-lux__card-icon {
+    width: 42px;
+    height: 42px;
+    border-radius: 0.85rem;
+    display: grid;
+    place-items: center;
+    background: rgba(14, 165, 233, 0.12);
+    color: #0284c7;
+    flex-shrink: 0;
+}
+.cpanel-lux__card-icon--amber {
+    background: rgba(245, 158, 11, 0.16);
+    color: #d97706;
+}
+.cpanel-lux__card-head h6 {
+    margin: 0;
+    font-weight: 800;
+    font-size: 0.98rem;
+}
+.cpanel-lux__card-head p {
+    margin: 0.15rem 0 0;
+    color: #64748b;
+    font-size: 0.8rem;
+}
+.cpanel-lux__email-row {
+    display: flex;
+    gap: 0.5rem;
+}
+.cpanel-lux__input {
+    border-radius: 0.8rem !important;
+    border-color: #dbe3ef !important;
+    min-height: 44px;
+    box-shadow: none !important;
+}
+.cpanel-lux__input:focus {
+    border-color: #0ea5e9 !important;
+    box-shadow: 0 0 0 3px rgba(14, 165, 233, 0.15) !important;
+}
+.cpanel-lux__btn-primary {
+    border: 0;
+    border-radius: 0.8rem;
+    background: linear-gradient(135deg, #0284c7, #0ea5e9);
+    color: #fff;
+    font-weight: 700;
+    padding-inline: 1.1rem;
+    white-space: nowrap;
+}
+.cpanel-lux__btn-primary:hover {
+    color: #fff;
+    filter: brightness(1.05);
+}
+.cpanel-lux__btn-accent {
+    border: 0;
+    border-radius: 0.9rem;
+    min-height: 48px;
+    font-weight: 800;
+    color: #1c1917;
+    background: linear-gradient(135deg, #fbbf24, #f59e0b 55%, #fb923c);
+    box-shadow: 0 12px 28px rgba(245, 158, 11, 0.28);
+}
+.cpanel-lux__btn-accent:hover {
+    color: #1c1917;
+    filter: brightness(1.03);
+}
+.cpanel-lux__tools {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.45rem;
+    margin-bottom: 0.75rem;
+}
+.cpanel-lux__tool {
+    border-radius: 999px;
+    border: 1px solid #e2e8f0;
+    background: #fff;
+    color: #334155;
+    font-size: 0.8rem;
+    font-weight: 700;
+    padding: 0.35rem 0.75rem;
+}
+.cpanel-lux__tool:hover {
+    border-color: #94a3b8;
+    background: #f8fafc;
+}
+.cpanel-lux__meter {
+    height: 7px;
+    border-radius: 999px;
+    background: #e2e8f0;
+    overflow: hidden;
+}
+.cpanel-lux__meter-bar {
+    display: block;
+    height: 100%;
+    width: 8%;
+    border-radius: inherit;
+    transition: width 0.25s ease, background 0.25s ease;
+    background: #94a3b8;
+}
+.cpanel-lux__meter-bar[data-level="1"] { background: #ef4444; }
+.cpanel-lux__meter-bar[data-level="2"] { background: #f59e0b; }
+.cpanel-lux__meter-bar[data-level="3"] { background: #0ea5e9; }
+.cpanel-lux__meter-bar[data-level="4"] { background: #10b981; }
+.cpanel-lux__strength-label {
+    margin-top: 0.35rem;
+    font-size: 0.78rem;
+    color: #64748b;
+    font-weight: 600;
+}
+
+@media (max-width: 575px) {
+    .cpanel-lux__identity {
+        grid-template-columns: 1fr;
+    }
+    .cpanel-lux__email-row {
+        flex-direction: column;
+    }
+}
+
+[data-theme-mode=dark] .cpanel-lux {
+    background: #0f172a;
+}
+[data-theme-mode=dark] .cpanel-lux__hero {
+    color: #dbeafe;
+    background:
+        radial-gradient(900px 240px at 100% -10%, rgba(46, 154, 208, 0.22), transparent 58%),
+        linear-gradient(145deg, #102a43 0%, #163a5f 55%, #1a4a73 100%);
+    border-bottom-color: rgba(46, 154, 208, 0.18);
+}
+[data-theme-mode=dark] .cpanel-lux__title {
+    color: #7dd3fc;
+}
+[data-theme-mode=dark] .cpanel-lux__subtitle,
+[data-theme-mode=dark] .cpanel-lux__label {
+    color: #93c5e8;
+}
+[data-theme-mode=dark] .cpanel-lux__badge,
+[data-theme-mode=dark] .cpanel-lux__close {
+    background: rgba(46, 154, 208, 0.16);
+    border-color: rgba(46, 154, 208, 0.25);
+    color: #7dd3fc;
+}
+[data-theme-mode=dark] .cpanel-lux__identity {
+    background: rgba(15, 23, 42, 0.45);
+    border-color: rgba(46, 154, 208, 0.2);
+}
+[data-theme-mode=dark] .cpanel-lux__identity strong {
+    color: #e2e8f0;
+}
+[data-theme-mode=dark] .cpanel-lux__identity code {
+    background: rgba(46, 154, 208, 0.2);
+    color: #7dd3fc;
+}
+[data-theme-mode=dark] .cpanel-lux__body {
+    background: linear-gradient(180deg, #111827 0%, #0f172a 50%);
+}
+[data-theme-mode=dark] .cpanel-lux__card {
+    background: #1e293b;
+    border-color: rgba(255, 255, 255, 0.08);
+}
+[data-theme-mode=dark] .cpanel-lux__card--password {
+    background: linear-gradient(180deg, rgba(245, 158, 11, 0.12), #1e293b 60%);
+}
+[data-theme-mode=dark] .cpanel-lux__card-head p,
+[data-theme-mode=dark] .cpanel-lux__strength-label {
+    color: #94a3b8;
+}
+[data-theme-mode=dark] .cpanel-lux__input {
+    background: #0f172a;
+    border-color: rgba(255, 255, 255, 0.1) !important;
+    color: #e2e8f0;
+}
+[data-theme-mode=dark] .cpanel-lux__tool {
+    background: #0f172a;
+    border-color: rgba(255, 255, 255, 0.1);
+    color: #e2e8f0;
+}

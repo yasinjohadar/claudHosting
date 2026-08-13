@@ -124,6 +124,7 @@ class Ticket extends Model
             'Low' => 'منخفضة',
             'Medium' => 'متوسطة',
             'High' => 'عالية',
+            'Urgent' => 'عاجلة',
             'Critical' => 'حرجة',
             'Emergency' => 'طارئة',
         ];
@@ -140,6 +141,7 @@ class Ticket extends Model
             'Low' => 'success',
             'Medium' => 'info',
             'High' => 'warning',
+            'Urgent' => 'danger',
             'Critical' => 'danger',
             'Emergency' => 'danger',
         ];
@@ -253,5 +255,107 @@ class Ticket extends Model
         }
 
         return false;
+    }
+
+    /**
+     * مراحل تقدم التذكرة للعرض في لوحة العميل.
+     *
+     * @return list<array{key: string, label: string, done: bool, current: bool}>
+     */
+    public function getProgressStepsAttribute(): array
+    {
+        $status = $this->status;
+        $closed = $status === 'Closed';
+        $hasAdminReply = $closed
+            || in_array($status, ['Answered', 'In Progress'], true)
+            || (
+                $this->relationLoaded('replies')
+                    ? $this->replies->contains(fn ($r) => $r->type === 'admin')
+                    : $this->replies()->where('type', 'admin')->exists()
+            );
+        $processing = $closed
+            || $hasAdminReply
+            || in_array($status, ['In Progress', 'Answered', 'Customer-Reply'], true);
+
+        $steps = [
+            [
+                'key' => 'opened',
+                'label' => 'تم الاستلام',
+                'done' => true,
+                'current' => false,
+            ],
+            [
+                'key' => 'processing',
+                'label' => 'قيد المعالجة',
+                'done' => $processing,
+                'current' => false,
+            ],
+            [
+                'key' => 'replied',
+                'label' => 'رد الدعم',
+                'done' => $hasAdminReply,
+                'current' => false,
+            ],
+            [
+                'key' => 'closed',
+                'label' => 'مكتملة',
+                'done' => $closed,
+                'current' => false,
+            ],
+        ];
+
+        $currentIndex = 0;
+        foreach ($steps as $i => $step) {
+            if ($step['done']) {
+                $currentIndex = $i;
+            }
+        }
+
+        if (! $closed) {
+            $next = min($currentIndex + 1, count($steps) - 1);
+            if (! $steps[$next]['done']) {
+                $steps[$next]['current'] = true;
+            } else {
+                $steps[$currentIndex]['current'] = true;
+            }
+        } else {
+            $steps[count($steps) - 1]['current'] = true;
+        }
+
+        return $steps;
+    }
+
+    public function getProgressPercentAttribute(): int
+    {
+        return match ($this->status) {
+            'Open' => 25,
+            'Customer-Reply' => 45,
+            'In Progress' => 60,
+            'Answered' => 75,
+            'Closed' => 100,
+            default => 30,
+        };
+    }
+
+    public static function generateTicketNumber(): string
+    {
+        $prefix = 'TCK-';
+        $year = date('Y');
+        $month = date('m');
+
+        $lastTicket = static::query()
+            ->whereYear('created_at', $year)
+            ->whereMonth('created_at', $month)
+            ->orderByDesc('created_at')
+            ->first();
+
+        if ($lastTicket && $lastTicket->tid) {
+            $lastNumber = (int) substr((string) $lastTicket->tid, -4);
+            $newNumber = str_pad((string) ($lastNumber + 1), 4, '0', STR_PAD_LEFT);
+        } else {
+            $newNumber = '0001';
+        }
+
+        return $prefix.$year.$month.$newNumber;
     }
 }

@@ -44,7 +44,7 @@
                 <i class="fe fe-rotate-ccw"></i> إعادة تثبيت كامل
             </button>
             <a href="{{ route('admin.coolify.backups.index', ['database_uuid' => $uuid]) }}" class="btn btn-outline-primary btn-sm">
-                <i class="fe fe-archive"></i> مركز النسخ
+                <i class="fe fe-hard-drive"></i> مركز النسخ
             </a>
             @include('admin.coolify.backups.partials.resource-snapshot-button', [
                 'resourceUuid' => $uuid,
@@ -158,7 +158,7 @@
         <div class="catalog-panel mb-4">
             <div class="catalog-panel__head d-flex justify-content-between align-items-center flex-wrap gap-2">
                 <div class="d-flex align-items-center gap-2">
-                    <div class="catalog-panel__head-icon"><i class="fe fe-archive"></i></div>
+                    <div class="catalog-panel__head-icon"><i class="fe fe-hard-drive"></i></div>
                     <div class="fw-semibold">النسخ الاحتياطي</div>
                 </div>
                 <a href="{{ route('admin.coolify.backups.create') }}?database_uuid={{ $uuid }}" class="btn btn-sm btn-primary">جدولة جديدة</a>

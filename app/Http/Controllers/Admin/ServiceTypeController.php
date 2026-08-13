@@ -21,7 +21,13 @@ class ServiceTypeController extends Controller
             ->ordered()
             ->paginate(15);
 
-        return view('admin.service-types.index', compact('serviceTypes'));
+        $stats = [
+            'total' => ServiceType::count(),
+            'active' => ServiceType::query()->where('is_active', true)->count(),
+            'with_services' => ServiceType::query()->has('offeredServices')->count(),
+        ];
+
+        return view('admin.service-types.index', compact('serviceTypes', 'stats'));
     }
 
     public function create()

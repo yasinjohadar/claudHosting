@@ -76,6 +76,24 @@ class WhmSettingsService
             'timeout' => $config['timeout'],
             'has_token' => $config['token_configured'],
             'billing' => $this->getBillingConfig(),
+            'ssh' => $this->getSshFormSettings(),
+        ];
+    }
+
+    /**
+     * @return array{ssh_host: string, ssh_user: string, ssh_port: int, has_ssh_key: bool, ssh_private_key_path: string, using_coolify_key: bool}
+     */
+    public function getSshFormSettings(): array
+    {
+        $ssh = app(WhmSshExecutor::class)->getSshConfig();
+
+        return [
+            'ssh_host' => $ssh['ssh_host'] ?? '',
+            'ssh_user' => $ssh['ssh_user'] ?? 'root',
+            'ssh_port' => $ssh['ssh_port'] ?? 22,
+            'has_ssh_key' => (bool) ($ssh['ssh_key_configured'] ?? false),
+            'ssh_private_key_path' => ($ssh['using_coolify_key'] ?? false) ? '' : ($ssh['ssh_private_key_path'] ?? ''),
+            'using_coolify_key' => (bool) ($ssh['using_coolify_key'] ?? false),
         ];
     }
 
@@ -151,7 +169,34 @@ class WhmSettingsService
             SystemSetting::set($keys['subscription_years'], (string) max(1, (int) $data['subscription_years']), 'integer', self::GROUP);
         }
 
+        if (array_key_exists('ssh_host', $data)) {
+            SystemSetting::set($keys['ssh_host'], trim((string) $data['ssh_host']), 'string', self::GROUP);
+        }
+
+        if (array_key_exists('ssh_user', $data)) {
+            SystemSetting::set($keys['ssh_user'], trim((string) $data['ssh_user']) ?: 'root', 'string', self::GROUP);
+        }
+
+        if (array_key_exists('ssh_port', $data)) {
+            $port = (int) $data['ssh_port'];
+            SystemSetting::set($keys['ssh_port'], (string) ($port > 0 && $port <= 65535 ? $port : 22), 'integer', self::GROUP);
+        }
+
+        if (array_key_exists('ssh_private_key_path', $data)) {
+            SystemSetting::set($keys['ssh_private_key_path'], trim((string) $data['ssh_private_key_path']), 'string', self::GROUP);
+        }
+
+        if (! empty($data['ssh_private_key'])) {
+            SystemSetting::set(
+                $keys['ssh_private_key'],
+                Crypt::encryptString((string) $data['ssh_private_key']),
+                'string',
+                self::GROUP
+            );
+        }
+
         $this->clearCache();
+        app(WhmSshExecutor::class)->clearSshCache();
     }
 
     public function clearCache(): void

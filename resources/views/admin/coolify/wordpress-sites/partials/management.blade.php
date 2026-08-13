@@ -7,8 +7,9 @@
     $wpLog = $site->metadata['wp_management_log'] ?? [];
     $wpMcpReady = !empty($site->metadata['wp_mcp_bootstrapped_at']);
     $wpMcpSnippet = $site->metadata['wp_mcp_cursor_snippet'] ?? '';
-    $settingsUrl = route('admin.coolify.settings.index');
+    $settingsUrl = $wpSettingsUrl ?? route('admin.coolify.settings.index');
     $embeddedInSiteShow = $embeddedInSiteShow ?? false;
+    $hideDockerTab = $hideDockerTab ?? false;
 @endphp
 @if(!$embeddedInSiteShow)
 <div class="card custom-card mb-3" id="wpManagementCard">
@@ -26,7 +27,7 @@
 @else
 <div id="wpManagementCard" class="site-wp-management">
     <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
-        <p class="text-muted small mb-0">تحديث Core، إضافات، مستخدمون، WP-CLI، Docker.</p>
+        <p class="text-muted small mb-0">{{ $hideDockerTab ? 'تحديث Core، إضافات، مستخدمون، WP-CLI عبر cPanel.' : 'تحديث Core، إضافات، مستخدمون، WP-CLI، Docker.' }}</p>
         @if($wpExec)
         <span class="badge bg-success">SSH + WP-CLI جاهز</span>
         @elseif($wpUi && !$wpSsh)
@@ -42,7 +43,7 @@
         @if(!$wpSsh)
         <div class="alert alert-warning py-3 mb-3">
             <strong>خطوة مطلوبة:</strong> لاستخدام التحديث وإعادة تثبيت Core وغيرها، أضف <strong>مفتاح SSH</strong> للسيرفر في
-            <a href="{{ $settingsUrl }}" class="alert-link fw-bold">إعدادات Coolify</a>
+            <a href="{{ $settingsUrl }}" class="alert-link fw-bold">{{ $hideDockerTab ? 'إعدادات WHM' : 'إعدادات Coolify' }}</a>
             (قسم SSH — لصق المفتاح PEM أو مسار الملف على الجهاز الذي يشغّل Laravel).
             <hr class="my-2">
             <span class="small">بعد الحفظ، حدّث هذه الصفحة. الأزرار أدناه ستُفعَّل تلقائياً.</span>
@@ -50,9 +51,15 @@
         @elseif($wpState['ssh_host_required'] ?? false)
         <div class="alert alert-danger py-3 mb-3">
             <strong>مطلوب: IP السيرفر للـ SSH</strong>
-            <p class="small mb-2">المفتاح مضبوط، لكن لم يُحدَّد IP الـ VPS. نطاق <code>coolify.claudsoft.com</code> للويب فقط ولا يقبل SSH.</p>
-            <a href="{{ $settingsUrl }}" class="btn btn-sm btn-danger">إعدادات Coolify → عنوان SSH للسيرفر</a>
-            <span class="small text-muted d-block mt-2">ضع IP من لوحة الاستضافة (Hetzner/OVH/…)، ثم «اختبار SSH»، ثم «تشخيص الاتصال» هنا.</span>
+            <p class="small mb-2">المفتاح مضبوط، لكن لم يُحدَّد عنوان SSH للسيرفر.</p>
+            <a href="{{ $settingsUrl }}" class="btn btn-sm btn-danger">{{ $hideDockerTab ? 'إعدادات WHM → SSH' : 'إعدادات Coolify → عنوان SSH' }}</a>
+            <span class="small text-muted d-block mt-2">ضع IP سيرفر cPanel/WHM، ثم اختبر SSH، ثم «تشخيص الاتصال» هنا.</span>
+        </div>
+        @endif
+        @if($wpQueueStuck ?? false)
+        <div class="alert alert-warning py-2 small mb-3" id="wpQueueStuckAlert">
+            <strong>تنبيه:</strong> توجد عملية في الانتظار منذ أكثر من دقيقة دون أن يبدأ تنفيذها — تأكد من تشغيل معالج الطابور:
+            <code dir="ltr">php artisan queue:work --queue={{ $wpManagementQueueName ?? 'coolify-provision' }}</code>
         </div>
         @endif
         <div id="wpJobAlert" class="alert alert-info py-2 small d-none mb-3"></div>
@@ -64,7 +71,9 @@
             <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#wpTabMaint" type="button">صيانة</button></li>
             <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#wpTabDatabase" type="button">قاعدة البيانات</button></li>
             <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#wpTabCli" type="button">WP-CLI</button></li>
+            @unless($hideDockerTab)
             <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#wpTabDocker" type="button">Docker</button></li>
+            @endunless
             <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#wpTabLog" type="button">سجل العمليات</button></li>
         </ul>
         <div class="tab-content">
@@ -75,11 +84,22 @@
                 </div>
                 <div id="wpOverviewContent" class="small">
                     @if(!empty($wpInfoData))
-                    <p><strong>إصدار WordPress:</strong> <code id="wpCoreVersion">{{ $wpInfoData['core_version'] ?? '—' }}</code></p>
-                    <p><strong>الحاوية:</strong> <code>{{ $wpInfoData['container']['name'] ?? '—' }}</code></p>
-                    <p><strong>آخر فحص:</strong> {{ $wpInfoData['fetched_at'] ?? '—' }}</p>
+                    <div class="wp-mgmt-stats">
+                        <div class="wp-mgmt-stat">
+                            <div class="wp-mgmt-stat-label">إصدار WordPress</div>
+                            <div class="wp-mgmt-stat-value" id="wpCoreVersion" dir="ltr">{{ $wpInfoData['core_version'] ?? '—' }}</div>
+                        </div>
+                        <div class="wp-mgmt-stat">
+                            <div class="wp-mgmt-stat-label">{{ $hideDockerTab ? 'الحساب' : 'الحاوية' }}</div>
+                            <div class="wp-mgmt-stat-value" dir="ltr">{{ $wpInfoData['container']['name'] ?? '—' }}</div>
+                        </div>
+                        <div class="wp-mgmt-stat">
+                            <div class="wp-mgmt-stat-label">آخر فحص</div>
+                            <div class="wp-mgmt-stat-value" dir="ltr">{{ $wpInfoData['fetched_at'] ?? '—' }}</div>
+                        </div>
+                    </div>
                     @else
-                    <p class="text-muted">@if($wpExec) اضغط «تحديث المعلومات». @else فعّل SSH أولاً. @endif</p>
+                    <p class="text-muted mb-0">@if($wpExec) اضغط «تحديث المعلومات». @else فعّل SSH أولاً. @endif</p>
                     @endif
                 </div>
             </div>
@@ -91,7 +111,7 @@
                     <button type="button" class="btn btn-outline-secondary btn-sm wp-action-btn wp-action" data-action="core_update_db" @disabled(!$wpExec)>تحديث قاعدة البيانات</button>
                     <button type="button" class="btn btn-outline-secondary btn-sm wp-action-btn wp-action" data-action="core_check_update" @disabled(!$wpExec)>فحص التحديثات</button>
                 </div>
-                <pre id="wpCoreOutput" class="p-2 bg-light rounded small mb-0" dir="ltr" style="max-height:160px;overflow:auto;white-space:pre-wrap;"></pre>
+                <pre id="wpCoreOutput" class="wp-mgmt-console mb-0" dir="ltr" style="max-height:160px;"></pre>
             </div>
             <div class="tab-pane fade" id="wpTabPlugins">
                 @include('admin.coolify.wordpress-sites.partials.wp-plugins-themes-panel')
@@ -166,11 +186,14 @@
                     <button type="button" class="btn btn-outline-success btn-sm wp-action-btn wp-action" data-action="maintenance_deactivate" @disabled(!$wpExec)>إيقاف الصيانة</button>
                     <button type="button" class="btn btn-outline-secondary btn-sm wp-action-btn wp-action" data-action="cache_flush" @disabled(!$wpExec)>مسح الكاش</button>
                     <button type="button" class="btn btn-outline-secondary btn-sm wp-action-btn wp-action" data-action="rewrite_flush" @disabled(!$wpExec)>إعادة الروابط</button>
+                    @unless($hideDockerTab)
                     @if(app(\App\Services\Coolify\CoolifySettingsService::class)->getWordpressRedisEnabled())
                     <button type="button" class="btn btn-outline-info btn-sm wp-action-btn wp-action" data-action="redis_apply_env" @disabled(!$wpExec)>تطبيق Redis (Coolify env)</button>
                     @endif
                     <button type="button" class="btn btn-info btn-sm wp-action-btn wp-action" data-action="bootstrap_mcp" data-confirm="تركيب إضافة MCP Server + حزمة WP-CLI AI على هذا الموقع؟" @disabled(!$wpExec)>تركيب MCP + WP-CLI AI</button>
+                    @endunless
                 </div>
+                @unless($hideDockerTab)
                 <div class="alert alert-info border-0 py-2 small mb-3">
                     <strong>MCP ≠ إدارة الإضافات في اللوحة.</strong>
                     MCP يوفّر لـ <strong>Cursor IDE</strong> وصول REST إلى الموقع (للمطورين).
@@ -193,14 +216,15 @@
                     @endif
                     @if($wpMcpSnippet)
                     <details class="mt-2"><summary class="fw-bold">معاينة إعداد Cursor MCP</summary>
-                    <pre class="small mb-0 mt-2" id="wpMcpSnippetPre" dir="ltr" style="white-space:pre-wrap;max-height:200px;overflow:auto;">{{ $wpMcpSnippet }}</pre>
+                    <pre class="wp-mgmt-console mb-0 mt-2" id="wpMcpSnippetPre" dir="ltr" style="max-height:200px;">{{ $wpMcpSnippet }}</pre>
                     </details>
                     @endif
                 </div>
                 @else
                 <p class="small text-muted mb-2">يثبّت <code>mcp-server</code> على WordPress و<code>mcp-wp/ai-command</code> في WP-CLI، ويُنشئ Application Password لربط Cursor.</p>
                 @endif
-                <pre id="wpMaintOutput" class="p-2 bg-light rounded small mb-0" dir="ltr" style="max-height:200px;overflow:auto;"></pre>
+                @endunless
+                <pre id="wpMaintOutput" class="wp-mgmt-console mb-0" dir="ltr" style="max-height:200px;"></pre>
             </div>
             <div class="tab-pane fade" id="wpTabDatabase">
                 <p class="small text-muted">عمليات قاعدة البيانات عبر WP-CLI.</p>
@@ -223,7 +247,8 @@
                         <button type="button" class="btn btn-danger btn-sm" id="wpBtnSearchReplace" @disabled(!$wpExec)>تنفيذ</button>
                     </div>
                 </div>
-                <pre id="wpDbOutput" class="p-2 bg-light rounded small mb-0" dir="ltr" style="max-height:200px;overflow:auto;white-space:pre-wrap;"></pre>
+                <pre id="wpDbOutput" class="wp-mgmt-console mb-0" dir="ltr" style="max-height:200px;"></pre>
+                <div id="wpDbExportResult" class="mt-2"></div>
             </div>
             <div class="tab-pane fade" id="wpTabCli">
                 <p class="small text-muted">تشغيل أوامر WP-CLI حرة (مسموح ببادئات آمنة فقط).</p>
@@ -237,8 +262,9 @@
                     <button type="button" class="btn btn-outline-secondary btn-sm wp-action wp-action-btn" data-action="post_list" @disabled(!$wpExec)>قائمة المنشورات</button>
                     <button type="button" class="btn btn-outline-secondary btn-sm" id="wpBtnTransientDelete" @disabled(!$wpExec)>مسح Transients</button>
                 </div>
-                <pre id="wpCliOutput" class="p-2 bg-light rounded small mb-0" dir="ltr" style="max-height:280px;overflow:auto;white-space:pre-wrap;"></pre>
+                <pre id="wpCliOutput" class="wp-mgmt-console mb-0" dir="ltr" style="max-height:280px;"></pre>
             </div>
+            @unless($hideDockerTab)
             <div class="tab-pane fade" id="wpTabDocker">
                 <p class="small text-muted">إدارة حاويات Docker على السيرفر (compose Coolify).</p>
                 <p class="small"><strong>الصورة:</strong> <code id="wpDockerImage">{{ $wpInfoData['container']['image'] ?? '—' }}</code></p>
@@ -248,11 +274,19 @@
                     <button type="button" class="btn btn-warning btn-sm wp-action wp-action-btn" data-action="docker_compose_restart" data-confirm="إعادة تشغيل الحاويات؟" @disabled(!$wpExec)>إعادة تشغيل</button>
                     <button type="button" class="btn btn-primary btn-sm wp-action-btn wp-action" data-action="docker_compose_pull" data-confirm="سحب الصور وإعادة التشغيل؟" @disabled(!$wpExec)>سحب أحدث صورة</button>
                 </div>
-                <pre id="wpDockerOutput" class="p-2 bg-light rounded small mt-2 mb-0" dir="ltr" style="max-height:200px;overflow:auto;white-space:pre-wrap;"></pre>
+                <pre id="wpDockerOutput" class="wp-mgmt-console mt-2 mb-0" dir="ltr" style="max-height:200px;"></pre>
             </div>
+            @endunless
             <div class="tab-pane fade" id="wpTabLog">
-                <pre id="wpManagementLog" class="p-2 bg-light rounded small mb-0" dir="ltr" style="max-height:240px;overflow:auto;white-space:pre-wrap;">@foreach($wpLog as $entry)[{{ $entry['at'] ?? '' }}] {{ $entry['action'] ?? '' }} ({{ $entry['status'] ?? '' }})
+                @if(!empty($wpSiteRoutes['wpOperations'] ?? null))
+                <div id="wpOperationsList" class="small" style="max-height:360px;overflow:auto;"></div>
+                <div class="text-center mt-2">
+                    <button type="button" class="btn btn-outline-secondary btn-sm d-none" id="wpOperationsLoadMore">تحميل المزيد</button>
+                </div>
+                @else
+                <pre id="wpManagementLog" class="wp-mgmt-console mb-0" dir="ltr" style="max-height:240px;">@foreach($wpLog as $entry)[{{ $entry['at'] ?? '' }}] {{ $entry['action'] ?? '' }} ({{ $entry['status'] ?? '' }})
 @endforeach</pre>
+                @endif
             </div>
         </div>
         @endif

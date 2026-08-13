@@ -78,6 +78,11 @@ class CoolifyWordpressSite extends Model
         return $this->belongsTo(User::class, 'user_id');
     }
 
+    public function operations(): \Illuminate\Database\Eloquent\Relations\HasMany
+    {
+        return $this->hasMany(CoolifyWordpressOperation::class);
+    }
+
     public function isCustomDomain(): bool
     {
         return $this->domain_type === self::DOMAIN_TYPE_CUSTOM;

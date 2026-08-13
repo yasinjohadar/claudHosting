@@ -124,7 +124,7 @@
                         <button type="button" class="domain-action-btn domain-action-btn--muted"
                             data-bs-toggle="modal" data-bs-target="#change_password{{ $user->id }}"
                             title="كلمة المرور">
-                            <i class="fe fe-key"></i>
+                            <i class="fe fe-lock"></i>
                         </button>
                         <button type="button" class="domain-action-btn domain-action-btn--danger"
                             data-bs-toggle="modal" data-bs-target="#delete{{ $user->id }}"

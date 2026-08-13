@@ -150,6 +150,9 @@
                     </div>
                 </div>
                 <div class="d-flex flex-wrap gap-2 align-items-center flex-shrink-0">
+                    <a href="{{ route('admin.whm.accounts.wordpress.index', $account) }}" class="btn btn-outline-primary btn-sm">
+                        <i class="fab fa-wordpress me-1"></i>ووردبريس
+                    </a>
                     @include('admin.whm.accounts.partials.cpanel-link', ['account' => $account, 'configured' => $configured ?? true])
                     <a href="{{ route('admin.whm.accounts.index') }}" class="btn btn-light btn-sm">
                         <i class="fe fe-arrow-right me-1"></i>رجوع

@@ -92,7 +92,7 @@
             </div>
             <div class="col-sm-6 col-xl-3">
                 <div class="cp-settings-kpi">
-                    <div class="cp-settings-kpi__icon cp-settings-kpi__icon--api"><i class="fe fe-key"></i></div>
+                    <div class="cp-settings-kpi__icon cp-settings-kpi__icon--api"><i class="fe fe-lock"></i></div>
                     <div>
                         <div class="cp-settings-kpi__label">API Token</div>
                         <div class="cp-settings-kpi__value">{{ $hasToken ? 'مضبوط' : 'يُشتق تلقائياً' }}</div>

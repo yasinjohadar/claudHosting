@@ -12,7 +12,7 @@
         [
             'href' => ! empty($summary['first_coolify_project_uuid'])
                 ? route('client.coolify.projects.show', $summary['first_coolify_project_uuid'])
-                : route('client.services').'#projects',
+                : route('client.services'),
             'color' => 'blue',
             'icon' => 'fe fe-layers',
             'label' => 'Coolify',
@@ -23,7 +23,7 @@
         [
             'href' => ! empty($summary['first_wordpress_site_uuid'])
                 ? route('client.wordpress-sites.show', $summary['first_wordpress_site_uuid'])
-                : route('client.services').'#wordpress',
+                : route('client.services'),
             'color' => 'teal',
             'icon' => 'fe fe-layout',
             'label' => 'WordPress',

@@ -240,7 +240,7 @@ return [
             'coolify_key' => 'private-key',
             'name_ar' => 'تطبيق بمفتاح نشر',
             'description_ar' => 'نشر من مستودع خاص باستخدام Deploy Key.',
-            'icon' => 'fe-key',
+            'icon' => 'fe-lock',
             'enabled' => true,
             'featured' => false,
             'sort_order' => 202,

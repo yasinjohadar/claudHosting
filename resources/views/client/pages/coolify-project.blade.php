@@ -16,7 +16,7 @@
                 <h4 class="mb-1 fw-semibold">{{ $project['name'] ?? 'مشروع' }}</h4>
                 <p class="text-muted small mb-0">موارد مشروع Coolify المرتبط بحسابك</p>
             </div>
-            <a href="{{ route('client.services') }}#projects" class="btn btn-light btn-sm">رجوع للخدمات</a>
+            <a href="{{ route('client.services') }}" class="btn btn-light btn-sm">رجوع للخدمات</a>
         </div>
 
         @if(session('success'))

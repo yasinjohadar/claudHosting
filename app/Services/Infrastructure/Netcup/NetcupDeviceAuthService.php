@@ -5,6 +5,7 @@ namespace App\Services\Infrastructure\Netcup;
 use App\Services\Infrastructure\InfrastructureSettingsService;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 
 class NetcupDeviceAuthService
@@ -150,12 +151,23 @@ class NetcupDeviceAuthService
 
             Cache::forget($this->cacheKey($pollToken));
 
+            $error = $this->formatOAuthError($body, $response->status());
+
+            Log::warning('Netcup SCP device-flow poll failed', [
+                'status' => $response->status(),
+                'error' => $error,
+            ]);
+
             return [
                 'success' => false,
                 'status' => 'error',
-                'message' => $this->formatOAuthError($body, $response->status()),
+                'message' => $error,
             ];
         } catch (\Throwable $e) {
+            Log::error('Netcup SCP device-flow poll exception', [
+                'message' => $e->getMessage(),
+            ]);
+
             return [
                 'success' => false,
                 'status' => 'error',

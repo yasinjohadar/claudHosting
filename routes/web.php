@@ -55,6 +55,7 @@ use App\Http\Controllers\Admin\PasswordResetMessageSettingsController;
 use App\Http\Controllers\Admin\PhoneOtpSettingsController;
 use App\Http\Controllers\Admin\PackageOrderRequestController;
 use App\Http\Controllers\Admin\OfferedServiceController;
+use App\Http\Controllers\Admin\PaymentController;
 use App\Http\Controllers\Admin\ProductController;
 use App\Http\Controllers\Admin\ServiceTypeController;
 use App\Http\Controllers\Admin\RoleController;
@@ -156,6 +157,30 @@ Route::middleware(['auth'])->group(function () {
         Route::get('/invoices/{invoice}/pay', [\App\Http\Controllers\Client\ClientPaymentController::class, 'payForm'])->name('invoices.pay');
         Route::post('/invoices/{invoice}/pay', [\App\Http\Controllers\Client\ClientPaymentController::class, 'payStore'])->name('invoices.pay.store');
         Route::get('/payments', [\App\Http\Controllers\Client\ClientPaymentController::class, 'index'])->name('payments.index');
+        Route::prefix('hosting')->name('hosting.')->group(function () {
+            Route::get('/{account}/cpanel', [\App\Http\Controllers\Client\ClientWhmAccountController::class, 'openCpanel'])->name('cpanel');
+            Route::post('/{account}/password', [\App\Http\Controllers\Client\ClientWhmAccountController::class, 'updatePassword'])->name('password');
+            Route::post('/{account}/email', [\App\Http\Controllers\Client\ClientWhmAccountController::class, 'updateEmail'])->name('email');
+            Route::prefix('{account}/wordpress')->name('wordpress.')->group(function () {
+                Route::get('/', [\App\Http\Controllers\Client\ClientWhmWordpressSiteController::class, 'index'])->name('index');
+                Route::post('/scan', [\App\Http\Controllers\Client\ClientWhmWordpressSiteController::class, 'scan'])->name('scan');
+                Route::get('/{site}', [\App\Http\Controllers\Client\ClientWhmWordpressSiteController::class, 'show'])->name('show');
+                Route::get('/{site}/status', [\App\Http\Controllers\Client\ClientWhmWordpressSiteController::class, 'status'])->name('status');
+                Route::get('/{site}/wp-info', [\App\Http\Controllers\Client\ClientWhmWordpressSiteController::class, 'wpInfo'])->name('wp-info');
+                Route::post('/{site}/wp-action', [\App\Http\Controllers\Client\ClientWhmWordpressSiteController::class, 'wpAction'])->name('wp-action');
+                Route::get('/{site}/wp-job', [\App\Http\Controllers\Client\ClientWhmWordpressSiteController::class, 'wpJob'])->name('wp-job');
+                Route::get('/{site}/wp-operations', [\App\Http\Controllers\Client\ClientWhmWordpressSiteController::class, 'wpOperations'])->name('wp-operations');
+                Route::get('/{site}/wp-operations/{operation}/download', [\App\Http\Controllers\Client\ClientWhmWordpressSiteController::class, 'downloadWpOperationFile'])->name('wp-operations.download');
+                Route::get('/{site}/open', [\App\Http\Controllers\Client\ClientWhmWordpressSiteController::class, 'open'])->name('open');
+                Route::get('/{site}/wp-admin', [\App\Http\Controllers\Client\ClientWhmWordpressSiteController::class, 'wpAdmin'])->name('wp-admin');
+                Route::get('/{site}/manager', [\App\Http\Controllers\Client\ClientWhmWordpressSiteController::class, 'manager'])->name('manager');
+            });
+        });
+        Route::get('/tickets', [\App\Http\Controllers\Client\ClientTicketController::class, 'index'])->name('tickets.index');
+        Route::get('/tickets/create', [\App\Http\Controllers\Client\ClientTicketController::class, 'create'])->name('tickets.create');
+        Route::post('/tickets', [\App\Http\Controllers\Client\ClientTicketController::class, 'store'])->name('tickets.store');
+        Route::get('/tickets/{ticket}', [\App\Http\Controllers\Client\ClientTicketController::class, 'show'])->name('tickets.show');
+        Route::post('/tickets/{ticket}/reply', [\App\Http\Controllers\Client\ClientTicketController::class, 'reply'])->name('tickets.reply');
         Route::get('/profile', [\App\Http\Controllers\Client\ClientProfileController::class, 'show'])->name('profile.show');
         Route::get('/profile/edit', [\App\Http\Controllers\Client\ClientProfileController::class, 'edit'])->name('profile.edit');
         Route::match(['put', 'post'], '/profile', [\App\Http\Controllers\Client\ClientProfileController::class, 'update'])->name('profile.update');
@@ -494,6 +519,8 @@ Route::middleware(['auth', 'admin.panel'])->group(function () {
                 Route::get('/{uuid}/wp-info', [CoolifyWordpressSiteController::class, 'wpInfo'])->name('wp-info');
                 Route::post('/{uuid}/wp-action', [CoolifyWordpressSiteController::class, 'wpAction'])->name('wp-action');
                 Route::get('/{uuid}/wp-job', [CoolifyWordpressSiteController::class, 'wpJob'])->name('wp-job');
+                Route::get('/{uuid}/wp-operations', [CoolifyWordpressSiteController::class, 'wpOperations'])->name('wp-operations');
+                Route::get('/{uuid}/wp-operations/{operation}/download', [CoolifyWordpressSiteController::class, 'downloadWpOperationFile'])->name('wp-operations.download');
                 Route::get('/{uuid}/files/list', [CoolifyWordpressSiteFilesController::class, 'list'])->name('files.list');
                 Route::get('/{uuid}/files/read', [CoolifyWordpressSiteFilesController::class, 'read'])->name('files.read');
                 Route::post('/{uuid}/files/write', [CoolifyWordpressSiteFilesController::class, 'write'])->name('files.write');
@@ -751,6 +778,7 @@ Route::middleware(['auth', 'admin.panel'])->group(function () {
             Route::get('/settings', [WhmSettingsController::class, 'index'])->name('settings.index');
             Route::put('/settings', [WhmSettingsController::class, 'update'])->name('settings.update');
             Route::post('/settings/test-connection', [WhmSettingsController::class, 'testConnection'])->name('settings.test');
+            Route::post('/settings/test-ssh', [WhmSettingsController::class, 'testSsh'])->name('settings.test-ssh');
             Route::get('/server', [WhmServerStatusController::class, 'index'])->name('server.index');
             Route::get('/server-status', [WhmServerStatusController::class, 'refresh'])->name('server-status');
             Route::prefix('accounts')->name('accounts.')->group(function () {
@@ -769,6 +797,20 @@ Route::middleware(['auth', 'admin.panel'])->group(function () {
                 Route::post('/{account}/update-password', [WhmAccountController::class, 'updatePassword'])->name('update-password');
                 Route::post('/{account}/rename-user', [WhmAccountController::class, 'renameUser'])->name('rename-user');
                 Route::post('/{account}/renew', [WhmAccountController::class, 'renew'])->name('renew');
+                Route::prefix('{account}/wordpress')->name('wordpress.')->group(function () {
+                    Route::get('/', [\App\Http\Controllers\Admin\Whm\WhmWordpressSiteController::class, 'index'])->name('index');
+                    Route::post('/scan', [\App\Http\Controllers\Admin\Whm\WhmWordpressSiteController::class, 'scan'])->name('scan');
+                    Route::get('/{site}', [\App\Http\Controllers\Admin\Whm\WhmWordpressSiteController::class, 'show'])->name('show');
+                    Route::get('/{site}/status', [\App\Http\Controllers\Admin\Whm\WhmWordpressSiteController::class, 'status'])->name('status');
+                    Route::get('/{site}/wp-info', [\App\Http\Controllers\Admin\Whm\WhmWordpressSiteController::class, 'wpInfo'])->name('wp-info');
+                    Route::post('/{site}/wp-action', [\App\Http\Controllers\Admin\Whm\WhmWordpressSiteController::class, 'wpAction'])->name('wp-action');
+                    Route::get('/{site}/wp-job', [\App\Http\Controllers\Admin\Whm\WhmWordpressSiteController::class, 'wpJob'])->name('wp-job');
+                    Route::get('/{site}/wp-operations', [\App\Http\Controllers\Admin\Whm\WhmWordpressSiteController::class, 'wpOperations'])->name('wp-operations');
+                    Route::get('/{site}/wp-operations/{operation}/download', [\App\Http\Controllers\Admin\Whm\WhmWordpressSiteController::class, 'downloadWpOperationFile'])->name('wp-operations.download');
+                    Route::get('/{site}/open', [\App\Http\Controllers\Admin\Whm\WhmWordpressSiteController::class, 'open'])->name('open');
+                    Route::get('/{site}/wp-admin', [\App\Http\Controllers\Admin\Whm\WhmWordpressSiteController::class, 'wpAdmin'])->name('wp-admin');
+                    Route::get('/{site}/manager', [\App\Http\Controllers\Admin\Whm\WhmWordpressSiteController::class, 'manager'])->name('manager');
+                });
             });
         });
 

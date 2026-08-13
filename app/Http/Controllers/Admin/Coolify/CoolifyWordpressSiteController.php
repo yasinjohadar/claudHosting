@@ -7,6 +7,7 @@ use App\Http\Controllers\Concerns\ResolvesAuthorizedWordpressSite;
 use App\Http\Controllers\Controller;
 use App\Actions\Coolify\CreateWordpressSiteAction;
 use App\Jobs\ProvisionWordpressSiteJob;
+use App\Models\CoolifyWordpressOperation;
 use App\Models\CoolifyWordpressSite;
 use App\Support\WordpressDomainHelper;
 use App\Services\Client\ClientAssetService;
@@ -22,7 +23,10 @@ use App\Support\WordpressSiteRouteMap;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\Rule;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class CoolifyWordpressSiteController extends Controller
 {
@@ -215,8 +219,11 @@ class CoolifyWordpressSiteController extends Controller
             try {
                 $this->provisioning->syncSiteFromCoolify($site);
                 $site->refresh();
-            } catch (\Throwable) {
-                // keep cached data
+            } catch (\Throwable $e) {
+                Log::warning('Coolify sync failed while building WordPress site show view; using cached data', [
+                    'site_uuid' => $site->uuid,
+                    'message' => $e->getMessage(),
+                ]);
             }
         }
 
@@ -242,12 +249,20 @@ class CoolifyWordpressSiteController extends Controller
             }
         }
 
+        $wpQueueStuck = CoolifyWordpressOperation::query()
+            ->where('coolify_wordpress_site_id', $site->id)
+            ->where('status', 'queued')
+            ->where('created_at', '<', now()->subSeconds(60))
+            ->exists();
+
         return [
             'site' => $site,
             'uuid' => $uuid,
             'wpCanManage' => $wpCanManage,
             'wpManagementState' => $wpManagementState,
             'wpInfo' => $wpInfo,
+            'wpQueueStuck' => $wpQueueStuck,
+            'wpManagementQueueName' => $this->settings->getWordpressManagementQueue(),
             'terminalBridge' => $terminalBridge,
             'wpPanel' => $panel,
             'isClientPanel' => $panel === 'client',
@@ -392,6 +407,60 @@ class CoolifyWordpressSiteController extends Controller
         ]);
     }
 
+    public function wpOperations(string $uuid): JsonResponse
+    {
+        $site = $this->resolveAuthorizedWordpressSite($uuid);
+
+        $query = CoolifyWordpressOperation::query()
+            ->where('coolify_wordpress_site_id', $site->id)
+            ->with('user:id,name')
+            ->orderByDesc('id');
+
+        $beforeId = (int) request()->query('before_id', 0);
+        if ($beforeId > 0) {
+            $query->where('id', '<', $beforeId);
+        }
+
+        $operations = $query->limit(25)->get();
+
+        return response()->json([
+            'success' => true,
+            'operations' => $operations->map(fn (CoolifyWordpressOperation $op) => [
+                'id' => $op->id,
+                'action' => $op->action,
+                'action_label' => $op->action_label ?? $op->action,
+                'status' => $op->status,
+                'success' => $op->success,
+                'message' => $op->message,
+                'output' => $op->output,
+                'user_name' => $op->user?->name,
+                'has_file' => $op->hasDownloadableFile(),
+                'result_file_size' => $op->result_file_size,
+                'started_at' => $op->started_at?->toIso8601String(),
+                'finished_at' => $op->finished_at?->toIso8601String(),
+            ]),
+            'has_more' => $operations->count() === 25,
+        ]);
+    }
+
+    public function downloadWpOperationFile(string $uuid, int $operation): StreamedResponse
+    {
+        $site = $this->resolveAuthorizedWordpressSite($uuid);
+
+        $record = CoolifyWordpressOperation::query()
+            ->where('coolify_wordpress_site_id', $site->id)
+            ->where('id', $operation)
+            ->firstOrFail();
+
+        if (! $record->hasDownloadableFile() || ! Storage::disk('local')->exists($record->result_file_path)) {
+            abort(404, 'الملف غير متوفر');
+        }
+
+        $downloadName = $record->action.'-'.$record->id.'.sql.gz';
+
+        return Storage::disk('local')->download($record->result_file_path, $downloadName);
+    }
+
     public function status(string $uuid): JsonResponse
     {
         $site = $this->resolveAuthorizedWordpressSite($uuid);
@@ -460,8 +529,11 @@ class CoolifyWordpressSiteController extends Controller
                         $payload['custom_public_url'] = $site->public_url;
                         $payload['coolify_default_url'] = $metadata['coolify_default_url'] ?? $payload['coolify_default_url'];
                         $payload['coolify_default_admin_url'] = $metadata['coolify_default_admin_url'] ?? $payload['coolify_default_admin_url'];
-                    } catch (\Throwable) {
-                        // non-fatal
+                    } catch (\Throwable $e) {
+                        Log::warning('Coolify sync failed while polling WordPress site status; keeping previous state', [
+                            'site_uuid' => $site->uuid,
+                            'message' => $e->getMessage(),
+                        ]);
                     }
                 }
 

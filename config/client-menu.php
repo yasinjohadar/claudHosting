@@ -55,6 +55,14 @@ return [
     ],
     [
         'type' => 'link',
+        'label' => 'التذاكر',
+        'route' => 'client.tickets.index',
+        'icon' => 'fe fe-headphones',
+        'color' => 'danger',
+        'active' => 'client.tickets.*',
+    ],
+    [
+        'type' => 'link',
         'label' => 'الملف الشخصي',
         'route' => 'client.profile.show',
         'icon' => 'fe fe-user',

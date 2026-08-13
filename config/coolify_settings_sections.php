@@ -90,7 +90,7 @@ return [
 
     'ssh' => [
         'label' => 'SSH',
-        'icon' => 'fe fe-key',
+        'icon' => 'fe fe-lock',
         'color' => 'teal',
         'description' => 'مفتاح SSH، المستخدم، المنفذ، وعنوان السيرفر',
         'partial' => 'tab-ssh',

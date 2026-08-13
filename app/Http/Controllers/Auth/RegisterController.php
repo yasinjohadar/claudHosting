@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
+use App\Models\Customer;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
@@ -68,6 +69,19 @@ class RegisterController extends Controller
 
         Role::firstOrCreate(['name' => 'client', 'guard_name' => 'web']);
         $user->assignRole('client');
+
+        $nameParts = preg_split('/\s+/', trim((string) $user->name), 2) ?: [];
+        Customer::create([
+            'user_id' => $user->id,
+            'whmcs_id' => null,
+            'firstname' => $nameParts[0] ?? $user->name,
+            'lastname' => $nameParts[1] ?? '',
+            'fullname' => $user->name,
+            'email' => $user->email,
+            'country' => config('whmcs.default_country', 'SY'),
+            'status' => 'Active',
+            'date_created' => now(),
+        ]);
 
         auth()->login($user);
 

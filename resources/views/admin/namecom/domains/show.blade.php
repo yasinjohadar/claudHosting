@@ -145,7 +145,7 @@
                             </div>
                             @endforeach
                         </div>
-                        <p class="text-muted small mb-0 mt-2"><i class="fe fe-mouse-pointer"></i> انقر على أي nameserver للنسخ</p>
+                        <p class="text-muted small mb-0 mt-2"><i class="fe fe-target"></i> انقر على أي nameserver للنسخ</p>
                         @else
                         <p class="text-muted mb-0">—</p>
                         @endif

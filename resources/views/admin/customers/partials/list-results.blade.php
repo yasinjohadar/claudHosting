@@ -67,7 +67,14 @@
                     <td>
                         <div class="customer-domain-chips">
                             @forelse($client->whmAccounts as $acc)
-                                <span class="customer-domain-chip" dir="ltr">{{ $acc->domain }}</span>
+                                <form method="POST" action="{{ route('admin.whm.accounts.assign-client', $acc) }}"
+                                    class="customer-domain-chip-form"
+                                    onsubmit="return confirm('فك ربط «{{ $acc->domain }}» عن العميل «{{ $client->name }}»؟');">
+                                    @csrf
+                                    <button type="submit" class="customer-domain-chip customer-domain-chip--unlink" dir="ltr" title="فك الربط">
+                                        {{ $acc->domain }} <i class="fe fe-x"></i>
+                                    </button>
+                                </form>
                             @empty
                                 <span class="text-muted">—</span>
                             @endforelse
@@ -95,11 +102,17 @@
                                class="domain-action-btn domain-action-btn--muted" title="حسابات WHM">
                                 <i class="fe fe-server"></i>
                             </a>
+                            @elseif(($unassignedWhmAccounts ?? collect())->isNotEmpty())
+                            <button type="button" class="domain-action-btn domain-action-btn--info"
+                                data-bs-toggle="modal" data-bs-target="#link-whm-{{ $client->id }}"
+                                title="ربط بحساب cPanel">
+                                <i class="fe fe-link"></i>
+                            </button>
                             @endif
                             <button type="button" class="domain-action-btn domain-action-btn--muted"
                                 data-bs-toggle="modal" data-bs-target="#change_password{{ $client->id }}"
                                 title="كلمة المرور">
-                                <i class="fe fe-key"></i>
+                                <i class="fe fe-lock"></i>
                             </button>
                             @if($canDelete)
                             <button type="button" class="domain-action-btn domain-action-btn--danger"
@@ -131,5 +144,26 @@
     @foreach($clients as $client)
         @include('admin.customers.partials.delete-modal', ['user' => $client])
         @include('admin.pages.users.change_password', ['user' => $client])
+        @if($client->whm_accounts_count == 0 && ($unassignedWhmAccounts ?? collect())->isNotEmpty())
+            @include('admin.customers.partials.link-whm-modal', ['user' => $client, 'unassignedWhmAccounts' => $unassignedWhmAccounts])
+        @endif
     @endforeach
 </div>
+@once
+@push('scripts')
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    document.body.addEventListener('submit', function (e) {
+        const form = e.target;
+        if (!form.classList || !form.classList.contains('link-whm-form')) return;
+        const select = form.querySelector('select[name="account_id"]');
+        if (!select || !select.value) {
+            e.preventDefault();
+            return;
+        }
+        form.action = form.dataset.urlTemplate.replace('__ID__', select.value);
+    });
+});
+</script>
+@endpush
+@endonce

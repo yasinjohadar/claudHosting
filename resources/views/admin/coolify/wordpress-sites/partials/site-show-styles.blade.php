@@ -175,10 +175,78 @@
     border-bottom-color: rgb(var(--primary-rgb, 132, 90, 223));
     color: rgb(var(--primary-rgb, 132, 90, 223));
 }
-.site-wp-management pre.bg-light,
-.site-wp-management .bg-light.rounded {
-    background: rgba(var(--primary-rgb, 132, 90, 223), 0.04) !important;
+/* محتوى تبويبات إدارة WordPress: بطاقات + لوحة أوامر */
+.site-wp-management .tab-content > .tab-pane {
+    padding: 1.1rem 1.25rem 1.25rem;
+    background: var(--custom-white, #fff);
     border: 1px solid var(--default-border);
+    border-radius: 0.85rem;
+}
+.site-wp-management .wp-action-btn,
+.site-wp-management .btn.wp-action {
+    border-radius: 0.55rem;
+    font-weight: 600;
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+.site-wp-management .wp-action-btn:hover:not(:disabled),
+.site-wp-management .btn.wp-action:hover:not(:disabled) {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(15, 23, 42, 0.1);
+}
+.site-wp-management .form-control,
+.site-wp-management .form-select,
+.site-wp-management .input-group-text {
+    border-radius: 0.55rem;
+}
+.wp-mgmt-console {
+    background: #0f172a;
+    color: #d7e2f5;
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    border-radius: 0.75rem;
+    padding: 0.85rem 1rem;
+    font-family: ui-monospace, SFMono-Regular, Consolas, Menlo, monospace;
+    font-size: 0.78rem;
+    line-height: 1.6;
+    overflow: auto;
+    white-space: pre-wrap;
+}
+.wp-mgmt-console:empty::before {
+    content: '—';
+    opacity: 0.35;
+}
+.wp-mgmt-console::-webkit-scrollbar { width: 8px; height: 8px; }
+.wp-mgmt-console::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.15); border-radius: 4px; }
+.wp-mgmt-stats {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.6rem;
+}
+.wp-mgmt-stat {
+    flex: 1 1 160px;
+    background: rgba(var(--primary-rgb, 132, 90, 223), 0.05);
+    border: 1px solid rgba(var(--primary-rgb, 132, 90, 223), 0.12);
+    border-radius: 0.7rem;
+    padding: 0.7rem 0.9rem;
+}
+.wp-mgmt-stat-label {
+    font-size: 0.68rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    color: var(--text-muted);
+    margin-bottom: 0.2rem;
+}
+.wp-mgmt-stat-value {
+    font-size: 0.92rem;
+    font-weight: 700;
+    color: var(--default-text-color);
+}
+#wpOperationsList [data-op-row] {
+    border-radius: 0.5rem;
+    transition: background 0.15s ease;
+}
+#wpOperationsList [data-op-row]:hover {
+    background: rgba(var(--primary-rgb, 132, 90, 223), 0.05);
 }
 /* بطاقات ملء العرض داخل التبويبات */
 .site-show-stats .coolify-info-widget,
@@ -278,16 +346,6 @@
     font-weight: 700;
     text-transform: uppercase;
     background: rgba(var(--primary-rgb, 132, 90, 223), 0.05);
-}
-.wp-pt-job-output {
-    font-size: 0.72rem;
-    max-height: 140px;
-    overflow: auto;
-    white-space: pre-wrap;
-    padding: 0.65rem 0.75rem;
-    background: rgba(15, 23, 42, 0.04);
-    border: 1px solid var(--default-border);
-    border-radius: 0.5rem;
 }
 .wp-pt-row-busy { opacity: 0.55; pointer-events: none; }
 .wp-pass-suggestions {

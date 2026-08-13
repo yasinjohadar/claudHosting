@@ -35,17 +35,27 @@
 @endphp
 <a href="{{ route('frontend.package-detail', $product->id) }}" class="pricing-card-link animate-on-scroll animate-delay-{{ ($index % 3) + 1 }}">
     <article class="pricing-card glass-panel {{ $isFeatured ? 'pricing-card--featured' : '' }}">
-        <div class="pricing-card-head">
-            <span class="pricing-card-badge">{{ $product->group_name ?? 'باقة' }}</span>
+        <span class="pricing-card-glow" aria-hidden="true"></span>
+        @if($isFeatured)
+        <span class="pricing-card-ribbon"><i class="fas fa-star"></i> الأكثر طلباً</span>
+        @endif
+        <div class="pricing-card-top">
             <div class="pricing-card-icon" aria-hidden="true">
                 <i class="fas {{ $icon }}"></i>
             </div>
+            <span class="pricing-card-badge">{{ $product->group_name ?? 'باقة' }}</span>
         </div>
         <div class="pricing-card-body">
             <h3 class="pricing-card-name">{{ $product->name }}</h3>
             @if($desc !== '')
             <p class="pricing-card-desc">{{ $desc }}</p>
             @endif
+            <div class="pricing-card-price-block">
+                <span class="pricing-card-currency">$</span>
+                <span class="pricing-card-amount">{{ $priceDisplay }}</span>
+                <span class="pricing-card-period">/ {{ $cycleAr }}</span>
+            </div>
+            <span class="pricing-card-divider" aria-hidden="true"></span>
             @if(count($featureItems) > 0)
                 @include('frontend.partials.package-features-list', [
                     'product' => $product,
@@ -68,11 +78,6 @@
             @endif
         </div>
         <div class="pricing-card-foot">
-            <div class="pricing-card-price-block">
-                <span class="pricing-card-currency">$</span>
-                <span class="pricing-card-amount">{{ $priceDisplay }}</span>
-                <span class="pricing-card-period">/ {{ $cycleAr }}</span>
-            </div>
             <span class="pricing-card-cta">
                 عرض التفاصيل
                 <i class="fas fa-arrow-left"></i>

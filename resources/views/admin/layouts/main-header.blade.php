@@ -145,6 +145,7 @@
                     <!-- End::header-element -->
 
                     <!-- Start::header-element -->
+                    @unless(request()->routeIs('client.*'))
                     <div class="header-element header-sidebar">
                         <!-- Start::header-link-->
                         <a href="javascript:void(0);" class="header-link" data-bs-toggle="offcanvas" data-bs-target="#header-sidebar">
@@ -152,6 +153,7 @@
                         </a>
                         <!-- End::header-link-->
                     </div>
+                    @endunless
                     <!-- End::header-element -->
 
                     <!-- Start::header-element -->

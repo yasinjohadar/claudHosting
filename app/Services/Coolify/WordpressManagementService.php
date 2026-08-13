@@ -4,8 +4,10 @@ namespace App\Services\Coolify;
 
 use App\Jobs\RunWordpressManagementJob;
 use App\Models\CoolifyActivityLog;
+use App\Models\CoolifyWordpressOperation;
 use App\Models\CoolifyWordpressSite;
 use App\Services\CoolifyApiService;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 
 class WordpressManagementService
@@ -261,8 +263,13 @@ class WordpressManagementService
         }
 
         $def = $this->actionRunner->definition($action);
-        if (! empty($def['confirm']) && empty($params['_confirmed'])) {
-            // UI handles confirm; optional server-side skip when _confirmed=1
+        $isSafeDryRun = $action === 'search_replace' && ! empty($params['dry_run']);
+        if (! empty($def['confirm']) && ! $isSafeDryRun && empty($params['_confirmed'])) {
+            return [
+                'success' => false,
+                'message' => (string) $def['confirm'],
+                'requires_confirmation' => true,
+            ];
         }
 
         $check = $this->canManage($site);
@@ -290,18 +297,27 @@ class WordpressManagementService
     /**
      * @param  array<string, mixed>  $params
      */
-    public function runSyncAction(CoolifyWordpressSite $site, string $action, array $params = [], ?int $userId = null): array
+    public function runSyncAction(CoolifyWordpressSite $site, string $action, array $params = [], ?int $userId = null, ?string $jobId = null): array
     {
         @set_time_limit(in_array($action, ['refresh_info', 'db_export', 'raw_cli', 'core_update', 'core_reinstall'], true) ? 600 : 180);
 
+        $operation = $this->startOperation($site, $action, $params, $userId, $jobId);
+
         $special = $this->runSpecialAction($site, $action, $params, $userId);
         if ($special !== null) {
+            $this->finishOperation($operation, $special);
+            $special['operation_id'] = $operation->id;
+
             return $special;
         }
 
         $resolved = $this->actionRunner->resolve($action, $params);
         if (! ($resolved['success'] ?? false)) {
-            return ['success' => false, 'message' => $resolved['message'] ?? 'فشل'];
+            $result = ['success' => false, 'message' => $resolved['message'] ?? 'فشل'];
+            $this->finishOperation($operation, $result);
+            $result['operation_id'] = $operation->id;
+
+            return $result;
         }
 
         $command = $resolved['command'] ?? '';
@@ -311,7 +327,105 @@ class WordpressManagementService
             ? $this->cli->runLong($site, $command, $timeout)
             : $this->cli->run($site, $command, $timeout);
 
-        return $this->finalizeActionResult($site, $action, $result['success'] ?? false, $result['output'] ?? '', $userId);
+        $resultFile = null;
+        $output = $result['output'] ?? '';
+        if ($action === 'db_export' && ($result['success'] ?? false)) {
+            $resultFile = $this->storeDbExportFile($site, $operation, (string) $output);
+            $output = $resultFile['summary'];
+        }
+
+        $final = $this->finalizeActionResult($site, $action, $result['success'] ?? false, $output, $userId);
+        if ($resultFile !== null) {
+            $final['result_file'] = $resultFile;
+        }
+        $this->finishOperation($operation, $final, $resultFile);
+        $final['operation_id'] = $operation->id;
+
+        return $final;
+    }
+
+    /**
+     * @param  array<string, mixed>  $params
+     */
+    protected function startOperation(CoolifyWordpressSite $site, string $action, array $params, ?int $userId, ?string $jobId): CoolifyWordpressOperation
+    {
+        if ($jobId !== null) {
+            $existing = CoolifyWordpressOperation::query()->where('job_id', $jobId)->first();
+            if ($existing) {
+                $existing->update(['status' => 'running']);
+
+                return $existing;
+            }
+        }
+
+        return CoolifyWordpressOperation::create([
+            'coolify_wordpress_site_id' => $site->id,
+            'user_id' => $userId,
+            'job_id' => $jobId,
+            'action' => $action,
+            'action_label' => $this->actionRunner->label($action) ?? $this->actionProgressLabel($action, $params),
+            'params' => $this->sanitizeParamsForLog($params),
+            'status' => 'running',
+            'started_at' => now(),
+        ]);
+    }
+
+    /**
+     * @param  array<string, mixed>  $result
+     * @param  array{path: string, size: int, summary: string}|null  $resultFile
+     */
+    protected function finishOperation(CoolifyWordpressOperation $operation, array $result, ?array $resultFile = null): void
+    {
+        $operation->update([
+            'status' => ($result['success'] ?? false) ? 'completed' : 'failed',
+            'success' => (bool) ($result['success'] ?? false),
+            'message' => is_string($result['message'] ?? null) ? Str::limit((string) $result['message'], 1000) : null,
+            'output' => Str::limit((string) ($result['output'] ?? ''), 20000),
+            'result_file_path' => $resultFile['path'] ?? null,
+            'result_file_size' => $resultFile['size'] ?? null,
+            'finished_at' => now(),
+        ]);
+    }
+
+    /**
+     * @param  array<string, mixed>  $params
+     * @return array<string, mixed>
+     */
+    protected function sanitizeParamsForLog(array $params): array
+    {
+        $safe = $params;
+        unset($safe['password'], $safe['_confirmed']);
+
+        return $safe;
+    }
+
+    /**
+     * @return array{path: string, size: int, summary: string}
+     */
+    protected function storeDbExportFile(CoolifyWordpressSite $site, CoolifyWordpressOperation $operation, string $sqlOutput): array
+    {
+        $gzipped = gzencode(trim($sqlOutput), 6) ?: '';
+        $relativePath = 'wordpress-exports/'.$site->uuid.'/'.$operation->id.'.sql.gz';
+        Storage::disk('local')->put($relativePath, $gzipped);
+        $size = (int) Storage::disk('local')->size($relativePath);
+
+        return [
+            'path' => $relativePath,
+            'size' => $size,
+            'summary' => 'تم تصدير قاعدة البيانات بنجاح — الحجم: '.$this->formatBytes($size),
+        ];
+    }
+
+    protected function formatBytes(int $bytes): string
+    {
+        if ($bytes < 1024) {
+            return $bytes.' B';
+        }
+        if ($bytes < 1024 * 1024) {
+            return round($bytes / 1024, 1).' KB';
+        }
+
+        return round($bytes / (1024 * 1024), 1).' MB';
     }
 
     /**
@@ -639,6 +753,17 @@ class WordpressManagementService
                     'finished_at' => null,
                 ],
             ]),
+        ]);
+
+        CoolifyWordpressOperation::create([
+            'coolify_wordpress_site_id' => $site->id,
+            'user_id' => $userId,
+            'job_id' => $jobId,
+            'action' => $action,
+            'action_label' => $this->actionRunner->label($action) ?? $this->actionProgressLabel($action, $params),
+            'params' => $this->sanitizeParamsForLog($params),
+            'status' => 'queued',
+            'started_at' => now(),
         ]);
 
         RunWordpressManagementJob::dispatch($site->id, $action, $params, $jobId, $userId);

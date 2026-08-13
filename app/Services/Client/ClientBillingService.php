@@ -2,6 +2,7 @@
 
 namespace App\Services\Client;
 
+use App\Models\Customer;
 use App\Models\Invoice;
 use App\Models\User;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
@@ -11,12 +12,62 @@ class ClientBillingService
 {
     public function hasCustomerProfile(User $user): bool
     {
-        return $user->customer()->exists();
+        return $this->ensureCustomerProfile($user) !== null;
     }
 
     public function customerIdForUser(User $user): ?int
     {
-        return $user->customer?->id;
+        return $this->ensureCustomerProfile($user)?->id;
+    }
+
+    /**
+     * يضمن وجود سجل Customer مربوط بالمستخدم (ربط بالبريد أو إنشاء محلي).
+     */
+    public function ensureCustomerProfile(User $user): ?Customer
+    {
+        $existing = $user->customer;
+        if ($existing) {
+            return $existing;
+        }
+
+        $byEmail = Customer::query()
+            ->where('email', $user->email)
+            ->whereNull('user_id')
+            ->first();
+
+        if ($byEmail) {
+            $byEmail->update(['user_id' => $user->id]);
+            $user->unsetRelation('customer');
+
+            return $byEmail->fresh();
+        }
+
+        $nameParts = preg_split('/\s+/', trim((string) $user->name), 2) ?: [];
+        $firstname = $nameParts[0] ?? ($user->name ?: 'عميل');
+        $lastname = $nameParts[1] ?? '';
+
+        $customer = Customer::create([
+            'user_id' => $user->id,
+            'whmcs_id' => null,
+            'firstname' => $firstname,
+            'lastname' => $lastname,
+            'fullname' => $user->name,
+            'email' => $user->email,
+            'companyname' => $user->companyname,
+            'address1' => $user->address1,
+            'address2' => $user->address2,
+            'city' => $user->city,
+            'state' => $user->state,
+            'postcode' => $user->postcode,
+            'country' => $user->country ?: config('whmcs.default_country', 'SY'),
+            'phonenumber' => trim(($user->country_code ? $user->country_code.' ' : '').($user->phone ?? '')),
+            'status' => 'Active',
+            'date_created' => now(),
+        ]);
+
+        $user->unsetRelation('customer');
+
+        return $customer;
     }
 
     /**

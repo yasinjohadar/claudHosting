@@ -191,7 +191,7 @@
 
                             @if(!$wp->hasStoredAdminPassword())
                                 <div class="cp-show-credentials">
-                                    <div class="small fw-semibold mb-2"><i class="fe fe-key me-1 text-primary"></i> بيانات الدخول للوحة</div>
+                                    <div class="small fw-semibold mb-2"><i class="fe fe-lock me-1 text-primary"></i> بيانات الدخول للوحة</div>
                                     <form method="POST" action="{{ route('admin.cyberpanel.wordpress-sites.save-credentials', $wp) }}" class="row g-2">
                                         @csrf
                                         <div class="col-md-4">

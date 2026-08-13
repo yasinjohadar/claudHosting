@@ -296,7 +296,7 @@ class CoolifySettingsController extends Controller
         $integrationWidgets = [
             ['label' => 'Hetzner Cloud', 'count' => null, 'route' => 'admin.coolify.hetzner.index', 'icon' => 'fe-cloud', 'accent' => 'primary', 'desc' => 'إنشاء سيرفرات'],
             ['label' => 'GitHub Apps', 'count' => null, 'route' => 'admin.coolify.github-apps.index', 'icon' => 'fab fa-github', 'accent' => 'secondary', 'desc' => 'ربط المستودعات'],
-            ['label' => 'Cloud Tokens', 'count' => null, 'route' => 'admin.coolify.cloud-tokens.index', 'icon' => 'fe-key', 'accent' => 'info', 'desc' => 'مفاتيح API'],
+            ['label' => 'Cloud Tokens', 'count' => null, 'route' => 'admin.coolify.cloud-tokens.index', 'icon' => 'fe-lock', 'accent' => 'info', 'desc' => 'مفاتيح API'],
             ['label' => 'المفاتيح الخاصة', 'count' => null, 'route' => 'admin.coolify.private-keys.index', 'icon' => 'fe-lock', 'accent' => 'warning', 'desc' => 'SSH keys'],
             ['label' => 'إعدادات Coolify', 'count' => null, 'route' => 'admin.coolify.settings.index', 'icon' => 'fe-settings', 'accent' => 'teal', 'desc' => 'API · SSH · S3'],
             ['label' => 'النظام', 'count' => null, 'route' => 'admin.coolify.system.index', 'icon' => 'fe-cpu', 'accent' => 'secondary', 'desc' => 'إصدار وصحة'],

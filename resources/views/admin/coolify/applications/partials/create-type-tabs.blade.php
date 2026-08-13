@@ -15,7 +15,7 @@
         'private-key' => [
             'label' => 'Deploy Key',
             'desc' => 'مستودع خاص بمفتاح نشر',
-            'icon' => 'fe fe-key',
+            'icon' => 'fe fe-lock',
             'accent' => 'warning',
         ],
         'dockerfile' => [

@@ -3,6 +3,7 @@
 namespace App\Services\Infrastructure;
 
 use App\Models\SystemSetting;
+use App\Services\Infrastructure\Netcup\NetcupScpClient;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Crypt;
 
@@ -142,14 +143,7 @@ class InfrastructureSettingsService
     public function clearCache(): void
     {
         Cache::forget(self::CACHE_KEY);
-        $creds = $this->getCredentials();
-        $fingerprint = implode('|', [
-            $creds['netcup_refresh_token'] ?? '',
-            $creds['netcup_customer_number'] ?? $creds['netcup_client_id'] ?? '',
-            $creds['netcup_api_password'] ?? $creds['netcup_client_secret'] ?? '',
-        ]);
-        Cache::forget('netcup_scp_token_'.md5($fingerprint));
-        Cache::forget('netcup_scp_token_'.md5($creds['netcup_client_id'] ?? 'x'));
+        Cache::forget(NetcupScpClient::TOKEN_CACHE_KEY);
     }
 
     protected function decryptIfEncrypted(?string $value): string
