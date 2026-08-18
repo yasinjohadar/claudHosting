@@ -19,16 +19,21 @@ return [
         'icon' => 'fe fe-globe',
         'color' => 'info',
         'active' => 'client.wordpress-sites.*',
+        // Hidden unless the client actually has Coolify WordPress sites — the page it
+        // opens would otherwise be permanently empty. Resolved by ClientMenuVisibility.
+        'visible' => 'has_wordpress_sites',
     ],
-    [
-        'type' => 'link',
-        'label' => 'Coolify',
-        'route' => 'client.services',
-        'url_hash' => '#projects',
-        'icon' => 'fe fe-layers',
-        'color' => 'purple',
-        'active' => 'client.coolify.projects.*',
-    ],
+    // Coolify is hidden from the client sidebar. Its pages and routes still exist —
+    // restore this entry to bring the link back.
+    // [
+    //     'type' => 'link',
+    //     'label' => 'Coolify',
+    //     'route' => 'client.services',
+    //     'url_hash' => '#projects',
+    //     'icon' => 'fe fe-layers',
+    //     'color' => 'purple',
+    //     'active' => 'client.coolify.projects.*',
+    // ],
     [
         'type' => 'link',
         'label' => 'الخدمات',

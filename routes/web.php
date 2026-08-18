@@ -161,6 +161,12 @@ Route::middleware(['auth'])->group(function () {
             Route::get('/{account}/cpanel', [\App\Http\Controllers\Client\ClientWhmAccountController::class, 'openCpanel'])->name('cpanel');
             Route::post('/{account}/password', [\App\Http\Controllers\Client\ClientWhmAccountController::class, 'updatePassword'])->name('password');
             Route::post('/{account}/email', [\App\Http\Controllers\Client\ClientWhmAccountController::class, 'updateEmail'])->name('email');
+            Route::get('/{account}', [\App\Http\Controllers\Client\ClientWhmAccountController::class, 'show'])->name('show');
+            Route::get('/{account}/email-deliverability', [\App\Http\Controllers\Client\ClientWhmAccountController::class, 'emailDeliverability'])->name('email-deliverability');
+            Route::get('/{account}/mail-dns/preview', [\App\Http\Controllers\Client\ClientWhmAccountController::class, 'mailDnsPreview'])->name('mail-dns.preview');
+            Route::post('/{account}/mail-dns/apply', [\App\Http\Controllers\Client\ClientWhmAccountController::class, 'mailDnsApply'])
+                ->middleware('throttle:4,1')
+                ->name('mail-dns.apply');
             Route::prefix('{account}/wordpress')->name('wordpress.')->group(function () {
                 Route::get('/', [\App\Http\Controllers\Client\ClientWhmWordpressSiteController::class, 'index'])->name('index');
                 Route::post('/scan', [\App\Http\Controllers\Client\ClientWhmWordpressSiteController::class, 'scan'])->name('scan');
@@ -788,6 +794,11 @@ Route::middleware(['auth', 'admin.panel'])->group(function () {
                 Route::post('/', [WhmAccountController::class, 'store'])->name('store');
                 Route::get('/{account}', [WhmAccountController::class, 'show'])->name('show');
                 Route::post('/{account}/refresh-summary', [WhmAccountController::class, 'refreshSummary'])->name('refresh-summary');
+                Route::get('/{account}/email-deliverability', [WhmAccountController::class, 'emailDeliverability'])->name('email-deliverability');
+                Route::get('/{account}/mail-dns/preview', [\App\Http\Controllers\Admin\Whm\WhmMailDnsController::class, 'preview'])->name('mail-dns.preview');
+                Route::post('/{account}/mail-dns/apply', [\App\Http\Controllers\Admin\Whm\WhmMailDnsController::class, 'apply'])
+                    ->middleware('throttle:6,1')
+                    ->name('mail-dns.apply');
                 Route::post('/{account}/change-package', [WhmAccountController::class, 'changePackage'])->name('change-package');
                 Route::delete('/{account}', [WhmAccountController::class, 'destroy'])->name('destroy');
                 Route::get('/{account}/cpanel', [WhmAccountController::class, 'cpanelLogin'])->name('cpanel');

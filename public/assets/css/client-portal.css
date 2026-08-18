@@ -444,6 +444,37 @@
     text-decoration: underline;
 }
 
+/* Mark every portal link with an icon so it reads as a link and not as plain coloured
+   text. Done here rather than in each Blade so all five link sites stay consistent.
+   The glyphs come from the Feather webfont already loaded app-wide:
+   \e95a = fe-external-link, \e92e = fe-chevron-left. */
+.client-services-link::after {
+    font-family: 'feather';
+    font-weight: normal;
+    font-style: normal;
+    /* Internal navigation by default; the external variant is overridden below.
+       The empty alt text after the slash keeps screen readers from announcing the
+       private-use glyph as a stray character — the link text carries the meaning. */
+    content: "\e92e" / "";
+    font-size: 0.85em;
+    margin-inline-start: 0.3em;
+    opacity: 0.65;
+    vertical-align: baseline;
+}
+
+/* Only a link that really opens a new tab gets the external-link arrow — using it on an
+   internal link would promise a new tab that never opens. */
+.client-services-link[target="_blank"]::after {
+    content: "\e95a" / "";
+}
+
+.client-services-link:hover::after {
+    opacity: 1;
+    /* Keep the icon out of the text underline so it does not look struck through. */
+    text-decoration: none;
+    display: inline-block;
+}
+
 .client-services-grid {
     overflow-x: auto;
     -webkit-overflow-scrolling: touch;
@@ -460,6 +491,15 @@
 
 .client-services-grid--cols-4 .client-services-grid__row {
     grid-template-columns: minmax(140px, 1.2fr) minmax(130px, 1.1fr) minmax(110px, 0.9fr) minmax(100px, 0.8fr);
+}
+
+.client-services-grid--cols-5 .client-services-grid__row {
+    grid-template-columns:
+        minmax(190px, 1.7fr)
+        minmax(100px, 0.9fr)
+        minmax(90px, 0.8fr)
+        minmax(95px, 0.85fr)
+        minmax(120px, 1fr);
 }
 
 .client-services-grid--cols-6 .client-services-grid__row {
@@ -485,7 +525,9 @@
 
 .client-services-grid__actions {
     display: flex;
-    justify-content: flex-end;
+    justify-content: center;
+    flex-wrap: wrap;
+    gap: 0.4rem;
 }
 
 .client-services-grid__actions .btn {
@@ -522,11 +564,17 @@
     padding: 0.85rem 1.15rem;
     min-width: 0;
     font-weight: 600;
+    /* Centre every cell so a header always sits over its own values. Header and body
+       share this rule, which is what keeps the two rows in step. */
+    text-align: center;
 }
 
 .client-services-grid__cell--ltr {
+    /* direction stays ltr so domains, usernames and emails render correctly; only the
+       alignment changes, because text-align:left was what pushed these cells away from
+       their right-aligned headers. */
     direction: ltr;
-    text-align: left;
+    text-align: center;
     unicode-bidi: plaintext;
 }
 

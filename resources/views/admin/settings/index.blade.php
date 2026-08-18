@@ -407,7 +407,7 @@
                                             <div class="col-12">
                                                 <label class="form-label">اسم الموقع</label>
                                                 <input type="text" name="site_name" class="form-control form-control-lg"
-                                                    value="{{ old('site_name', $settings['site_name'] ?? '') }}" placeholder="ClaudSoft Hosting">
+                                                    value="{{ old('site_name', $settings['site_name'] ?? '') }}" placeholder="ClaudSoft">
                                                 <div class="form-text">يُستخدم في الهيدر والفوتر وSEO عبر <code>{site_name}</code></div>
                                             </div>
                                             <div class="col-12">

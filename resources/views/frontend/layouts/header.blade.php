@@ -74,7 +74,9 @@
                             <span class="navbar-user__name">{{ $authUser->name }}</span>
                         </a>
                     @else
-                        <a href="{{ route('login') }}" class="btn btn-primary navbar-login-btn">
+                        {{-- No .btn-primary: the brand colours live on .navbar-login-btn, and keeping
+                             Bootstrap's variant here would fight it on :hover/:active. --}}
+                        <a href="{{ route('login') }}" class="btn navbar-login-btn">
                             <i class="fas fa-sign-in-alt ms-1" aria-hidden="true"></i>
                             تسجيل الدخول
                         </a>

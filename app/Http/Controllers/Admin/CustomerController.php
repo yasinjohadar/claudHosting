@@ -132,6 +132,7 @@ class CustomerController extends Controller
     {
         $client = User::with([
             'whmAccounts' => fn ($q) => $q->orderByDesc('joined_at'),
+            'whmAccounts.invoices',
             'clientCoolifyTeam',
         ])
             ->withCount('whmAccounts')

@@ -139,7 +139,7 @@
                             <div class="domain-user-photo">
                                 <label for="photo-input" class="domain-user-photo__preview">
                                     <img id="photo-preview"
-                                        src="{{ $user->photo ? asset('storage/' . $user->photo) : asset('assets/images/faces/default-avatar.jpg') }}"
+                                        src="{{ $user->photoUrl() }}"
                                         alt="صورة المستخدم">
                                     <span class="domain-user-photo__overlay"><i class="fe fe-camera"></i></span>
                                 </label>

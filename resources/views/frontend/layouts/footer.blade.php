@@ -54,7 +54,7 @@
 
     <!-- ============ FOOTER ============ -->
     @php
-        $siteName = $settings['site_name'] ?? 'ClaudSoft Hosting';
+        $siteName = $settings['site_name'] ?? 'ClaudSoft';
         $footerDesc = $settings['footer_description'] ?? 'استضافة كلاودسوفت — بنية سحابية موثوقة، باقات مرنة، ودعم فني مستمر لموقعك أو متجرك الإلكتروني.';
         $footerEmail = $settings['contact_email'] ?? 'info@cloudsofthosting.com';
         $footerPhone = $settings['contact_phone'] ?? '+963 XXX XXX XXX';
@@ -130,6 +130,20 @@
                                 <span class="footer-contact-text">{{ $footerPhone }}</span>
                             </a>
                         </li>
+                        @php
+                            // Same source and same digit-stripping as the floating button
+                            // below, so the two can never point at different numbers.
+                            $footerWhatsapp = $settings['contact_whatsapp'] ?? $settings['contact_phone'] ?? null;
+                            $footerWaDigits = $footerWhatsapp ? preg_replace('/[^0-9]/', '', $footerWhatsapp) : '';
+                        @endphp
+                        @if($footerWaDigits !== '')
+                        <li>
+                            <a href="https://wa.me/{{ $footerWaDigits }}" class="footer-contact-item" target="_blank" rel="noopener noreferrer">
+                                <span class="footer-contact-icon"><i class="fab fa-whatsapp"></i></span>
+                                <span class="footer-contact-text">واتساب</span>
+                            </a>
+                        </li>
+                        @endif
                         <li>
                             <span class="footer-contact-item footer-contact-item--static">
                                 <span class="footer-contact-icon"><i class="fas fa-map-marker-alt"></i></span>

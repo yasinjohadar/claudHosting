@@ -13,7 +13,7 @@
                 try {
                     await navigator.clipboard.writeText(text);
                     if (typeof whmShowToast === 'function') {
-                        whmShowToast('تم نسخ البريد إلى الحافظة', 'success');
+                        whmShowToast(btn.dataset.copyMsg || 'تم نسخ البريد إلى الحافظة', 'success');
                     }
                     const icon = btn.querySelector('i');
                     const prev = icon?.className;
@@ -34,7 +34,7 @@
                     ta.select();
                     try {
                         document.execCommand('copy');
-                        if (typeof whmShowToast === 'function') whmShowToast('تم نسخ البريد', 'success');
+                        if (typeof whmShowToast === 'function') whmShowToast(btn.dataset.copyMsg || 'تم نسخ البريد', 'success');
                     } catch {
                         if (typeof whmShowToast === 'function') whmShowToast('تعذّر النسخ', 'danger');
                     }

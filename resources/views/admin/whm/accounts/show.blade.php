@@ -15,76 +15,11 @@
     font-weight: 700;
     word-break: break-all;
 }
-.whm-account-page .whm-meta-chip {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.35rem;
-    padding: 0.35rem 0.75rem;
-    border-radius: 50rem;
-    font-size: 0.8rem;
-    background: rgba(255, 255, 255, 0.7);
-    border: 1px solid rgba(0, 0, 0, 0.06);
-}
-.whm-account-page .whm-stat-tile {
-    display: flex;
-    align-items: flex-start;
-    gap: 0.75rem;
-    padding: 0.85rem 1rem;
-    border-radius: 0.75rem;
-    background: var(--custom-white, #fff);
-    border: 1px solid rgba(0, 0, 0, 0.06);
-    height: 100%;
-}
-.whm-account-page .whm-stat-icon {
-    width: 2.25rem;
-    height: 2.25rem;
-    border-radius: 0.5rem;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    flex-shrink: 0;
-}
-.whm-account-page .whm-stat-label {
-    display: block;
-    font-size: 0.7rem;
-    text-transform: uppercase;
-    letter-spacing: 0.03em;
-    color: var(--text-muted, #6c757d);
-    margin-bottom: 0.15rem;
-}
-.whm-account-page .whm-stat-value {
-    display: block;
-    font-size: 0.9rem;
-    font-weight: 600;
-    line-height: 1.3;
-}
-.whm-account-page .whm-section {
-    padding: 1.25rem 0;
-    border-bottom: 1px solid rgba(0, 0, 0, 0.06);
-}
-.whm-account-page .whm-section:last-child {
-    border-bottom: none;
-    padding-bottom: 0;
-}
-.whm-account-page .whm-section:first-child {
-    padding-top: 0;
-}
-.whm-account-page .whm-section-title {
-    font-size: 0.8rem;
-    font-weight: 700;
-    text-transform: uppercase;
-    letter-spacing: 0.04em;
-    color: var(--text-muted, #6c757d);
-    margin-bottom: 0.85rem;
-}
 .whm-account-page .whm-danger-zone {
     border: 1px solid rgba(var(--danger-rgb, 220, 53, 69), 0.25);
     border-radius: 0.75rem;
     background: rgba(var(--danger-rgb, 220, 53, 69), 0.04);
     padding: 1rem 1.25rem;
-}
-.whm-account-page .whm-stats-panel {
-    padding: 0.25rem 0;
 }
 .whm-account-page > .container-fluid {
     padding-top: 1.5rem;
@@ -183,6 +118,7 @@
                     'summarySyncedAt' => $summarySyncedAt,
                     'configured' => $configured,
                     'sslBadge' => $sslBadge ?? null,
+                    'panelId' => 'whm-summary-card',
                 ])
             </div>
         </div>
@@ -204,52 +140,23 @@
                                 <button class="nav-link" data-bs-toggle="tab" data-bs-target="#whm-tab-package" type="button">الباقة</button>
                             </li>
                             @endif
+                            @if(($configured ?? false) && $account->status !== 'terminated')
+                            <li class="nav-item" role="presentation">
+                                <button class="nav-link" data-bs-toggle="tab" data-bs-target="#whm-tab-mail" type="button">البريد</button>
+                            </li>
+                            @endif
                         </ul>
                     </div>
                     <div class="card-body pt-3">
                         <div class="tab-content">
                             <div class="tab-pane fade show active" id="whm-tab-overview" role="tabpanel">
-                                <div class="whm-section">
-                                    <div class="whm-section-title">الاشتراك والفواتير</div>
-                                    <dl class="row small mb-3">
-                                        <dt class="col-sm-4">نهاية الاشتراك</dt>
-                                        <dd class="col-sm-8">{{ $account->subscription_ends_at?->format('Y-m-d') ?? '—' }}</dd>
-                                        <dt class="col-sm-4">آخر تجديد</dt>
-                                        <dd class="col-sm-8">{{ $account->last_renewed_at?->format('Y-m-d H:i') ?? '—' }}</dd>
-                                        <dt class="col-sm-4">مبلغ الفاتورة الافتراضي</dt>
-                                        <dd class="col-sm-8">{{ number_format($billing['renewal_amount'] ?? 0, 2) }} ر.س</dd>
-                                    </dl>
-                                    @if($account->status !== 'terminated')
-                                    <form action="{{ route('admin.whm.accounts.renew', $account) }}" method="POST" class="row g-2 align-items-end"
-                                        onsubmit="return confirm('تجديد الاشتراك لمدة {{ $billing['subscription_years'] ?? 1 }} سنة وإنشاء فاتورة؟');">
-                                        @csrf
-                                        <div class="col-md-4">
-                                            <label class="form-label small">مبلغ الفاتورة (اختياري)</label>
-                                            <input type="number" name="amount" class="form-control form-control-sm" min="0" step="0.01"
-                                                placeholder="{{ $billing['renewal_amount'] ?? 0 }}">
-                                        </div>
-                                        <div class="col-md-auto">
-                                            <button type="submit" class="btn btn-success btn-sm">
-                                                <i class="fe fe-refresh-cw me-1"></i>تجديد الاشتراك
-                                            </button>
-                                        </div>
-                                    </form>
-                                    @endif
-                                    @if($account->invoices->isNotEmpty())
-                                    <div class="mt-3">
-                                        <div class="small text-muted mb-1">آخر الفواتير</div>
-                                        <ul class="list-unstyled small mb-0">
-                                            @foreach($account->invoices as $inv)
-                                            <li class="mb-1">
-                                                <a href="{{ route('admin.invoices.show', $inv) }}">{{ $inv->invoice_number }}</a>
-                                                — {{ number_format($inv->total, 2) }} ر.س
-                                                <span class="badge bg-{{ $inv->status === 'Paid' ? 'success' : 'warning' }}-transparent">{{ $inv->status_name }}</span>
-                                            </li>
-                                            @endforeach
-                                        </ul>
-                                    </div>
-                                    @endif
-                                </div>
+                                @include('admin.whm.accounts.partials.subscription-panel', [
+                                    'account' => $account,
+                                    'invoices' => $account->invoices,
+                                    'invoiceRoute' => 'admin.invoices.show',
+                                    'billing' => $billing,
+                                    'canRenew' => true,
+                                ])
                                 <div class="whm-section">
                                     <div class="whm-section-title">حالة الحساب</div>
                                     @include('admin.whm.accounts.partials.status-toggle', ['account' => $account])
@@ -271,6 +178,12 @@
                             @if(($configured ?? false) && $account->status !== 'terminated')
                             <div class="tab-pane fade" id="whm-tab-package" role="tabpanel">
                                 @include('admin.whm.accounts.partials.change-package-form', ['account' => $account, 'packages' => $packages, 'configured' => $configured, 'embedded' => true])
+                            </div>
+                            @endif
+
+                            @if(($configured ?? false) && $account->status !== 'terminated')
+                            <div class="tab-pane fade" id="whm-tab-mail" role="tabpanel">
+                                @include('admin.whm.accounts.partials.email-deliverability-tab', ['account' => $account, 'embedded' => true, 'canWriteDns' => true])
                             </div>
                             @endif
                         </div>
@@ -316,4 +229,6 @@
 @include('admin.whm.accounts.partials.status-toggle-script')
 @include('admin.whm.accounts.partials.account-credentials-script')
 @include('admin.whm.accounts.partials.client-assign-script')
+@include('admin.whm.accounts.partials.copy-email-script')
+@include('admin.whm.accounts.partials.email-deliverability-script')
 @endpush

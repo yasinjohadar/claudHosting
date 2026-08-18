@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Services\Cloudflare\CloudflareSettingsService;
+use App\Support\Dns\DnsValue;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
@@ -288,6 +289,7 @@ class CloudflareApiService
             'accounts' => false,
             'zones' => false,
             'dns' => false,
+            'dns_edit' => false,
             'ssl' => false,
             'registrar' => false,
         ];
@@ -312,6 +314,8 @@ class CloudflareApiService
 
             $ssl = $this->request('GET', "zones/{$zoneId}/settings/ssl");
             $probes['ssl'] = $ssl['success'] ?? false;
+
+            $probes['dns_edit'] = $this->probeDnsEditCapability($zoneId);
         }
 
         $accountId = $this->getAccountId();
@@ -321,6 +325,64 @@ class CloudflareApiService
         }
 
         return $probes;
+    }
+
+    /**
+     * Can this token WRITE DNS? Determined without creating anything.
+     *
+     * Preferred path: read it off the token's own permission-group names, which costs
+     * no extra call. Fallback: POST a deliberately incomplete record body. Cloudflare
+     * checks authorisation before validation, so 403 means "not permitted" while a
+     * 400 validation error means the write itself would have been allowed. Nothing
+     * creatable is ever sent.
+     */
+    protected function probeDnsEditCapability(string $zoneId): bool
+    {
+        $verify = $this->verifyToken();
+        if ($verify['success'] ?? false) {
+            $policies = $this->parseTokenPolicies($verify['data']['result'] ?? []);
+            $implied = $this->policiesImplyDnsEdit($policies);
+            if ($implied !== null) {
+                return $implied;
+            }
+        }
+
+        $probe = $this->request('POST', "zones/{$zoneId}/dns_records", [], ['type' => 'A']);
+        if ($probe['success'] ?? false) {
+            // Should be impossible (no name/content), but a success means we may write.
+            return true;
+        }
+
+        return (int) ($probe['status'] ?? 0) === 400;
+    }
+
+    /**
+     * @param  array<int, array{effect: string, permissions: array<int, string>, resources: string}>  $policies
+     * @return bool|null  null when the policy names are inconclusive
+     */
+    protected function policiesImplyDnsEdit(array $policies): ?bool
+    {
+        $sawDnsPermission = false;
+
+        foreach ($policies as $policy) {
+            if (strtolower((string) ($policy['effect'] ?? 'allow')) !== 'allow') {
+                continue;
+            }
+
+            foreach ($policy['permissions'] ?? [] as $permission) {
+                $name = strtolower((string) $permission);
+                if (! str_contains($name, 'dns')) {
+                    continue;
+                }
+                $sawDnsPermission = true;
+                if (str_contains($name, 'write') || str_contains($name, 'edit')) {
+                    return true;
+                }
+            }
+        }
+
+        // A DNS permission that is explicitly read-only is conclusive: no write.
+        return $sawDnsPermission ? false : null;
     }
 
     /**
@@ -341,6 +403,12 @@ class CloudflareApiService
                 'label' => 'سجلات DNS',
                 'description' => 'عرض سجلات DNS داخل كل zone',
                 'hint' => 'DNS · Read',
+            ],
+            [
+                'key' => 'dns_edit',
+                'label' => 'تعديل سجلات DNS',
+                'description' => 'إنشاء وتحديث سجلات DNS — لازم لتركيب سجلات البريد تلقائياً',
+                'hint' => 'DNS · Edit',
             ],
             [
                 'key' => 'ssl',
@@ -542,34 +610,70 @@ class CloudflareApiService
     }
 
     /**
-     * @return array<string, mixed>|null
+     * Resolve the Cloudflare zone that CONTAINS a hostname, walking up the labels.
+     *
+     * docs.claudsoft.com is not a zone; claudsoft.com is. The old implementation
+     * matched only exactly AND passed the hostname to listAllZones() as a
+     * `name=contains:` filter, so a subdomain failed twice over. Here the zone list is
+     * fetched once, unfiltered (and cached), then the candidates are tried from most
+     * specific to least. Asking Cloudflare which candidate really is a zone is
+     * authoritative and needs no public-suffix list.
+     *
+     * @return array{id: string, name: string}|null
      */
-    public function resolveZoneIdForDomain(string $domain): ?string
+    public function resolveZoneForHostname(string $hostname): ?array
     {
-        $domain = strtolower(trim($domain));
-        $domain = preg_replace('#^https?://#', '', $domain ?? '');
-        $domain = rtrim($domain ?? '', '/');
-
-        if ($domain === '') {
+        $candidates = DnsValue::zoneCandidates($hostname);
+        if ($candidates === []) {
             return null;
         }
 
-        $zones = $this->listAllZones($domain);
-        if (isset($zones['_error'])) {
+        $zones = $this->listAllZones();
+        if (! is_array($zones) || isset($zones['_error'])) {
             return null;
         }
 
+        $byName = [];
         foreach ($zones as $zone) {
             if (! is_array($zone)) {
                 continue;
             }
-            $name = strtolower(rtrim((string) ($zone['name'] ?? ''), '.'));
-            if ($name === $domain) {
-                return (string) ($zone['id'] ?? '');
+            $name = DnsValue::host($zone['name'] ?? null);
+            $id = trim((string) ($zone['id'] ?? ''));
+            if ($name !== '' && $id !== '' && ! isset($byName[$name])) {
+                $byName[$name] = $id;
+            }
+        }
+
+        foreach ($candidates as $candidate) {
+            if (isset($byName[$candidate])) {
+                return ['id' => $byName[$candidate], 'name' => $candidate];
             }
         }
 
         return null;
+    }
+
+    public function resolveZoneIdForDomain(string $domain): ?string
+    {
+        $zone = $this->resolveZoneForHostname($domain);
+
+        return $zone === null ? null : $zone['id'];
+    }
+
+    /**
+     * Forget the cached zone list. listAllZones() caches its own FAILURES (it breaks
+     * out of pagination on error and Cache::remember stores the empty array for the
+     * full TTL), so one transient Cloudflare error would otherwise make every zone
+     * lookup return null for cache_ttl seconds.
+     */
+    public function forgetZoneListCache(): void
+    {
+        foreach ([null, ''] as $nameFilter) {
+            foreach ([null, '', 'active'] as $statusFilter) {
+                Cache::forget('cloudflare_zones_v2_'.md5(($nameFilter ?? '').'|'.($statusFilter ?? '')));
+            }
+        }
     }
 
     /**
@@ -751,5 +855,6 @@ class CloudflareApiService
     public function clearCaches(): void
     {
         $this->settings->clearCache();
+        $this->forgetZoneListCache();
     }
 }

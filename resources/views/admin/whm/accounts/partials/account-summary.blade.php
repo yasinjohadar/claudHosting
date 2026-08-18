@@ -2,15 +2,19 @@
     $summary = $summary ?? [];
     $syncedAt = $summarySyncedAt ?? null;
     $ssl = $sslBadge ?? ['label' => '—', 'badge' => 'bg-secondary-transparent'];
+    $panelId = $panelId ?? null;        // was a hardcoded id="whm-summary-card"
+    $canRefresh = $canRefresh ?? true;  // admin-only POST refresh form
+    $showTitle = $showTitle ?? true;
     $diskUsed = $summary['diskused'] ?? '—';
     $diskLimit = $summary['disklimit'] ?? '—';
     $inodesUsed = $summary['inodesused'] ?? '—';
     $inodesLimit = $summary['inodeslimit'] ?? '—';
 @endphp
-<div class="whm-stats-panel" id="whm-summary-card">
+@include('admin.whm.accounts.partials.whm-panel-styles')
+<div class="whm-stats-panel" @if($panelId) id="{{ $panelId }}" @endif>
     <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
-        <span class="fw-semibold text-muted small text-uppercase">موارد WHM</span>
-        @if(($configured ?? false) && ($account->status ?? '') !== 'terminated')
+        @if($showTitle)<span class="fw-semibold text-muted small text-uppercase">موارد WHM</span>@endif
+        @if($canRefresh && ($configured ?? false) && ($account->status ?? '') !== 'terminated')
             <form method="post" action="{{ route('admin.whm.accounts.refresh-summary', $account) }}" class="mb-0">
                 @csrf
                 <button type="submit" class="btn btn-sm btn-outline-primary">

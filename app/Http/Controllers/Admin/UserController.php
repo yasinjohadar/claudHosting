@@ -197,6 +197,7 @@ class UserController extends Controller
     public function show(string $id)
     {
         $user = User::with(['whmAccounts' => fn ($q) => $q->orderByDesc('joined_at')])
+            ->with('whmAccounts.invoices')
             ->with(['cyberpanelWebsites' => fn ($q) => $q->orderByDesc('joined_at')])
             ->withCount(['whmAccounts', 'cyberpanelWebsites'])
             ->findOrFail($id);

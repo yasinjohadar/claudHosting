@@ -303,6 +303,111 @@ class WhmApiService
         return $response;
     }
 
+    /**
+     * Peel result/data/cpanelresult wrappers WITHOUT forcing the payload into a list.
+     *
+     * Sibling of extractUapiDataList() for payloads that may legitimately be a
+     * map keyed by domain — that shape would come back as [] from the list version.
+     */
+    protected function unwrapUapiData(mixed $payload, int $depth = 0): mixed
+    {
+        if ($depth > 6 || ! is_array($payload)) {
+            return $payload;
+        }
+
+        if (isset($payload['cpanelresult']) && is_array($payload['cpanelresult'])) {
+            return $this->unwrapUapiData($payload['cpanelresult'], $depth + 1);
+        }
+
+        if (isset($payload['result']) && is_array($payload['result'])) {
+            $result = $payload['result'];
+            if (isset($result['status']) && (int) $result['status'] === 0) {
+                return null;
+            }
+            if (isset($result['data'])) {
+                return $this->unwrapUapiData($result['data'], $depth + 1);
+            }
+
+            return $this->unwrapUapiData($result, $depth + 1);
+        }
+
+        if (isset($payload['data'])) {
+            return $this->unwrapUapiData($payload['data'], $depth + 1);
+        }
+
+        return $payload;
+    }
+
+    /**
+     * cPanel UAPI EmailAuth::validate_current_setup — DKIM / SPF / PTR state for one domain.
+     *
+     * @return array{success: bool, message?: string, payload?: mixed}
+     */
+    public function emailAuthValidateSetup(string $cpanelUser, string $domain = ''): array
+    {
+        $params = $domain !== '' ? ['domain' => $domain] : [];
+        $response = $this->cpanelUapi($cpanelUser, 'EmailAuth', 'validate_current_setup', $params);
+        if (! ($response['success'] ?? false)) {
+            return $response;
+        }
+
+        return ['success' => true, 'payload' => $this->unwrapUapiData($response['data'] ?? null)];
+    }
+
+    /**
+     * cPanel UAPI EmailAuth::fetch_dkim_public_keys.
+     *
+     * @return array{success: bool, message?: string, payload?: mixed}
+     */
+    public function emailAuthDkimKeys(string $cpanelUser, string $domain): array
+    {
+        $response = $this->cpanelUapi($cpanelUser, 'EmailAuth', 'fetch_dkim_public_keys', ['domain' => $domain]);
+        if (! ($response['success'] ?? false)) {
+            return $response;
+        }
+
+        return ['success' => true, 'payload' => $this->unwrapUapiData($response['data'] ?? null)];
+    }
+
+    /**
+     * cPanel UAPI DomainInfo::domains_data — main / addon / sub / parked domains.
+     *
+     * @return array{success: bool, message?: string, payload?: mixed}
+     */
+    public function domainsData(string $cpanelUser): array
+    {
+        $response = $this->cpanelUapi($cpanelUser, 'DomainInfo', 'domains_data', [
+            'return_https_redirect_status' => 0,
+        ]);
+        if (! ($response['success'] ?? false)) {
+            return $response;
+        }
+
+        return ['success' => true, 'payload' => $this->unwrapUapiData($response['data'] ?? null)];
+    }
+
+    /**
+     * WHM gethostname — the server hostname, used as the Mail HELO identity.
+     *
+     * @return array{success: bool, message?: string, hostname?: string}
+     */
+    public function serverHostname(): array
+    {
+        $response = $this->request('gethostname');
+        if (! ($response['success'] ?? false)) {
+            return $response;
+        }
+
+        $data = is_array($response['data'] ?? null) ? $response['data'] : [];
+        $hostname = trim((string) ($data['hostname'] ?? $data['host'] ?? ''));
+
+        if ($hostname === '') {
+            return ['success' => false, 'message' => 'اسم مضيف السيرفر غير متوفر'];
+        }
+
+        return ['success' => true, 'hostname' => $hostname];
+    }
+
     public function clearPackagesCache(): void
     {
         foreach (['creatable', 'all', 'viewable', 'editable'] as $want) {

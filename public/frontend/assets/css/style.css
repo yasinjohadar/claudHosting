@@ -629,6 +629,9 @@ ul {
     text-overflow: ellipsis;
 }
 
+/* Brand-coloured header login button: same gradient as .btn-primary-custom used across
+   the site, at header scale. The markup deliberately omits Bootstrap's .btn-primary
+   (default #0d6efd) so there is no variant to out-specify on :hover / :active. */
 .navbar-login-btn {
     display: inline-flex;
     align-items: center;
@@ -638,6 +641,32 @@ ul {
     font-weight: 600;
     border-radius: 0.5rem;
     white-space: nowrap;
+    background: linear-gradient(135deg, var(--clr-primary), var(--clr-primary-dark));
+    border: none;
+    color: #fff;
+    box-shadow: 0 4px 14px var(--clr-primary-glow);
+    transition:
+        background var(--transition-fast),
+        box-shadow var(--transition-fast),
+        transform var(--transition-fast);
+}
+
+/* Bootstrap styles :hover, :focus, :active and .show separately, so each state has to
+   be reclaimed or the default blue flashes back on interaction. */
+.navbar-login-btn:hover,
+.navbar-login-btn:focus,
+.navbar-login-btn:focus-visible,
+.navbar-login-btn:active {
+    background: linear-gradient(135deg, var(--clr-primary-dark), var(--clr-primary));
+    color: #fff;
+    box-shadow: 0 6px 20px var(--clr-primary-glow);
+    transform: translateY(-1px);
+}
+
+/* Keep a visible keyboard focus ring — the transform alone is not an accessible cue. */
+.navbar-login-btn:focus-visible {
+    outline: 2px solid var(--clr-primary-light);
+    outline-offset: 2px;
 }
 
 /* Theme Toggle */

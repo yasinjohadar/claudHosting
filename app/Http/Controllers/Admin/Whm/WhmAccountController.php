@@ -7,6 +7,7 @@ use App\Models\User;
 use App\Models\WhmAccount;
 use App\Services\Whm\WhmAccountService;
 use App\Services\Whm\WhmApiService;
+use App\Services\Whm\WhmEmailDeliverabilityService;
 use App\Services\Whm\WhmServerStatusService;
 use App\Services\Whm\WhmSettingsService;
 use Illuminate\Database\Eloquent\Builder;
@@ -18,7 +19,8 @@ class WhmAccountController extends Controller
         protected WhmApiService $whmApi,
         protected WhmAccountService $accounts,
         protected WhmServerStatusService $serverStatus,
-        protected WhmSettingsService $settings
+        protected WhmSettingsService $settings,
+        protected WhmEmailDeliverabilityService $deliverability
     ) {
         $this->middleware('auth');
     }
@@ -267,6 +269,25 @@ class WhmAccountController extends Controller
             $result['success'] ? 'success' : 'error',
             $result['message']
         );
+    }
+
+    /**
+     * Email deliverability (DKIM / SPF / PTR / HELO) for the account, as a rendered
+     * HTML fragment. Lazy-loaded by the "البريد" tab; ?fresh=1 busts the cache.
+     */
+    public function emailDeliverability(Request $request, WhmAccount $account)
+    {
+        $data = $this->deliverability->forAccount($account, $request->boolean('fresh'));
+
+        return response()->json([
+            'success' => (bool) $data['success'],
+            'message' => $data['message'] ?? '',
+            'fetched_at_human' => $data['fetched_at_human'] ?? null,
+            'html' => view('admin.whm.accounts.partials.email-deliverability-body', [
+                'account' => $account,
+                'data' => $data,
+            ])->render(),
+        ]);
     }
 
     public function changePackage(Request $request, WhmAccount $account)

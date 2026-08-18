@@ -37,20 +37,9 @@
             <div class="client-services-toolbar">
                 <ul class="nav client-services-tabs" id="servicesTabs" role="tablist">
                     <li class="nav-item" role="presentation">
-                        <button class="nav-link active client-services-tab client-services-tab--domains" id="tab-domains-btn"
-                            data-bs-toggle="tab" data-bs-target="#pane-domains" type="button" role="tab"
-                            aria-controls="pane-domains" aria-selected="true" data-hash="domains">
-                            <span class="client-services-tab__icon"><i class="fe fe-globe"></i></span>
-                            <span class="client-services-tab__text">
-                                <span class="client-services-tab__label">النطاقات</span>
-                                <span class="client-services-tab__count">{{ $domainCount }}</span>
-                            </span>
-                        </button>
-                    </li>
-                    <li class="nav-item" role="presentation">
-                        <button class="nav-link client-services-tab client-services-tab--hosting" id="tab-hosting-btn"
+                        <button class="nav-link active client-services-tab client-services-tab--hosting" id="tab-hosting-btn"
                             data-bs-toggle="tab" data-bs-target="#pane-hosting" type="button" role="tab"
-                            aria-controls="pane-hosting" aria-selected="false" data-hash="hosting">
+                            aria-controls="pane-hosting" aria-selected="true" data-hash="hosting">
                             <span class="client-services-tab__icon"><i class="fe fe-server"></i></span>
                             <span class="client-services-tab__text">
                                 <span class="client-services-tab__label">cPanel</span>
@@ -58,11 +47,22 @@
                             </span>
                         </button>
                     </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link client-services-tab client-services-tab--domains" id="tab-domains-btn"
+                            data-bs-toggle="tab" data-bs-target="#pane-domains" type="button" role="tab"
+                            aria-controls="pane-domains" aria-selected="false" data-hash="domains">
+                            <span class="client-services-tab__icon"><i class="fe fe-globe"></i></span>
+                            <span class="client-services-tab__text">
+                                <span class="client-services-tab__label">النطاقات</span>
+                                <span class="client-services-tab__count">{{ $domainCount }}</span>
+                            </span>
+                        </button>
+                    </li>
                 </ul>
             </div>
 
             <div class="tab-content client-services-panels" id="servicesTabContent">
-                <div class="tab-pane fade show active" id="pane-domains" role="tabpanel" aria-labelledby="tab-domains-btn" tabindex="0">
+                <div class="tab-pane fade" id="pane-domains" role="tabpanel" aria-labelledby="tab-domains-btn" tabindex="0">
                     <div class="client-services-panel-head">
                         <h2 class="client-services-panel-head__title"><i class="fe fe-globe"></i> النطاقات المرتبطة</h2>
                         <span class="client-services-panel-head__meta">{{ $domainCount }} نطاق</span>
@@ -95,7 +95,7 @@
                     @endif
                 </div>
 
-                <div class="tab-pane fade" id="pane-hosting" role="tabpanel" aria-labelledby="tab-hosting-btn" tabindex="0">
+                <div class="tab-pane fade show active" id="pane-hosting" role="tabpanel" aria-labelledby="tab-hosting-btn" tabindex="0">
                     <div class="client-services-panel-head">
                         <h2 class="client-services-panel-head__title"><i class="fe fe-server"></i> حسابات cPanel</h2>
                         <span class="client-services-panel-head__meta">{{ $hostingCount }} حساب</span>
@@ -147,6 +147,10 @@
                                     </div>
                                     <div class="client-services-grid__cell">
                                         <div class="client-services-grid__actions">
+                                            <a href="{{ route('client.hosting.show', $acc) }}"
+                                                class="btn btn-light btn-sm rounded-pill px-3">
+                                                <i class="fe fe-info me-1"></i> التفاصيل
+                                            </a>
                                             @if($acc->status === 'active')
                                                 <a href="{{ route('client.hosting.cpanel', $acc) }}"
                                                     class="btn btn-primary btn-sm rounded-pill px-3"
@@ -293,6 +297,65 @@ document.addEventListener('DOMContentLoaded', function () {
         window.addEventListener('hashchange', function () {
             showTabByHash(window.location.hash);
         });
+
+        // Keyboard navigation, per the ARIA tabs pattern.
+        var tabs = Array.prototype.slice.call(tabEl.querySelectorAll('[role="tab"]'));
+
+        // The arrow keys follow what the user SEES, not DOM order: in an RTL layout the
+        // next tab sits to the left, so ArrowLeft must move forward. Read the direction
+        // from the document rather than hard-coding it, so an LTR page still behaves.
+        function isRtl() {
+            var dir = document.documentElement.getAttribute('dir')
+                || window.getComputedStyle(document.documentElement).direction;
+
+            return dir === 'rtl';
+        }
+
+        // Roving tabindex: only the selected tab is in the tab order, so Tab moves past
+        // the whole strip into the panel instead of stepping through every tab.
+        function syncTabindex() {
+            tabs.forEach(function (tab) {
+                tab.setAttribute('tabindex', tab.classList.contains('active') ? '0' : '-1');
+            });
+        }
+
+        function activate(index) {
+            if (tabs.length === 0) return;
+            // Wrap around at both ends.
+            var target = tabs[(index + tabs.length) % tabs.length];
+            bootstrap.Tab.getOrCreateInstance(target).show();
+            target.focus();
+        }
+
+        tabEl.addEventListener('keydown', function (e) {
+            if (e.altKey || e.ctrlKey || e.metaKey) return;
+
+            var current = tabs.indexOf(document.activeElement);
+            if (current === -1) return;
+
+            var forwardKey = isRtl() ? 'ArrowLeft' : 'ArrowRight';
+            var backwardKey = isRtl() ? 'ArrowRight' : 'ArrowLeft';
+            var handled = true;
+
+            if (e.key === forwardKey) {
+                activate(current + 1);
+            } else if (e.key === backwardKey) {
+                activate(current - 1);
+            } else if (e.key === 'Home') {
+                activate(0);
+            } else if (e.key === 'End') {
+                activate(tabs.length - 1);
+            } else {
+                handled = false;
+            }
+
+            if (handled) {
+                e.preventDefault();
+            }
+        });
+
+        tabEl.addEventListener('shown.bs.tab', syncTabindex);
+        syncTabindex();
     }
 
     var modal = document.getElementById('cpanelManageModal');

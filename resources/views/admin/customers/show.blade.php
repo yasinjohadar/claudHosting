@@ -131,57 +131,13 @@
                     <a href="{{ route('admin.whm.accounts.index', ['user_id' => $client->id]) }}" class="btn btn-sm btn-primary-light">عرض في WHM</a>
                 </div>
             </div>
-            <div class="table-responsive">
-                <table class="domain-dns-table domain-list-table">
-                    <thead>
-                        <tr>
-                            <th>المستخدم</th>
-                            <th>النطاق</th>
-                            <th>الباقة</th>
-                            <th>الحالة</th>
-                            <th class="domain-list-table__action text-center">إجراء</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        @forelse($client->whmAccounts as $acc)
-                            @php
-                                $whmStatusClass = match ($acc->status) {
-                                    'active' => 'active',
-                                    'suspended' => 'warning',
-                                    'terminated' => 'expired',
-                                    default => 'info',
-                                };
-                            @endphp
-                            <tr>
-                                <td><span class="domain-dns-value">{{ $acc->username }}</span></td>
-                                <td dir="ltr">{{ $acc->domain }}</td>
-                                <td>{{ $acc->package ?: '—' }}</td>
-                                <td>
-                                    <span class="domain-status-badge domain-status-badge--{{ $whmStatusClass }}">
-                                        {{ $acc->status_label }}
-                                    </span>
-                                </td>
-                                <td class="domain-list-table__action text-center text-nowrap">
-                                    <a href="{{ route('admin.whm.accounts.show', $acc) }}" class="domain-action-btn">
-                                        <i class="fe fe-eye"></i> عرض
-                                    </a>
-                                    @if($configured && $acc->status !== 'terminated')
-                                        <a href="{{ route('admin.whm.accounts.cpanel', $acc) }}" target="_blank" rel="noopener" class="domain-action-btn domain-action-btn--warning">
-                                            <i class="fe fe-external-link"></i> cPanel
-                                        </a>
-                                    @endif
-                                </td>
-                            </tr>
-                        @empty
-                            <tr>
-                                <td colspan="5" class="text-center text-muted py-4">
-                                    لا توجد حسابات مرتبطة —
-                                    <a href="{{ route('admin.whm.accounts.index') }}">اربط حساباً من قائمة WHM</a>.
-                                </td>
-                            </tr>
-                        @endforelse
-                    </tbody>
-                </table>
+            <div class="p-3">
+                @include('admin.whm.accounts.partials.accounts-accordion', [
+                    'accounts' => $client->whmAccounts,
+                    'configured' => $configured,
+                    'accordionId' => 'whm-accounts-accordion',
+                    'variant' => 'domain',
+                ])
             </div>
         </div>
 
@@ -349,3 +305,7 @@
 
 @include('admin.partials.impersonate-client-modal')
 @endsection
+
+@push('scripts')
+@include('admin.whm.accounts.partials.whm-panel-scripts')
+@endpush

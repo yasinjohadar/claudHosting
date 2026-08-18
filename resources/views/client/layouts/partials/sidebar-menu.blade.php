@@ -16,6 +16,13 @@
     }
 
     $menuItems = config('client-menu', []);
+
+    // Resolved once and reused so each distinct condition is evaluated a single time.
+    $menuVisibility = app(\App\Support\ClientMenuVisibility::class);
+    $menuItems = array_values(array_filter(
+        $menuItems,
+        fn (array $item): bool => $menuVisibility->passes($item['visible'] ?? null)
+    ));
 @endphp
 
 @foreach($menuItems as $item)
