@@ -116,11 +116,17 @@ final class PhoneField
         }
     }
 
-  /**
+    /**
      * @return array{country_code: string, phone: string}|null
      */
     private static function splitE164Digits(string $digits): ?array
     {
+        // Guarded like UserPhoneCountryValidator: a server whose vendor/ predates
+        // libphonenumber would otherwise fatal here while merely rendering a form.
+        if (! class_exists(PhoneNumberUtil::class)) {
+            return self::splitByLongestDialCode($digits);
+        }
+
         $util = PhoneNumberUtil::getInstance();
 
         try {
@@ -142,6 +148,40 @@ final class PhoneField
             }
         } catch (NumberParseException) {
             return null;
+        }
+
+        return null;
+    }
+
+    /**
+     * Split E.164 digits without libphonenumber by matching the configured dial codes.
+     *
+     * Longest prefix first, because +1 would otherwise swallow +1xxx style codes and a
+     * short code could win over the more specific one it prefixes.
+     *
+     * @return array{country_code: string, phone: string}|null
+     */
+    private static function splitByLongestDialCode(string $digits): ?array
+    {
+        $codes = array_keys(config('country_codes.iso', []));
+
+        usort($codes, static fn (string $a, string $b): int => strlen($b) <=> strlen($a));
+
+        foreach ($codes as $dialCode) {
+            $codeDigits = preg_replace('/\D+/', '', (string) $dialCode) ?? '';
+            if ($codeDigits === '' || ! str_starts_with($digits, $codeDigits)) {
+                continue;
+            }
+
+            $national = substr($digits, strlen($codeDigits));
+            if ($national === '' || $national === false) {
+                continue;
+            }
+
+            return [
+                'country_code' => (string) $dialCode,
+                'phone' => $national,
+            ];
         }
 
         return null;
