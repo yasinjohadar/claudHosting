@@ -175,7 +175,10 @@ class PasswordResetDeliveryService
             ->get();
 
         foreach ($users as $user) {
-            $userDigits = InternationalPhoneDigits::fromInput((string) $user->phone);
+            // Must go through forUser(): `phone` alone is the national number, so comparing
+            // it against the caller's full E.164 digits never matched for any account whose
+            // country code lives in the separate column — which is all of them.
+            $userDigits = InternationalPhoneDigits::forUser($user);
 
             if ($userDigits === null || strlen($userDigits) < 8) {
                 continue;
