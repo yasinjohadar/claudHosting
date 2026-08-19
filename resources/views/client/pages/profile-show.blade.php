@@ -19,16 +19,9 @@
     $addressLine = collect([$user->address1, $user->address2])->filter()->implode('، ');
     $locationLine = collect([$user->city, $user->state, $user->postcode])->filter()->implode(' · ');
     $hasAddress = $addressLine !== '' || $locationLine !== '' || $countryLabel || $user->companyname;
-    $fields = [
-        !empty($user->phone),
-        !empty($user->username),
-        !empty($user->photo),
-        !empty($user->companyname),
-        !empty($user->address1),
-        !empty($user->city),
-        !empty($user->country),
-    ];
-    $completion = (int) round((count(array_filter($fields)) / count($fields)) * 100);
+    // Completion now comes from App\Support\ProfileCompletion so the profile page and the
+    // dashboard cannot disagree, and so name/email actually count towards the figure.
+    $completion = $profileCompletion ?? \App\Support\ProfileCompletion::for($user);
     $initials = mb_strtoupper(
         mb_substr($user->name ?? 'U', 0, 1)
         .mb_substr(strstr($user->name ?? '', ' ') ?: '', 1, 1)
@@ -85,13 +78,17 @@
                     </div>
 
                     <div class="client-profile-show__hero-side">
-                        <div class="client-profile-show__completion" style="--progress: {{ $completion }};">
+                        <div class="client-profile-show__completion" style="--progress: {{ $completion->percent() }};">
                             <div class="client-profile-show__completion-ring" aria-hidden="true">
-                                <span>{{ $completion }}%</span>
+                                <span>{{ $completion->percent() }}%</span>
                             </div>
                             <div>
                                 <strong>اكتمال الملف</strong>
-                                <p class="client-profile-show__completion-hint mb-0">أكمل بياناتك لتجربة أفضل</p>
+                                <p class="client-profile-show__completion-hint mb-0">
+                                    {{ $completion->isComplete()
+                                        ? 'كل البيانات المطلوبة موجودة'
+                                        : $completion->completedCount().' من '.$completion->totalCount().' من البيانات المطلوبة' }}
+                                </p>
                             </div>
                         </div>
                         <div class="client-profile-show__actions">
@@ -104,6 +101,10 @@
                         </div>
                     </div>
                 </div>
+            </div>
+
+            <div class="client-profile-show__completion-panel">
+                @include('client.partials.profile-completion', ['completion' => $completion, 'variant' => 'full'])
             </div>
 
             <div class="row g-3 client-profile-show__grid">

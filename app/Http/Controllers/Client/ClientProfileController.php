@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Client;
 
 use App\Http\Controllers\Controller;
 use App\Support\PhoneField;
+use App\Support\ProfileCompletion;
 use App\Support\UserAddressField;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
@@ -20,8 +21,11 @@ class ClientProfileController extends Controller
 
     public function show(): View
     {
+        $user = auth()->user();
+
         return view('client.pages.profile-show', [
-            'user' => auth()->user(),
+            'user' => $user,
+            'profileCompletion' => ProfileCompletion::for($user),
         ]);
     }
 

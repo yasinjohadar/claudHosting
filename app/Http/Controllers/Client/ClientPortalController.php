@@ -8,6 +8,7 @@ use App\Models\WhmAccount;
 use App\Services\Client\ClientAssetService;
 use App\Services\Client\ClientBillingService;
 use App\Services\Whm\Wordpress\WhmWordpressDiscoveryService;
+use App\Support\ProfileCompletion;
 use Illuminate\View\View;
 
 class ClientPortalController extends Controller
@@ -34,7 +35,9 @@ class ClientPortalController extends Controller
             $summary['first_wordpress_site_uuid'] = $wordpressSites->first()->uuid;
         }
 
-        return view('client.pages.dashboard', compact('user', 'summary'));
+        $profileCompletion = ProfileCompletion::for($user);
+
+        return view('client.pages.dashboard', compact('user', 'summary', 'profileCompletion'));
     }
 
     public function services(): View
