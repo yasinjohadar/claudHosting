@@ -19,6 +19,7 @@ class DatabaseSeeder extends Seeder
             AdminUserSeeder::class,
             BlogSeeder::class,
             PaymentSeeder::class,
+            WhatsAppMessageTemplateSeeder::class,
         ]);
 
         // إنشاء مستخدم تجريبي إضافي

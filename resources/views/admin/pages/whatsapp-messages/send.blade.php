@@ -95,51 +95,27 @@
 
                                 <div class="mb-3" id="individual-placeholders-info" style="display: none;">
                                     <small class="text-muted">
-                                        <strong>متغيرات متاحة عند اختيار طالب:</strong><br>
-                                        <code>{student_name}</code> - اسم الطالب<br>
-                                        <code>{student_email}</code> - بريد الطالب<br>
-                                        <code>{course_name}</code> - اسم الكورس<br>
-                                        <code>{group_name}</code> - اسم المجموعة
+                                        <strong>متغيرات تُستبدل ببيانات المستلم:</strong><br>
+                                        <code>{customer_name}</code> - اسم العميل<br>
+                                        <code>{customer_email}</code> - بريد العميل<br>
+                                        <code>{customer_phone}</code> - جوال العميل<br>
+                                        <a href="{{ route('admin.whatsapp-templates.index') }}">القائمة الكاملة</a>
                                     </small>
                                 </div>
                             </div>
 
                             <!-- Broadcast fields -->
+                            {{--
+                                The course/group selects that used to live here came from a
+                                training-courses app: nothing ever passed $courses or $groups,
+                                so this page threw "Undefined variable $courses" on every visit.
+                            --}}
                             <div id="broadcast-fields" style="display: none;">
-                                <div class="mb-3">
-                                    <label for="course_id" class="form-label">الكورس <span class="text-danger">*</span></label>
-                                    <select class="form-select @error('course_id') is-invalid @enderror" id="course_id" name="course_id">
-                                        <option value="">اختر الكورس</option>
-                                        @foreach($courses as $course)
-                                            <option value="{{ $course->id }}" {{ old('course_id') == $course->id ? 'selected' : '' }}>{{ $course->title }}</option>
-                                        @endforeach
-                                    </select>
-                                    @error('course_id')
-                                        <div class="invalid-feedback">{{ $message }}</div>
-                                    @enderror
-                                </div>
-
-                                <div class="mb-3">
-                                    <label for="group_id" class="form-label">المجموعة <span class="text-muted">(اختياري)</span></label>
-                                    <select class="form-select @error('group_id') is-invalid @enderror" id="group_id" name="group_id">
-                                        <option value="">جميع المجموعات</option>
-                                        @foreach($groups as $group)
-                                            <option value="{{ $group->id }}" 
-                                                    {{ old('group_id') == $group->id ? 'selected' : '' }}>
-                                                {{ $group->name }}
-                                            </option>
-                                        @endforeach
-                                    </select>
-                                    <small class="text-muted">اختيار المجموعة يرسل للطلاب المنتمين لهذه المجموعة فقط</small>
-                                    @error('group_id')
-                                        <div class="invalid-feedback">{{ $message }}</div>
-                                    @enderror
-                                </div>
-
-                                <div class="mb-3">
-                                    <div class="alert alert-info">
-                                        <strong>عدد الطلاب:</strong> <span id="students-count">0</span> طالب
-                                    </div>
+                                <div class="alert alert-info border-0 py-2 small mb-0">
+                                    <i class="fas fa-users me-1"></i>
+                                    سيُرسل إلى <strong><span id="students-count">0</span></strong>
+                                    مستخدماً يملكون أرقام هواتف صالحة.
+                                    كل رسالة تُصاغ ببيانات صاحبها.
                                 </div>
                             </div>
 
@@ -159,11 +135,12 @@
                                 <textarea class="form-control @error('message') is-invalid @enderror" id="message" name="message" rows="5">{{ old('message') }}</textarea>
                                 <div id="placeholders-info" style="display: none;" class="mt-2">
                                     <small class="text-muted">
-                                        <strong>متغيرات متاحة للإرسال الجماعي:</strong><br>
-                                        <code>{student_name}</code> - اسم الطالب<br>
-                                        <code>{student_email}</code> - بريد الطالب<br>
-                                        <code>{course_name}</code> - اسم الكورس<br>
-                                        <code>{group_name}</code> - اسم المجموعة
+                                        <strong>متغيرات تُستبدل لكل مستلم:</strong><br>
+                                        <code>{customer_name}</code> - اسم العميل<br>
+                                        <code>{customer_email}</code> - بريد العميل<br>
+                                        <code>{customer_phone}</code> - جوال العميل<br>
+                                        <code>{company_name}</code> - اسم الشركة<br>
+                                        <a href="{{ route('admin.whatsapp-templates.index') }}">القائمة الكاملة في صفحة القوالب</a>
                                     </small>
                                 </div>
                                 @error('message')
@@ -171,27 +148,39 @@
                                 @enderror
                             </div>
 
+                            {{--
+                                Was a free-text "Meta template name" field. On Evolution that
+                                sent the NAME itself to the customer, so it now picks a real
+                                template from the system, rendered with the recipient's data.
+                            --}}
                             <div class="mb-3" id="template-fields" style="display: none;">
-                                <div class="mb-3">
-                                    <label for="template_name" class="form-label">اسم القالب <span class="text-danger">*</span></label>
-                                    <input type="text" class="form-control @error('template_name') is-invalid @enderror" id="template_name" name="template_name" value="{{ old('template_name') }}" placeholder="اسم القالب المعتمد في Meta">
-                                    <small class="text-muted">يجب أن يكون القالب معتمداً في Meta Business Account</small>
-                                    @error('template_name')
-                                        <div class="invalid-feedback">{{ $message }}</div>
-                                    @enderror
-                                </div>
-                                <div class="mb-3">
-                                    <label for="language" class="form-label">رمز اللغة <span class="text-danger">*</span></label>
-                                    <select class="form-select @error('language') is-invalid @enderror" id="language" name="language">
-                                        <option value="ar" {{ old('language', 'ar') == 'ar' ? 'selected' : '' }}>العربية (ar)</option>
-                                        <option value="en" {{ old('language') == 'en' ? 'selected' : '' }}>الإنجليزية (en)</option>
-                                        <option value="fr" {{ old('language') == 'fr' ? 'selected' : '' }}>الفرنسية (fr)</option>
-                                        <option value="es" {{ old('language') == 'es' ? 'selected' : '' }}>الإسبانية (es)</option>
+                                <label for="template_id" class="form-label">القالب <span class="text-danger">*</span></label>
+                                @if(($templates ?? collect())->isEmpty())
+                                    <div class="alert alert-warning border-0 py-2 small mb-0">
+                                        لا توجد قوالب مفعّلة.
+                                        <a href="{{ route('admin.whatsapp-templates.create') }}">أنشئ قالباً أولاً</a>.
+                                    </div>
+                                @else
+                                    <select class="form-select @error('template_id') is-invalid @enderror" id="template_id" name="template_id">
+                                        <option value="">— اختر قالباً —</option>
+                                        @foreach($templates as $tpl)
+                                            <option value="{{ $tpl->id }}"
+                                                data-body="{{ $tpl->body }}"
+                                                {{ (string) old('template_id') === (string) $tpl->id ? 'selected' : '' }}>
+                                                {{ $tpl->name }}
+                                            </option>
+                                        @endforeach
                                     </select>
-                                    @error('language')
+                                    @error('template_id')
                                         <div class="invalid-feedback">{{ $message }}</div>
                                     @enderror
-                                </div>
+                                    <small class="text-muted d-block mt-1">
+                                        تُستبدل المتغيرات ببيانات كل مستلم عند الإرسال.
+                                        <a href="{{ route('admin.whatsapp-templates.index') }}">إدارة القوالب</a>
+                                    </small>
+                                    <div class="mt-2 p-2 border rounded bg-light small" id="template-preview"
+                                        dir="auto" style="white-space: pre-wrap; display: none;"></div>
+                                @endif
                             </div>
 
                             <div class="d-flex gap-2">
@@ -226,16 +215,14 @@ $(document).ready(function() {
     const individualPlaceholdersInfo = document.getElementById('individual-placeholders-info');
     const toInput = document.getElementById('to');
     const studentSearch = document.getElementById('student_search');
-    const courseSelect = document.getElementById('course_id');
-    const groupSelect = document.getElementById('group_id');
     const studentsCountSpan = document.getElementById('students-count');
     const messageForm = document.getElementById('message-form');
     const typeSelect = document.getElementById('type');
     const messageField = document.getElementById('message-field');
     const templateFields = document.getElementById('template-fields');
     const messageInput = document.getElementById('message');
-    const templateNameInput = document.getElementById('template_name');
-    const languageInput = document.getElementById('language');
+    const templateSelect = document.getElementById('template_id');
+    const templatePreview = document.getElementById('template-preview');
 
     // Initialize Select2 for student search using jQuery
     jQuery(studentSearch).select2({
@@ -320,7 +307,6 @@ $(document).ready(function() {
             placeholdersInfo.style.display = 'block';
             individualPlaceholdersInfo.style.display = 'none';
             toInput.removeAttribute('required');
-            courseSelect.setAttribute('required', 'required');
             updateStudentsCount();
         } else {
             individualFields.style.display = 'block';
@@ -334,7 +320,6 @@ $(document).ready(function() {
             if (!studentSearch || !studentSearch.value) {
                 toInput.setAttribute('required', 'required');
             }
-            courseSelect.removeAttribute('required');
         }
     }
 
@@ -344,31 +329,40 @@ $(document).ready(function() {
             messageField.style.display = 'none';
             templateFields.style.display = 'block';
             messageInput.removeAttribute('required');
-            templateNameInput.setAttribute('required', 'required');
-            languageInput.setAttribute('required', 'required');
+            // The select is absent when no template exists yet; requiring it would block the
+            // form with nothing the admin can pick.
+            if (templateSelect) {
+                templateSelect.setAttribute('required', 'required');
+            }
         } else {
             messageField.style.display = 'block';
             templateFields.style.display = 'none';
             messageInput.setAttribute('required', 'required');
-            templateNameInput.removeAttribute('required');
-            languageInput.removeAttribute('required');
+            if (templateSelect) {
+                templateSelect.removeAttribute('required');
+            }
         }
     }
 
-    // Update students count via AJAX
-    function updateStudentsCount() {
-        const courseId = courseSelect.value;
-        const groupId = groupSelect.value;
-
-        if (!courseId && !groupId) {
-            studentsCountSpan.textContent = '0';
+    // Show the raw template body so the admin sees which text they picked.
+    function showTemplateBody() {
+        if (!templateSelect || !templatePreview) {
             return;
         }
 
-        fetch('{{ route("admin.whatsapp-messages.broadcast.students-count") }}?' + new URLSearchParams({
-            course_id: courseId || '',
-            group_id: groupId || ''
-        }), {
+        const option = templateSelect.options[templateSelect.selectedIndex];
+        const body = option ? (option.getAttribute('data-body') || '') : '';
+
+        templatePreview.textContent = body;
+        templatePreview.style.display = body === '' ? 'none' : 'block';
+    }
+
+    templateSelect?.addEventListener('change', showTemplateBody);
+    showTemplateBody();
+
+    // How many recipients a broadcast would actually reach.
+    function updateStudentsCount() {
+        fetch('{{ route("admin.whatsapp-messages.broadcast.students-count") }}', {
             headers: {
                 'X-Requested-With': 'XMLHttpRequest'
             }
@@ -385,8 +379,6 @@ $(document).ready(function() {
     // Event listeners
     sendTypeIndividual.addEventListener('change', toggleSendType);
     sendTypeBroadcast.addEventListener('change', toggleSendType);
-    courseSelect.addEventListener('change', updateStudentsCount);
-    groupSelect.addEventListener('change', updateStudentsCount);
     typeSelect.addEventListener('change', toggleMessageType);
 
     // Initial state
@@ -398,12 +390,6 @@ $(document).ready(function() {
         if (sendTypeIndividual.checked && !toInput.value) {
             e.preventDefault();
             alert('يرجى إدخال رقم الهاتف');
-            return false;
-        }
-
-        if (sendTypeBroadcast.checked && !courseSelect.value) {
-            e.preventDefault();
-            alert('يرجى اختيار الكورس');
             return false;
         }
 

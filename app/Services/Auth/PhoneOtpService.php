@@ -69,7 +69,7 @@ class PhoneOtpService
             'ip_address' => $ip,
         ]);
 
-        $this->sender->send($phone, $code);
+        $this->sender->send($phone, $code, $user);
 
         $cooldown = max(30, (int) ($settings['resend_cooldown_seconds'] ?? 60));
         Cache::put(

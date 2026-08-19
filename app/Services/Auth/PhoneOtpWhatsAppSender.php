@@ -2,7 +2,7 @@
 
 namespace App\Services\Auth;
 
-use InvalidArgumentException;
+use App\Models\User;
 
 class PhoneOtpWhatsAppSender
 {
@@ -20,9 +20,11 @@ class PhoneOtpWhatsAppSender
         return $this->evolutionSender->isAvailable();
     }
 
-    public function send(string $phone, string $code): void
+    public function send(string $phone, string $code, ?User $user = null): void
     {
-        $this->evolutionSender->send($phone, $code);
+        // The user is optional so existing callers keep working; passing it lets an OTP
+        // template greet the recipient by name instead of being limited to {code}.
+        $this->evolutionSender->send($phone, $code, $user);
     }
 
     /**

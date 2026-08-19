@@ -2,21 +2,22 @@
 
 namespace App\Http\Controllers\Admin;
 
+use App\Exceptions\WhatsAppApiException;
 use App\Http\Controllers\Controller;
+use App\Jobs\BroadcastWhatsAppMessageJob;
 use App\Models\User;
-use App\Models\WhatsAppMessage;
 use App\Models\WhatsAppBroadcast;
 use App\Models\WhatsAppContact;
-use App\Services\WhatsApp\SendWhatsAppMessage;
+use App\Models\WhatsAppMessage;
+use App\Models\WhatsAppMessageTemplate;
 use App\Services\WhatsApp\BroadcastWhatsAppMessage;
-use App\Jobs\BroadcastWhatsAppMessageJob;
-use App\Jobs\SendWhatsAppMessageJob;
+use App\Services\WhatsApp\SendWhatsAppMessage;
 use App\Services\WhatsApp\WhatsAppProviderFactory;
 use App\Services\WhatsApp\WhatsAppSettingsService;
-use App\Exceptions\WhatsAppApiException;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Schema;
 
 class WhatsAppMessageController extends Controller
 {
@@ -110,6 +111,7 @@ class WhatsAppMessageController extends Controller
     public function show(WhatsAppMessage $message)
     {
         $message->load('contact');
+
         return view('admin.pages.whatsapp-messages.show', compact('message'));
     }
 
@@ -118,7 +120,48 @@ class WhatsAppMessageController extends Controller
      */
     public function create()
     {
-        return view('admin.pages.whatsapp-messages.send');
+        return view('admin.pages.whatsapp-messages.send', [
+            'templates' => $this->availableTemplates(),
+        ]);
+    }
+
+    /**
+     * Active text templates for the picker.
+     *
+     * Returns an empty collection when the table is missing so the send page still works on an
+     * install where the templates migration has not run yet.
+     */
+    protected function availableTemplates()
+    {
+        if (! Schema::hasTable('whatsapp_message_templates')) {
+            return collect();
+        }
+
+        return WhatsAppMessageTemplate::active()
+            ->byType(WhatsAppMessageTemplate::TYPE_TEXT)
+            ->orderBy('name')
+            ->get(['id', 'name', 'slug', 'body', 'category']);
+    }
+
+    /**
+     * Resolve the chosen template and render it for one recipient.
+     *
+     * Central to the fix for the old "قالب" option: it called sendTemplate(), which on
+     * Evolution falls back to sending the template NAME as the message body — so picking a
+     * template mailed the customer the string "welcome_msg". Templates are now rendered here
+     * and sent as ordinary text.
+     */
+    protected function renderTemplateFor(int $templateId, ?User $recipient): ?string
+    {
+        $template = WhatsAppMessageTemplate::active()
+            ->byType(WhatsAppMessageTemplate::TYPE_TEXT)
+            ->find($templateId);
+
+        if ($template === null) {
+            return null;
+        }
+
+        return $template->render([], $recipient !== null ? ['user' => $recipient] : []);
     }
 
     /**
@@ -135,22 +178,22 @@ class WhatsAppMessageController extends Controller
                 try {
                     $query->students();
                 } catch (\Exception $e) {
-                    Log::warning('Error in students scope: ' . $e->getMessage());
+                    Log::warning('Error in students scope: '.$e->getMessage());
                 }
             }
 
             // Filter by phone
             $query->whereNotNull('phone')
-                  ->where('phone', '!=', '');
+                ->where('phone', '!=', '');
 
             // Search
             if ($request->filled('search')) {
                 $search = $request->input('search');
                 $query->where(function ($q) use ($search) {
-                    $q->where('name', 'like', '%' . $search . '%')
-                      ->orWhere('email', 'like', '%' . $search . '%')
-                      ->orWhere('phone', 'like', '%' . $search . '%');
-                      
+                    $q->where('name', 'like', '%'.$search.'%')
+                        ->orWhere('email', 'like', '%'.$search.'%')
+                        ->orWhere('phone', 'like', '%'.$search.'%');
+
                     if (is_numeric($search)) {
                         $q->orWhere('id', $search);
                     }
@@ -168,10 +211,11 @@ class WhatsAppMessageController extends Controller
 
             return response()->json($students);
         } catch (\Exception $e) {
-            Log::error('Error searching students: ' . $e->getMessage(), [
+            Log::error('Error searching students: '.$e->getMessage(), [
                 'exception' => $e,
-                'trace' => $e->getTraceAsString()
+                'trace' => $e->getTraceAsString(),
             ]);
+
             return response()->json(['error' => $e->getMessage()], 500);
         }
     }
@@ -186,16 +230,14 @@ class WhatsAppMessageController extends Controller
             'to' => 'required_without:student_id|string|regex:/^\+[1-9]\d{1,14}$/',
             'type' => 'required|in:text,template',
             'message' => 'required_if:type,text|nullable|string|max:4096',
-            'template_name' => 'required_if:type,template|nullable|string|max:255',
-            'language' => 'required_if:type,template|nullable|string|max:10',
+            'template_id' => 'required_if:type,template|nullable|integer',
         ], [
             'student_id.exists' => 'الطالب المحدد غير موجود',
             'to.required_without' => 'رقم الهاتف مطلوب إذا لم يتم اختيار طالب',
             'to.regex' => 'رقم الهاتف يجب أن يبدأ بـ + متبوعاً برمز الدولة',
             'type.required' => 'نوع الرسالة مطلوب',
             'message.required_if' => 'نص الرسالة مطلوب',
-            'template_name.required_if' => 'اسم القالب مطلوب',
-            'language.required_if' => 'اللغة مطلوبة',
+            'template_id.required_if' => 'اختر قالباً من القائمة',
         ]);
 
         try {
@@ -204,24 +246,37 @@ class WhatsAppMessageController extends Controller
             $messageText = $validated['message'] ?? '';
 
             // If student_id is provided, get student and use their phone
-            if (!empty($validated['student_id'])) {
+            if (! empty($validated['student_id'])) {
                 $student = User::findOrFail($validated['student_id']);
-                if (!$student->phone) {
+                if (! $student->phone) {
                     return redirect()->back()
-                                   ->with('error', 'الطالب المحدد لا يملك رقم هاتف مسجل.')
-                                   ->withInput();
+                        ->with('error', 'الطالب المحدد لا يملك رقم هاتف مسجل.')
+                        ->withInput();
                 }
                 $phone = $student->phone;
+            }
 
-                // Replace placeholders if message is text type
-                if ($validated['type'] === 'text' && !empty($messageText)) {
-                    $messageText = $this->broadcastService->replacePlaceholders(
-                        $messageText,
-                        $student,
-                        null,
-                        null
-                    );
+            $templatePayload = null;
+
+            if ($validated['type'] === 'template') {
+                $messageText = $this->renderTemplateFor((int) $validated['template_id'], $student);
+
+                if ($messageText === null) {
+                    return redirect()->back()
+                        ->with('error', 'القالب المحدد غير موجود أو غير مفعّل.')
+                        ->withInput();
                 }
+
+                if (trim($messageText) === '') {
+                    return redirect()->back()
+                        ->with('error', 'القالب المحدد ينتج نصاً فارغاً — راجعه من صفحة القوالب.')
+                        ->withInput();
+                }
+
+                // Kept on the record so the log still shows which template produced this text.
+                $templatePayload = ['template_id' => (int) $validated['template_id']];
+            } elseif (! empty($messageText) && $student !== null) {
+                $messageText = $this->broadcastService->replacePlaceholders($messageText, $student);
             }
 
             // Find or create contact
@@ -231,14 +286,12 @@ class WhatsAppMessageController extends Controller
             $message = WhatsAppMessage::create([
                 'direction' => WhatsAppMessage::DIRECTION_OUTBOUND,
                 'contact_id' => $contact->id,
-                'type' => $validated['type'] === 'template' ? WhatsAppMessage::TYPE_TEMPLATE : WhatsAppMessage::TYPE_TEXT,
-                'body' => $validated['type'] === 'template' ? $validated['template_name'] : $messageText,
+                // Always TYPE_TEXT now: Evolution has no real template channel, and recording
+                // it as a template made retry() re-send the template name instead of the text.
+                'type' => WhatsAppMessage::TYPE_TEXT,
+                'body' => $messageText,
                 'status' => WhatsAppMessage::STATUS_QUEUED, // Will be updated after sending
-                'payload' => $validated['type'] === 'template' ? [
-                    'template_name' => $validated['template_name'],
-                    'language' => $validated['language'] ?? 'ar',
-                    'components' => [],
-                ] : null,
+                'payload' => $templatePayload,
             ]);
 
             // Get provider settings and send message directly (synchronous)
@@ -249,21 +302,8 @@ class WhatsAppMessageController extends Controller
             // Create provider instance
             $providerInstance = WhatsAppProviderFactory::create($provider, $config);
 
-            // Send message directly
-            if ($validated['type'] === 'template') {
-                $response = $providerInstance->sendTemplate(
-                    $phone,
-                    $validated['template_name'],
-                    $validated['language'] ?? 'ar',
-                    []
-                );
-            } else {
-                $response = $providerInstance->sendText(
-                    $phone,
-                    $messageText,
-                    false
-                );
-            }
+            // One path for both types: a template is already rendered text by this point.
+            $response = $providerInstance->sendText($phone, $messageText, false);
 
             // Update message with meta_message_id and status
             $message->update([
@@ -282,7 +322,7 @@ class WhatsAppMessageController extends Controller
             ]);
 
             return redirect()->route('admin.whatsapp-messages.show', $message)
-                           ->with('success', 'تم إرسال الرسالة بنجاح!');
+                ->with('success', 'تم إرسال الرسالة بنجاح!');
         } catch (WhatsAppApiException $e) {
             // Update message with error if message was created
             if (isset($message) && $message->id) {
@@ -303,8 +343,8 @@ class WhatsAppMessageController extends Controller
             ]);
 
             return redirect()->back()
-                           ->with('error', 'فشل إرسال الرسالة: ' . $e->getMessage())
-                           ->withInput();
+                ->with('error', 'فشل إرسال الرسالة: '.$e->getMessage())
+                ->withInput();
         } catch (\Exception $e) {
             // Update message with error if message was created
             if (isset($message) && $message->id) {
@@ -324,8 +364,8 @@ class WhatsAppMessageController extends Controller
             ]);
 
             return redirect()->back()
-                           ->with('error', 'حدث خطأ أثناء إرسال الرسالة: ' . $e->getMessage())
-                           ->withInput();
+                ->with('error', 'حدث خطأ أثناء إرسال الرسالة: '.$e->getMessage())
+                ->withInput();
         }
     }
 
@@ -334,13 +374,8 @@ class WhatsAppMessageController extends Controller
      */
     public function getStudentsCount(Request $request)
     {
-        $students = $this->broadcastService->getStudentsByCriteria(
-            null, // course_id - not used in this project
-            null  // group_id - not used in this project
-        );
-
         return response()->json([
-            'count' => $students->count(),
+            'count' => $this->broadcastService->getBroadcastRecipients()->count(),
         ]);
     }
 
@@ -353,14 +388,14 @@ class WhatsAppMessageController extends Controller
             'send_type' => 'required|in:individual,broadcast',
             'type' => 'required|in:text,template',
             'message' => 'required_if:type,text|nullable|string|max:4096',
-            'template_name' => 'required_if:type,template|nullable|string|max:255',
-            'language' => 'required_if:type,template|nullable|string|max:10',
+            'template_id' => 'required_if:type,template|nullable|integer',
             // Individual field
             'to' => 'required_if:send_type,individual|nullable|string|regex:/^\+[1-9]\d{1,14}$/',
         ], [
             'send_type.required' => 'نوع الإرسال مطلوب',
             'type.required' => 'نوع الرسالة مطلوب',
             'message.required_if' => 'نص الرسالة مطلوب',
+            'template_id.required_if' => 'اختر قالباً من القائمة',
             'to.required_if' => 'رقم الهاتف مطلوب للإرسال الفردي',
         ]);
 
@@ -371,10 +406,7 @@ class WhatsAppMessageController extends Controller
             }
 
             // Broadcast logic - send to all users with valid phone numbers
-            $students = $this->broadcastService->getStudentsByCriteria(
-                null, // course_id - not used
-                null  // group_id - not used
-            );
+            $students = $this->broadcastService->getBroadcastRecipients();
 
             if ($students->isEmpty()) {
                 return redirect()->back()
@@ -382,9 +414,22 @@ class WhatsAppMessageController extends Controller
                     ->withInput();
             }
 
+            $template = null;
+            if ($validated['type'] === 'template') {
+                $template = WhatsAppMessageTemplate::active()
+                    ->byType(WhatsAppMessageTemplate::TYPE_TEXT)
+                    ->find((int) $validated['template_id']);
+
+                if ($template === null) {
+                    return redirect()->back()
+                        ->with('error', 'القالب المحدد غير موجود أو غير مفعّل.')
+                        ->withInput();
+                }
+            }
+
             // Create broadcast record
             $broadcast = WhatsAppBroadcast::create([
-                'message_template' => $validated['message'] ?? $validated['template_name'] ?? '',
+                'message_template' => $template !== null ? $template->body : ($validated['message'] ?? ''),
                 'send_type' => $validated['type'],
                 'course_id' => null,
                 'group_id' => null,
@@ -396,38 +441,38 @@ class WhatsAppMessageController extends Controller
             // Get delay settings
             $delaySettings = $this->settingsService->getDelaySettings();
             $baseDelay = $delaySettings['delay_between_messages'];
-            
+
             // Dispatch jobs for each student with delay
             $index = 0;
             foreach ($students as $student) {
-                $message = $this->broadcastService->replacePlaceholders(
-                    $validated['message'] ?? '',
-                    $student,
-                    null, // course - not used
-                    null  // group - not used
-                );
+                // Rendered per recipient, never once for the batch — otherwise the first
+                // recipient's name and city would go out to every number.
+                $message = $template !== null
+                    ? $template->render([], ['user' => $student])
+                    : $this->broadcastService->replacePlaceholders($validated['message'] ?? '', $student);
 
                 // Calculate delay for this message (with random variation if enabled)
                 $delay = $this->settingsService->calculateDelay($baseDelay);
-                
+
                 BroadcastWhatsAppMessageJob::dispatch(
-                    $broadcast, 
-                    $student, 
-                    $message, 
+                    $broadcast,
+                    $student,
+                    $message,
                     $validated['type'],
                     $delay,
                     $index
                 );
-                
+
                 $index++;
             }
 
             return redirect()->route('admin.whatsapp-messages.index')
-                ->with('success', 'تم بدء إرسال ' . $students->count() . ' رسالة جماعية.');
+                ->with('success', 'تم بدء إرسال '.$students->count().' رسالة جماعية.');
         } catch (\Exception $e) {
-            Log::error('Error sending broadcast message: ' . $e->getMessage());
+            Log::error('Error sending broadcast message: '.$e->getMessage());
+
             return redirect()->back()
-                ->with('error', 'فشل إرسال الرسالة الجماعية: ' . $e->getMessage())
+                ->with('error', 'فشل إرسال الرسالة الجماعية: '.$e->getMessage())
                 ->withInput();
         }
     }
@@ -439,14 +484,14 @@ class WhatsAppMessageController extends Controller
     {
         try {
             // Only allow retry for queued or failed messages
-            if (!in_array($message->status, [WhatsAppMessage::STATUS_QUEUED, WhatsAppMessage::STATUS_FAILED])) {
+            if (! in_array($message->status, [WhatsAppMessage::STATUS_QUEUED, WhatsAppMessage::STATUS_FAILED])) {
                 return redirect()->back()
-                    ->with('error', 'لا يمكن إعادة إرسال هذه الرسالة. الحالة الحالية: ' . $message->status);
+                    ->with('error', 'لا يمكن إعادة إرسال هذه الرسالة. الحالة الحالية: '.$message->status);
             }
 
             // Load contact relationship
             $message->load('contact');
-            if (!$message->contact) {
+            if (! $message->contact) {
                 return redirect()->back()
                     ->with('error', 'المستقبل غير موجود.');
             }
@@ -461,22 +506,10 @@ class WhatsAppMessageController extends Controller
             // Create provider instance
             $providerInstance = WhatsAppProviderFactory::create($provider, $config);
 
-            // Send message directly (synchronous)
-            if ($message->type === WhatsAppMessage::TYPE_TEMPLATE) {
-                $payload = $message->payload ?? [];
-                $response = $providerInstance->sendTemplate(
-                    $to,
-                    $payload['template_name'] ?? $message->body,
-                    $payload['language'] ?? 'ar',
-                    $payload['components'] ?? []
-                );
-            } else {
-                $response = $providerInstance->sendText(
-                    $to,
-                    $message->body ?? '',
-                    false
-                );
-            }
+            // Always resend the stored body. The old branch called sendTemplate() for template
+            // messages, which on Evolution resends the template NAME — so retrying a template
+            // message delivered "welcome_msg" to the customer.
+            $response = $providerInstance->sendText($to, $message->body ?? '', false);
 
             // Update message with meta_message_id and status
             $message->update([
@@ -516,7 +549,7 @@ class WhatsAppMessageController extends Controller
             ]);
 
             return redirect()->back()
-                ->with('error', 'فشل إرسال الرسالة: ' . $e->getMessage());
+                ->with('error', 'فشل إرسال الرسالة: '.$e->getMessage());
         } catch (\Exception $e) {
             // Update message with error
             $message->update([
@@ -535,7 +568,7 @@ class WhatsAppMessageController extends Controller
             ]);
 
             return redirect()->back()
-                ->with('error', 'حدث خطأ أثناء إرسال الرسالة: ' . $e->getMessage());
+                ->with('error', 'حدث خطأ أثناء إرسال الرسالة: '.$e->getMessage());
         }
     }
 }

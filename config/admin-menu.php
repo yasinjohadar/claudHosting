@@ -98,6 +98,7 @@ return [
         'active' => ['admin.whatsapp*', 'admin.evolution-api.*'],
         'children' => [
             ['type' => 'link', 'label' => 'الرسائل', 'route' => 'admin.whatsapp-messages.index', 'icon' => 'fe fe-message-square', 'color' => 'success', 'active' => 'admin.whatsapp-messages.*'],
+            ['type' => 'link', 'label' => 'قوالب الواتساب', 'route' => 'admin.whatsapp-templates.index', 'icon' => 'fe fe-file-text', 'color' => 'success', 'active' => 'admin.whatsapp-templates.*'],
             ['type' => 'link', 'label' => 'إعدادات واتساب', 'route' => 'admin.whatsapp-settings.index', 'icon' => 'fe fe-settings', 'color' => 'success', 'active' => 'admin.whatsapp-settings.*'],
             ['type' => 'link', 'label' => 'إعدادات Evolution', 'route' => 'admin.evolution-api.settings.index', 'icon' => 'fe fe-sliders', 'color' => 'teal', 'active' => 'admin.evolution-api.settings.*'],
             ['type' => 'link', 'label' => 'Instances', 'route' => 'admin.evolution-api.instances.index', 'icon' => 'fe fe-smartphone', 'color' => 'teal', 'active' => 'admin.evolution-api.instances.*'],

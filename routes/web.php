@@ -65,6 +65,7 @@ use App\Http\Controllers\Admin\SystemDatabaseController;
 use App\Http\Controllers\Admin\TicketController;
 use App\Http\Controllers\Admin\UserController;
 use App\Http\Controllers\Admin\WhatsAppMessageController;
+use App\Http\Controllers\Admin\WhatsAppMessageTemplateController;
 use App\Http\Controllers\Admin\WhatsAppSettingsController;
 use App\Http\Controllers\Admin\EvolutionChatsController;
 use App\Http\Controllers\Admin\EvolutionContactsController;
@@ -967,6 +968,18 @@ Route::middleware(['auth', 'admin.panel'])->group(function () {
             Route::get('/broadcast/students-count', [WhatsAppMessageController::class, 'getStudentsCount'])->name('broadcast.students-count');
             Route::post('/{message}/retry', [WhatsAppMessageController::class, 'retry'])->name('retry');
             Route::get('/{message}', [WhatsAppMessageController::class, 'show'])->name('show');
+        });
+        // قوالب رسائل الواتساب (نص + متغيرات)
+        Route::prefix('whatsapp-templates')->middleware(['role:admin'])->name('whatsapp-templates.')->group(function () {
+            Route::get('/', [WhatsAppMessageTemplateController::class, 'index'])->name('index');
+            Route::get('/create', [WhatsAppMessageTemplateController::class, 'create'])->name('create');
+            Route::post('/', [WhatsAppMessageTemplateController::class, 'store'])->name('store');
+            Route::post('/preview', [WhatsAppMessageTemplateController::class, 'preview'])->name('preview');
+            Route::post('/test-send', [WhatsAppMessageTemplateController::class, 'testSend'])
+                ->middleware('throttle:10,1')->name('test-send');
+            Route::get('/{whatsappTemplate}/edit', [WhatsAppMessageTemplateController::class, 'edit'])->name('edit');
+            Route::put('/{whatsappTemplate}', [WhatsAppMessageTemplateController::class, 'update'])->name('update');
+            Route::delete('/{whatsappTemplate}', [WhatsAppMessageTemplateController::class, 'destroy'])->name('destroy');
         });
         // ========== Evolution API ==========
         Route::prefix('evolution-api')->middleware(['role:admin'])->name('evolution-api.')->group(function () {

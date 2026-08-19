@@ -5,12 +5,14 @@ namespace App\Services\WhatsApp\AutoReply;
 use App\Jobs\ProcessWhatsAppAutoReplyJob;
 use App\Models\EvolutionInstance;
 use App\Models\WhatsAppMessage;
+use App\Models\WhatsAppMessageTemplate;
 use App\Services\WhatsApp\Evolution\EvolutionRotatingSendService;
 use App\Services\WhatsApp\SendWhatsAppMessage;
 use App\Services\WhatsApp\WhatsAppSettingsService;
 use App\Support\WhatsAppRecipientNormalizer;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Schema;
 
 class WhatsAppAutoReplyService
 {
@@ -172,10 +174,11 @@ class WhatsAppAutoReplyService
         $useAi = (bool) ($settings['auto_reply_use_ai'] ?? false);
         $replyText = $useAi
             ? $this->aiGenerator->generate($settings, $incomingBodies)
-            : ($settings['auto_reply_message'] ?? 'شكراً لك، تم استلام رسالتك. سنرد عليك قريباً.');
+            : $this->cannedReply($settings);
 
         if ($replyText === null || trim($replyText) === '') {
-            $replyText = $settings['auto_reply_message'] ?? 'شكراً لك، تم استلام رسالتك. سنرد عليك قريباً.';
+            // AI produced nothing usable; fall back to the canned reply rather than silence.
+            $replyText = $this->cannedReply($settings);
         }
 
         $chunks = $this->humanizer->splitIntoChunks(
@@ -437,5 +440,35 @@ class WhatsAppAutoReplyService
         $name = preg_replace('/\s+/u', ' ', $name) ?? $name;
 
         return mb_strtolower($name);
+    }
+
+    /**
+     * The non-AI reply text.
+     *
+     * Prefers the managed auto_reply_fallback template so the wording is editable from the
+     * templates screen, and keeps the settings field (then a hardcoded sentence) behind it so
+     * an un-migrated install still answers instead of going silent.
+     *
+     * @param  array<string, mixed>  $settings
+     */
+    private function cannedReply(array $settings): string
+    {
+        if (Schema::hasTable('whatsapp_message_templates')) {
+            try {
+                $template = WhatsAppMessageTemplate::findBySlug(WhatsAppMessageTemplate::SLUG_AUTO_REPLY_FALLBACK);
+                $rendered = $template !== null ? trim($template->render()) : '';
+                if ($rendered !== '') {
+                    return $rendered;
+                }
+            } catch (\Throwable) {
+                // An auto-reply must never fail because of a template lookup.
+            }
+        }
+
+        $configured = trim((string) ($settings['auto_reply_message'] ?? ''));
+
+        return $configured !== ''
+            ? $configured
+            : 'شكراً لك، تم استلام رسالتك. سنرد عليك قريباً.';
     }
 }
