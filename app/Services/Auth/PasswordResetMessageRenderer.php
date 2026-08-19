@@ -6,6 +6,7 @@ use App\Models\User;
 use App\Models\WhatsAppMessageTemplate;
 use App\Services\WhatsApp\WhatsAppSettingsService;
 use Carbon\Carbon;
+use Illuminate\Support\Facades\Schema;
 
 class PasswordResetMessageRenderer
 {
@@ -108,6 +109,17 @@ class PasswordResetMessageRenderer
     {
         $settings = $this->settingsService->getSettings();
         $variables = $this->credentialMessageVariables($user, $plainPassword);
+
+        // A managed template dedicated to credentials wins: it is the one the admin edits from
+        // the templates screen, and it keeps this wording out of the password-reset settings
+        // where it was mixed in with the reset-link message.
+        $managed = $this->managedCredentialTemplate();
+        if ($managed !== null) {
+            $rendered = trim($managed->render($variables, ['user' => $user]));
+            if ($rendered !== '') {
+                return $rendered;
+            }
+        }
 
         if (! empty($settings['whatsapp_template_id'])) {
             $template = WhatsAppMessageTemplate::active()
@@ -270,5 +282,23 @@ TEXT;
     <p style="margin-top:10px;margin-bottom:0;">{admin_instructions}</p>
 </div>
 HTML;
+    }
+    /**
+     * The managed credentials template, or null.
+     *
+     * Guarded because this runs while an admin is saving a password: a missing table on a
+     * not-yet-migrated install must fall back to the previous wording, not fail the save.
+     */
+    private function managedCredentialTemplate(): ?WhatsAppMessageTemplate
+    {
+        if (! Schema::hasTable('whatsapp_message_templates')) {
+            return null;
+        }
+
+        try {
+            return WhatsAppMessageTemplate::findBySlug(WhatsAppMessageTemplate::SLUG_CREDENTIALS);
+        } catch (\Throwable) {
+            return null;
+        }
     }
 }

@@ -48,6 +48,9 @@ class PasswordCredentialDeliveryService
      *     email_error: ?string,
      *     whatsapp_error: ?string
      * }
+     *
+     * @param  bool  $viaEmail  false to skip the email channel entirely
+     * @param  bool  $viaWhatsApp  false to skip the WhatsApp channel entirely
      */
     public function deliver(
         User $user,
@@ -56,7 +59,15 @@ class PasswordCredentialDeliveryService
         ?string $whatsappRecipientOverride = null,
         bool $requireWhatsApp = false,
         bool $requireEmail = false,
+        bool $viaEmail = true,
+        bool $viaWhatsApp = true,
     ): array {
+        // Both channels default to on, which is how every existing caller behaves. The flags
+        // exist for the admin screen, where the operator picks the channels — without them an
+        // unticked "email" box was silently ignored and the customer got the mail anyway.
+        $viaWhatsApp = $viaWhatsApp || $requireWhatsApp;
+        $viaEmail = $viaEmail || $requireEmail;
+
         $emailSent = false;
         $whatsappSent = false;
         $whatsappRecipient = null;
@@ -65,21 +76,8 @@ class PasswordCredentialDeliveryService
 
         // Prefer the required channel first so we never email/WA a password that will not be saved.
         if ($requireWhatsApp) {
-            try {
-                $result = $this->sendWhatsAppWithRetries($user, $plainPassword, $whatsappRecipientOverride);
-                $whatsappSent = $result['sent'];
-                $whatsappRecipient = $result['recipient'];
-                $whatsappError = $result['error'];
-            } catch (\Throwable $e) {
-                $whatsappError = $e->getMessage();
-                Log::error('Password credential WhatsApp failed', [
-                    'user_id' => $user->id,
-                    'context' => $context,
-                    'recipient' => $whatsappRecipient,
-                    'error' => $e->getMessage(),
-                    'exception' => $e::class,
-                ]);
-            }
+            ['sent' => $whatsappSent, 'recipient' => $whatsappRecipient, 'error' => $whatsappError]
+                = $this->attemptWhatsApp($user, $plainPassword, $context, $whatsappRecipientOverride);
 
             if (! $whatsappSent) {
                 throw new \InvalidArgumentException(
@@ -87,31 +85,11 @@ class PasswordCredentialDeliveryService
                 );
             }
 
-            try {
-                $this->sendEmail($user, $plainPassword);
-                $emailSent = true;
-            } catch (\Throwable $e) {
-                $emailError = $e->getMessage();
-                Log::error('Password credential email failed', [
-                    'user_id' => $user->id,
-                    'context' => $context,
-                    'error' => $e->getMessage(),
-                    'exception' => $e::class,
-                ]);
+            if ($viaEmail) {
+                ['sent' => $emailSent, 'error' => $emailError] = $this->attemptEmail($user, $plainPassword, $context);
             }
         } elseif ($requireEmail) {
-            try {
-                $this->sendEmail($user, $plainPassword);
-                $emailSent = true;
-            } catch (\Throwable $e) {
-                $emailError = $e->getMessage();
-                Log::error('Password credential email failed', [
-                    'user_id' => $user->id,
-                    'context' => $context,
-                    'error' => $e->getMessage(),
-                    'exception' => $e::class,
-                ]);
-            }
+            ['sent' => $emailSent, 'error' => $emailError] = $this->attemptEmail($user, $plainPassword, $context);
 
             if (! $emailSent) {
                 throw new \InvalidArgumentException(
@@ -119,49 +97,18 @@ class PasswordCredentialDeliveryService
                 );
             }
 
-            try {
-                $result = $this->sendWhatsAppWithRetries($user, $plainPassword, $whatsappRecipientOverride);
-                $whatsappSent = $result['sent'];
-                $whatsappRecipient = $result['recipient'];
-                $whatsappError = $result['error'];
-            } catch (\Throwable $e) {
-                $whatsappError = $e->getMessage();
-                Log::error('Password credential WhatsApp failed', [
-                    'user_id' => $user->id,
-                    'context' => $context,
-                    'recipient' => $whatsappRecipient,
-                    'error' => $e->getMessage(),
-                    'exception' => $e::class,
-                ]);
+            if ($viaWhatsApp) {
+                ['sent' => $whatsappSent, 'recipient' => $whatsappRecipient, 'error' => $whatsappError]
+                    = $this->attemptWhatsApp($user, $plainPassword, $context, $whatsappRecipientOverride);
             }
         } else {
-            try {
-                $this->sendEmail($user, $plainPassword);
-                $emailSent = true;
-            } catch (\Throwable $e) {
-                $emailError = $e->getMessage();
-                Log::error('Password credential email failed', [
-                    'user_id' => $user->id,
-                    'context' => $context,
-                    'error' => $e->getMessage(),
-                    'exception' => $e::class,
-                ]);
+            if ($viaEmail) {
+                ['sent' => $emailSent, 'error' => $emailError] = $this->attemptEmail($user, $plainPassword, $context);
             }
 
-            try {
-                $result = $this->sendWhatsAppWithRetries($user, $plainPassword, $whatsappRecipientOverride);
-                $whatsappSent = $result['sent'];
-                $whatsappRecipient = $result['recipient'];
-                $whatsappError = $result['error'];
-            } catch (\Throwable $e) {
-                $whatsappError = $e->getMessage();
-                Log::error('Password credential WhatsApp failed', [
-                    'user_id' => $user->id,
-                    'context' => $context,
-                    'recipient' => $whatsappRecipient,
-                    'error' => $e->getMessage(),
-                    'exception' => $e::class,
-                ]);
+            if ($viaWhatsApp) {
+                ['sent' => $whatsappSent, 'recipient' => $whatsappRecipient, 'error' => $whatsappError]
+                    = $this->attemptWhatsApp($user, $plainPassword, $context, $whatsappRecipientOverride);
             }
         }
 
@@ -182,6 +129,54 @@ class PasswordCredentialDeliveryService
             'email_error' => $emailError,
             'whatsapp_error' => $whatsappError,
         ];
+    }
+
+    /**
+     * One email attempt. Never throws — the caller decides whether a failure is fatal.
+     *
+     * @return array{sent: bool, error: ?string}
+     */
+    private function attemptEmail(User $user, #[\SensitiveParameter] string $plainPassword, string $context): array
+    {
+        try {
+            $this->sendEmail($user, $plainPassword);
+
+            return ['sent' => true, 'error' => null];
+        } catch (\Throwable $e) {
+            Log::error('Password credential email failed', [
+                'user_id' => $user->id,
+                'context' => $context,
+                'error' => $e->getMessage(),
+                'exception' => $e::class,
+            ]);
+
+            return ['sent' => false, 'error' => $e->getMessage()];
+        }
+    }
+
+    /**
+     * One WhatsApp attempt (with the retries the sender does internally). Never throws.
+     *
+     * @return array{sent: bool, recipient: ?string, error: ?string}
+     */
+    private function attemptWhatsApp(
+        User $user,
+        #[\SensitiveParameter] string $plainPassword,
+        string $context,
+        ?string $whatsappRecipientOverride,
+    ): array {
+        try {
+            return $this->sendWhatsAppWithRetries($user, $plainPassword, $whatsappRecipientOverride);
+        } catch (\Throwable $e) {
+            Log::error('Password credential WhatsApp failed', [
+                'user_id' => $user->id,
+                'context' => $context,
+                'error' => $e->getMessage(),
+                'exception' => $e::class,
+            ]);
+
+            return ['sent' => false, 'recipient' => null, 'error' => $e->getMessage()];
+        }
     }
 
     /**

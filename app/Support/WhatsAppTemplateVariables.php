@@ -210,6 +210,20 @@ final class WhatsAppTemplateVariables
                 'sample' => '482913',
                 'aliases' => [],
             ],
+            'password' => [
+                'group' => self::GROUP_SYSTEM,
+                'label' => 'كلمة المرور (قالب بيانات الدخول فقط)',
+                // A fake on purpose: the preview must never show a real password, and this value
+                // is only ever substituted from an explicit override — no model resolves it.
+                'sample' => 'Xk7#mQ2p!vL9',
+                'aliases' => ['new_password'],
+            ],
+            'admin_instructions' => [
+                'group' => self::GROUP_SYSTEM,
+                'label' => 'ملاحظات الإدارة',
+                'sample' => 'يُنصح بتغيير كلمة المرور بعد أول دخول.',
+                'aliases' => [],
+            ],
         ];
     }
 

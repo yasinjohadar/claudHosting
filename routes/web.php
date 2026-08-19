@@ -42,6 +42,7 @@ use App\Http\Controllers\Admin\Coolify\CoolifyWordpressSiteController;
 use App\Http\Controllers\Admin\Coolify\CoolifyWordpressSiteFilesController;
 use App\Http\Controllers\Admin\CustomerServiceController;
 use App\Http\Controllers\Admin\CustomerController;
+use App\Http\Controllers\Admin\CustomerPasswordController;
 use App\Http\Controllers\Admin\CustomerWhatsAppController;
 use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\Domain\DomainHubController;
@@ -279,6 +280,14 @@ Route::middleware(['auth', 'admin.panel'])->group(function () {
                 ->name('whatsapp.preview');
             Route::post('/{user}/whatsapp/send', [CustomerWhatsAppController::class, 'send'])
                 ->middleware('throttle:20,1')->name('whatsapp.send');
+
+            // تعيين كلمة مرور العميل وإرسال بيانات الدخول له
+            Route::get('/password/suggest', [CustomerPasswordController::class, 'suggest'])
+                ->name('password.suggest');
+            Route::post('/{user}/password/preview', [CustomerPasswordController::class, 'preview'])
+                ->name('password.preview');
+            Route::post('/{user}/password', [CustomerPasswordController::class, 'update'])
+                ->middleware('throttle:20,1')->name('password.update');
         });
 
         // كتالوج الخدمات (غير باقات الاستضافة)

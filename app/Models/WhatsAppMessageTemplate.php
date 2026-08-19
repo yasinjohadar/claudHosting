@@ -46,6 +46,9 @@ class WhatsAppMessageTemplate extends Model
 
     public const SLUG_AUTO_REPLY_FALLBACK = 'auto_reply_fallback';
 
+    /** Login credentials sent to a customer after an admin sets their password. */
+    public const SLUG_CREDENTIALS = 'credentials_delivery';
+
     /**
      * Categories, for grouping in the admin list.
      *
@@ -95,6 +98,7 @@ class WhatsAppMessageTemplate extends Model
             self::SLUG_PAYMENT_RECEIVED,
             self::SLUG_SUBSCRIPTION_EXPIRING,
             self::SLUG_AUTO_REPLY_FALLBACK,
+            self::SLUG_CREDENTIALS,
         ];
     }
 

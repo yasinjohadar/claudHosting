@@ -170,5 +170,6 @@
 
 @include('admin.partials.impersonate-client-modal')
 @include('admin.partials.customer-whatsapp-modal')
+@include('admin.partials.customer-password-modal')
 @include('admin.customers.partials.ajax-filters-script')
 @endsection

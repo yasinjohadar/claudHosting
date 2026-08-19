@@ -3,6 +3,7 @@
 namespace Database\Seeders;
 
 use App\Models\WhatsAppMessageTemplate;
+use App\Services\Auth\PasswordResetMessageRenderer;
 use Illuminate\Database\Seeder;
 
 /**
@@ -70,6 +71,16 @@ class WhatsAppMessageTemplateSeeder extends Seeder
                 'category' => 'support',
                 'body' => "شكراً لتواصلك مع {app_name}. وصلت رسالتك وسيتواصل معك فريق الدعم قريباً.\nيمكنك أيضاً فتح تذكرة من: {support_url}",
                 'variables' => ['app_name', 'support_url', 'customer_name'],
+            ],
+            [
+                'slug' => WhatsAppMessageTemplate::SLUG_CREDENTIALS,
+                'name' => 'بيانات الدخول للعميل',
+                'description' => 'يُرسل للعميل عند تعيين كلمة مرور جديدة له من لوحة الأدمن. يجب أن يحتوي على {password}.',
+                'category' => 'auth',
+                // Byte-for-byte the body PasswordResetMessageRenderer::defaultWhatsAppBody()
+                // already sends, so installing this changes nothing the customer receives.
+                'body' => PasswordResetMessageRenderer::defaultWhatsAppBody(),
+                'variables' => ['customer_name', 'company_name', 'customer_email', 'customer_phone', 'password', 'login_url', 'app_name', 'admin_instructions'],
             ],
             [
                 'slug' => 'welcome_new_account',

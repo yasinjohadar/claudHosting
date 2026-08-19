@@ -122,9 +122,14 @@
                                 <i class="fe fe-link"></i>
                             </button>
                             @endif
-                            <button type="button" class="domain-action-btn domain-action-btn--muted"
-                                data-bs-toggle="modal" data-bs-target="#change_password{{ $client->id }}"
-                                title="كلمة المرور">
+                            <button type="button" class="domain-action-btn domain-action-btn--muted js-change-password"
+                                data-user-id="{{ $client->id }}"
+                                data-name="{{ $client->name }}"
+                                data-initials="{{ $initials ?: '?' }}"
+                                data-email="{{ $client->email }}"
+                                data-phone="{{ $waDigits ? \App\Support\InternationalPhoneDigits::toDisplay($waDigits) : '' }}"
+                                data-has-phone="{{ $waDigits ? '1' : '0' }}"
+                                title="تعيين كلمة المرور وإرسال بيانات الدخول">
                                 <i class="fe fe-lock"></i>
                             </button>
                             @if($canDelete)
@@ -155,8 +160,8 @@
 @endif
 <div class="customers-modals">
     @foreach($clients as $client)
+        {{-- The password modal is now a single shared one on the page, not one per row. --}}
         @include('admin.customers.partials.delete-modal', ['user' => $client])
-        @include('admin.pages.users.change_password', ['user' => $client])
         @if($client->whm_accounts_count == 0 && ($unassignedWhmAccounts ?? collect())->isNotEmpty())
             @include('admin.customers.partials.link-whm-modal', ['user' => $client, 'unassignedWhmAccounts' => $unassignedWhmAccounts])
         @endif
