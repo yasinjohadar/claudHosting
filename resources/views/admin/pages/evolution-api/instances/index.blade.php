@@ -197,7 +197,24 @@
                 <i class="ri-shuffle-line"></i> في الجدول أو أعد الربط عبر QR.
             </div>
         @endif
-        @if($instances->contains(fn ($i) => ! $i->isConnected()))
+        @php
+            // not_found is our own marker, not an Evolution state: the stored name is
+            // absent from the server. Telling that admin to rescan a QR would waste their
+            // time, so it gets its own message.
+            $notFound = $instances->filter(fn ($i) => $i->connection_status === 'not_found');
+            $disconnected = $instances->filter(fn ($i) => ! $i->isConnected() && $i->connection_status !== 'not_found');
+        @endphp
+        @if($notFound->isNotEmpty())
+            <div class="alert alert-danger border-0 py-2 small mb-3">
+                <i class="ri-error-warning-line me-1"></i>
+                الاسم غير موجود على سيرفر Evolution:
+                <strong>{{ $notFound->pluck('instance_name')->implode('، ') }}</strong>.
+                الجهاز قد يكون مرتبطاً فعلاً عبر QR، لكن النظام يسأل عن اسم مختلف — أو عن سيرفر مختلف.
+                اضغط <strong>مزامنة الحالة</strong> لعرض الأسماء الموجودة فعلاً، وتأكد من الرابط والمفتاح في عمود
+                <strong>API / الرابط</strong>. إعادة مسح QR لن تُصلح هذه الحالة.
+            </div>
+        @endif
+        @if($disconnected->isNotEmpty())
             <div class="alert alert-warning border-0 py-2 small mb-3">
                 <i class="ri-qr-code-line me-1"></i>
                 بعض الـ instances غير متصلة (close). اضغط أيقونة QR لإعادة الربط — لن يدخل الرقم في التبديل حتى تصبح الحالة
@@ -251,8 +268,17 @@
                             @endif
                         </td>
                         <td>
-                            <span class="badge bg-{{ $instance->isConnected() ? 'success' : 'secondary' }}-transparent text-{{ $instance->isConnected() ? 'success' : 'secondary' }}">
-                                {{ $instance->connection_status }}
+                            @php
+                                $tone = match ($instance->connection_status) {
+                                    'open' => 'success',
+                                    'connecting' => 'info',
+                                    'not_found' => 'danger',
+                                    default => 'secondary',
+                                };
+                            @endphp
+                            <span class="badge bg-{{ $tone }}-transparent text-{{ $tone }}"
+                                @if($instance->connection_status === 'not_found') title="الاسم غير موجود على سيرفر Evolution" @endif>
+                                {{ $instance->connection_status === 'not_found' ? 'اسم غير موجود' : $instance->connection_status }}
                             </span>
                         </td>
                         <td>{{ $instance->phone_number ?? '—' }}</td>

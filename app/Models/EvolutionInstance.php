@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Services\WhatsApp\Evolution\EvolutionInstanceState;
 use App\Services\WhatsApp\WhatsAppSettingsService;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Crypt;
@@ -112,30 +113,69 @@ class EvolutionInstance extends Model
         return static::rotationEligible()->count();
     }
 
+    /**
+     * Upsert one row of Evolution's instance list.
+     *
+     * Every field is written only when the payload actually carries it. The previous
+     * version overwrote unconditionally, so a build that omits a key blanked good data —
+     * most visibly `connectionStatus`, which defaulted to "close" and flipped a genuinely
+     * linked phone to disconnected, and `number`, which is null on v2 unless the instance
+     * was paired by code and so erased the number derived from ownerJid.
+     */
     public static function syncFromApiArray(array $instance, bool $markDefault = false): self
     {
-        $name = (string) ($instance['name'] ?? '');
-        $status = strtolower((string) ($instance['connectionStatus'] ?? 'close'));
+        $name = EvolutionInstanceState::rowName($instance);
+        $status = EvolutionInstanceState::readConnectionState($instance);
         $existing = static::where('instance_name', $name)->first();
 
-        $model = static::updateOrCreate(
-            ['instance_name' => $name],
-            [
-                'evolution_uuid' => $instance['id'] ?? null,
-                'connection_status' => $status === 'open' ? 'open' : $status,
-                'owner_jid' => $instance['ownerJid'] ?? null,
-                'profile_name' => $instance['profileName'] ?? null,
-                'phone_number' => $instance['number'] ?? null,
-                'profile_pic_url' => $instance['profilePicUrl'] ?? null,
-                'is_manual' => $existing?->is_manual ?? false,
-                'metadata' => [
-                    'integration' => $instance['integration'] ?? null,
-                    'counts' => $instance['_count'] ?? null,
-                ],
-                'connected_at' => $status === 'open' ? now() : null,
-                'disconnected_at' => $status === 'open' ? null : now(),
-            ]
-        );
+        $attributes = [
+            'is_manual' => $existing?->is_manual ?? false,
+        ];
+
+        if (! empty($instance['id'])) {
+            $attributes['evolution_uuid'] = $instance['id'];
+        }
+
+        if ($status !== null) {
+            $attributes['connection_status'] = $status;
+            $attributes['disconnected_at'] = $status === EvolutionInstanceState::OPEN ? null : now();
+
+            if ($status === EvolutionInstanceState::OPEN) {
+                // connected_at is the first-seen-up moment; keep it across re-syncs.
+                $attributes['connected_at'] = $existing?->connected_at ?? now();
+            }
+        } elseif ($existing === null) {
+            // A brand-new row with no readable state is pending, not disconnected.
+            $attributes['connection_status'] = 'pending';
+        }
+
+        $ownerJid = EvolutionInstanceState::ownerJid($instance);
+        if ($ownerJid !== null) {
+            $attributes['owner_jid'] = $ownerJid;
+        }
+
+        if (! empty($instance['profileName'])) {
+            $attributes['profile_name'] = $instance['profileName'];
+        }
+
+        if (! empty($instance['profilePicUrl'])) {
+            $attributes['profile_pic_url'] = $instance['profilePicUrl'];
+        }
+
+        $phone = EvolutionInstanceState::phoneNumber($instance);
+        if ($phone !== null) {
+            $attributes['phone_number'] = $phone;
+        }
+
+        $metadata = array_filter([
+            'integration' => $instance['integration'] ?? null,
+            'counts' => $instance['_count'] ?? null,
+        ], static fn ($value) => $value !== null);
+        if ($metadata !== []) {
+            $attributes['metadata'] = $metadata;
+        }
+
+        $model = static::updateOrCreate(['instance_name' => $name], $attributes);
 
         if ($markDefault) {
             static::where('id', '!=', $model->id)->update(['is_default' => false]);

@@ -51,25 +51,68 @@ class EvolutionService
     public function refreshInstanceFromApi(EvolutionInstance $instance): EvolutionInstance
     {
         $client = $this->clientFor($instance);
-        $state = $client->getConnectionState($instance->instance_name);
-        $connection = strtolower((string) ($state['instance']['state'] ?? $state['state'] ?? 'close'));
-        $wasOpen = $instance->connection_status === 'open';
 
-        $updates = [
-            'connection_status' => $connection,
-            'connected_at' => $connection === 'open' ? now() : $instance->connected_at,
-            'disconnected_at' => $connection === 'open' ? null : now(),
-        ];
+        // The instance list comes first: it carries the profile, it is the fallback when
+        // the state endpoint answers in a shape we cannot read, and it is the only way to
+        // tell "this phone is disconnected" apart from "this name is not on this server".
+        $profile = $this->fetchInstanceProfileFromApi($client, $instance->instance_name);
+        $updates = $profile['updates'];
 
-        if ($connection === 'open' && ! $wasOpen) {
-            $updates['rotation_enabled'] = true;
+        $connection = null;
+        try {
+            $connection = EvolutionInstanceState::readConnectionState(
+                $client->getConnectionState($instance->instance_name)
+            );
+        } catch (\Throwable $e) {
+            // A 404 here means the name is unknown to this server, which the list already
+            // told us. Anything else is a real transport failure and must surface.
+            if (! EvolutionApiException::isNotFound($e)) {
+                throw $e;
+            }
         }
 
-        $updates = array_merge($updates, $this->fetchInstanceProfileFromApi($client, $instance->instance_name));
+        // Order of trust: the dedicated state endpoint, then the list's connectionStatus,
+        // then "the server does not know this name at all". Never an invented "close".
+        $connection ??= $profile['connection_status'];
+        if ($connection === null && $profile['found'] === false) {
+            $connection = EvolutionInstanceState::NOT_FOUND;
+        }
 
-        $instance->update($updates);
+        if ($connection !== null) {
+            $updates['connection_status'] = $connection;
+
+            if ($connection === EvolutionInstanceState::OPEN) {
+                $updates['disconnected_at'] = null;
+                if ($instance->connection_status !== EvolutionInstanceState::OPEN) {
+                    $updates['connected_at'] = now();
+                    $updates['rotation_enabled'] = true;
+                }
+            } else {
+                // connected_at is history and is left alone; only the last-seen-down moves.
+                $updates['disconnected_at'] = now();
+            }
+        }
+
+        if ($updates !== []) {
+            $instance->update($updates);
+        }
 
         return $instance->fresh();
+    }
+
+    /**
+     * Names this Evolution server reports, for the "your name matches none of these"
+     * hint. Returns null when the list could not be read at all.
+     *
+     * @return list<string>|null
+     */
+    public function remoteInstanceNames(?EvolutionInstance $instance = null): ?array
+    {
+        try {
+            return EvolutionInstanceState::names($this->clientFor($instance)->fetchInstances());
+        } catch (\Throwable) {
+            return null;
+        }
     }
 
     /**
@@ -97,58 +140,68 @@ class EvolutionService
     }
 
     /**
-     * @return array<string, mixed>
+     * Look this instance up in the server's instance list.
+     *
+     * `found` is three-valued on purpose: true (row present), false (the server answered
+     * but this name is not in the list), null (the list itself could not be read, so we
+     * know nothing and must not conclude anything).
+     *
+     * @return array{updates: array<string, mixed>, connection_status: ?string, found: ?bool}
      */
     private function fetchInstanceProfileFromApi(EvolutionApiClient $client, string $instanceName): array
     {
-        $updates = [];
+        $result = ['updates' => [], 'connection_status' => null, 'found' => null];
 
         try {
             $response = $client->fetchInstances($instanceName);
-            $list = is_array($response) && isset($response[0]) ? $response : ($response['value'] ?? $response);
-            if (! is_array($list)) {
-                return $updates;
+        } catch (\Throwable $e) {
+            // 404 from the list endpoint is still an answer: the name is not there.
+            if (EvolutionApiException::isNotFound($e)) {
+                $result['found'] = false;
             }
 
-            $row = null;
-            foreach ($list as $item) {
-                if (is_array($item) && (string) ($item['name'] ?? '') === $instanceName) {
-                    $row = $item;
-                    break;
-                }
-            }
-
-            $row ??= is_array($list[0] ?? null) ? $list[0] : null;
-            if (! is_array($row)) {
-                return $updates;
-            }
-
-            if (! empty($row['id'])) {
-                $updates['evolution_uuid'] = $row['id'];
-            }
-            if (! empty($row['ownerJid'])) {
-                $updates['owner_jid'] = $row['ownerJid'];
-            }
-            if (! empty($row['profileName'])) {
-                $updates['profile_name'] = $row['profileName'];
-            }
-            if (! empty($row['number'])) {
-                $updates['phone_number'] = $row['number'];
-            } elseif (! empty($updates['owner_jid'])) {
-                $updates['phone_number'] = $this->phoneDigitsFromJid((string) $updates['owner_jid']);
-            }
-        } catch (\Throwable) {
-            // connection state refresh is enough when profile fetch fails
+            return $result;
         }
 
-        return $updates;
-    }
+        $row = EvolutionInstanceState::findRow($response, $instanceName);
+        if ($row === null) {
+            $result['found'] = false;
 
-    private function phoneDigitsFromJid(string $jid): ?string
-    {
-        $digits = preg_replace('/\D+/', '', strtok($jid, '@') ?: $jid);
+            return $result;
+        }
 
-        return $digits !== '' ? $digits : null;
+        $result['found'] = true;
+        $result['connection_status'] = EvolutionInstanceState::readConnectionState($row);
+
+        $updates = [];
+
+        // Only non-empty values are written: a build that omits profileName must not wipe
+        // the name we already learned from a previous sync.
+        if (! empty($row['id'])) {
+            $updates['evolution_uuid'] = $row['id'];
+        }
+
+        $ownerJid = EvolutionInstanceState::ownerJid($row);
+        if ($ownerJid !== null) {
+            $updates['owner_jid'] = $ownerJid;
+        }
+
+        if (! empty($row['profileName'])) {
+            $updates['profile_name'] = $row['profileName'];
+        }
+
+        if (! empty($row['profilePicUrl'])) {
+            $updates['profile_pic_url'] = $row['profilePicUrl'];
+        }
+
+        $phone = EvolutionInstanceState::phoneNumber($row);
+        if ($phone !== null) {
+            $updates['phone_number'] = $phone;
+        }
+
+        $result['updates'] = $updates;
+
+        return $result;
     }
 
     /**
@@ -280,10 +333,9 @@ class EvolutionService
     {
         $settings = $this->getSettings();
         $configuredName = $settings['evolution_instance_name'] ?? '';
-        $instances = $this->client()->fetchInstances();
-        $list = is_array($instances) && isset($instances[0]) ? $instances : ($instances['value'] ?? $instances);
+        $list = EvolutionInstanceState::rows($this->client()->fetchInstances());
 
-        if (! is_array($list)) {
+        if ($list === []) {
             return [];
         }
 
@@ -291,11 +343,11 @@ class EvolutionService
         $remoteNames = [];
 
         foreach ($list as $instance) {
-            if (! is_array($instance) || empty($instance['name'])) {
+            $name = EvolutionInstanceState::rowName($instance);
+            if ($name === '') {
                 continue;
             }
 
-            $name = (string) $instance['name'];
             $remoteNames[] = $name;
 
             try {
@@ -342,7 +394,7 @@ class EvolutionService
     {
         $instance = $instanceName ?: $this->activeInstanceName();
 
-        return $this->webhookBaseUrl() . '/api/webhooks/evolution/' . urlencode($instance);
+        return $this->webhookBaseUrl().'/api/webhooks/evolution/'.urlencode($instance);
     }
 
     public function defaultWebhookEvents(): array

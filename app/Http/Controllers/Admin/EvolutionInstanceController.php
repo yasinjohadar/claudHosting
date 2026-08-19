@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\EvolutionInstance;
 use App\Services\WhatsApp\Evolution\EvolutionApiException;
+use App\Services\WhatsApp\Evolution\EvolutionInstanceState;
 use App\Services\WhatsApp\Evolution\EvolutionService;
 use App\Services\WhatsApp\WhatsAppSettingsService;
 use Illuminate\Http\JsonResponse;
@@ -178,15 +179,33 @@ class EvolutionInstanceController extends Controller
     {
         try {
             $instance = EvolutionInstance::where('instance_name', $instanceName)->firstOrFail();
-            $this->evolutionService->refreshInstanceFromApi($instance);
-            $this->evolutionService->syncInstances(false);
 
-            $fresh = $instance->fresh();
+            // Discovery first and never fatal — see sync(). Refreshing this instance with
+            // its own credentials is the authoritative step and must have the last word.
+            try {
+                $this->evolutionService->syncInstances(false);
+            } catch (Throwable) {
+                // Global credentials may be unset while this instance uses its own.
+            }
 
-            return response()->json([
+            $fresh = $this->evolutionService->refreshInstanceFromApi($instance);
+            $state = $fresh->connection_status;
+
+            $payload = [
                 'success' => true,
-                'state' => $fresh->connection_status,
-            ]);
+                'state' => $state,
+                'number' => $fresh->phone_number,
+            ];
+
+            if ($state === EvolutionInstanceState::NOT_FOUND) {
+                $remote = $this->evolutionService->remoteInstanceNames($fresh);
+                $payload['message'] = 'اسم الـ instance «'.$instance->instance_name.'» غير موجود على سيرفر Evolution.'
+                    .(! empty($remote)
+                        ? ' الأسماء الموجودة: «'.implode('»، «', $remote).'». صحّح الاسم ليطابقها حرفياً.'
+                        : ' تأكد من الرابط والمفتاح ومطابقة الاسم حرفياً.');
+            }
+
+            return response()->json($payload);
         } catch (Throwable $e) {
             return response()->json([
                 'success' => false,
@@ -326,25 +345,61 @@ class EvolutionInstanceController extends Controller
 
     public function sync(): RedirectResponse
     {
+        // Discovery runs first and its failure is not fatal. It uses the *global*
+        // credentials, while instances marked "خاص" carry their own — a broken global
+        // setting must not stop those from refreshing. Running it second was also what let
+        // the global instance list overwrite the state each instance's own credentials had
+        // just reported, showing "close" for a phone that was in fact linked.
+        $discovered = [];
+        $discoveryError = null;
+
+        try {
+            $discovered = $this->evolutionService->syncInstances(false);
+        } catch (Throwable $e) {
+            $discoveryError = EvolutionApiException::resolveUserMessage($e);
+        }
+
         try {
             $refreshed = $this->evolutionService->syncAllRegisteredInstances();
-            $discovered = $this->evolutionService->syncInstances(false);
-            $poolCount = EvolutionInstance::rotationPoolCount();
-
-            $message = 'تمت مزامنة '.count($refreshed).' instance مسجّل';
-            if (count($discovered) > 0) {
-                $message .= ' واكتشاف '.count($discovered).' من Evolution API';
-            }
-            $message .= '. جلسات التبديل النشطة: '.$poolCount.'.';
-
-            if ($poolCount < 2) {
-                $message .= ' لإتاحة التبديل بين رقمين، اربط instance إضافياً عبر QR حتى تصبح حالته open.';
-            }
-
-            return back()->with($poolCount >= 2 ? 'success' : 'warning', $message);
         } catch (Throwable $e) {
             return $this->evolutionErrorRedirect($e);
         }
+
+        $poolCount = EvolutionInstance::rotationPoolCount();
+
+        $message = 'تمت مزامنة '.count($refreshed).' instance مسجّل';
+        if (count($discovered) > 0) {
+            $message .= ' واكتشاف '.count($discovered).' من Evolution API';
+        }
+        $message .= '. جلسات التبديل النشطة: '.$poolCount.'.';
+
+        if ($discoveryError !== null) {
+            $message .= ' تعذّر جلب قائمة الـ instances بالإعدادات العامة ('.$discoveryError.')';
+        }
+
+        $missing = EvolutionInstance::where('connection_status', EvolutionInstanceState::NOT_FOUND)
+            ->pluck('instance_name')
+            ->all();
+
+        if ($missing !== []) {
+            // The single most common cause of "connected on Evolution but close here":
+            // the stored name is not the name the server knows.
+            $message .= ' تحذير: الأسماء التالية غير موجودة على سيرفر Evolution — «'
+                .implode('»، «', $missing).'».';
+
+            $remote = $this->evolutionService->remoteInstanceNames();
+            if (! empty($remote)) {
+                $message .= ' الأسماء الموجودة فعلاً: «'.implode('»، «', $remote).'». صحّح الاسم ليطابقها حرفياً.';
+            }
+        }
+
+        if ($poolCount < 2) {
+            $message .= ' لإتاحة التبديل بين رقمين، اربط instance إضافياً عبر QR حتى تصبح حالته open.';
+        }
+
+        $ok = $poolCount >= 2 && $discoveryError === null && $missing === [];
+
+        return back()->with($ok ? 'success' : 'warning', $message);
     }
 
     public function toggleRotation(string $instanceName): RedirectResponse
