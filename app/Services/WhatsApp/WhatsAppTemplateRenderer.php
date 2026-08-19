@@ -46,7 +46,12 @@ class WhatsAppTemplateRenderer
     public function resolve(array $context = []): array
     {
         $user = $context['user'] ?? null;
-        $customer = $context['customer'] ?? $user?->customer ?? null;
+        // array_key_exists, not ??: a caller that deliberately passes customer => null (because
+        // it already tried and failed to load one) must not have the lookup re-run here, outside
+        // its own error handling.
+        $customer = array_key_exists('customer', $context)
+            ? $context['customer']
+            : $this->customerOf($user);
         $account = $context['whmAccount'] ?? null;
         $invoice = $context['invoice'] ?? null;
         $payment = $context['payment'] ?? null;
@@ -192,6 +197,25 @@ class WhatsAppTemplateRenderer
         $text = preg_replace("/\n{3,}/", "\n\n", $text) ?? $text;
 
         return [trim($text), $unresolved];
+    }
+
+    /** The user's customer record, or null — never an exception, which would abort the send. */
+    private function customerOf(?User $user): ?Customer
+    {
+        if ($user === null) {
+            return null;
+        }
+
+        try {
+            return $user->customer;
+        } catch (\Throwable $e) {
+            Log::channel('whatsapp')->warning('Could not load the customer record while rendering a template.', [
+                'user_id' => $user->getKey(),
+                'error' => $e->getMessage(),
+            ]);
+
+            return null;
+        }
     }
 
     /**

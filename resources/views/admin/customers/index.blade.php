@@ -169,5 +169,6 @@
 </div>
 
 @include('admin.partials.impersonate-client-modal')
+@include('admin.partials.customer-whatsapp-modal')
 @include('admin.customers.partials.ajax-filters-script')
 @endsection

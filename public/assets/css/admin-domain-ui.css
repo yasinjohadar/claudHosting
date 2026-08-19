@@ -1666,6 +1666,26 @@ button.customer-domain-chip--unlink:hover i {
     background: rgba(239, 68, 68, 0.18);
 }
 
+/* WhatsApp send action, in the row action group. */
+.domain-action-btn--success {
+    color: #16a34a;
+    background: rgba(22, 163, 74, 0.1);
+    border-color: rgba(22, 163, 74, 0.2);
+}
+
+.domain-action-btn--success:hover {
+    color: #15803d;
+    background: rgba(22, 163, 74, 0.18);
+}
+
+/* Kept visible but clearly inert when the customer has no dialable number, so the
+   admin can see WHY rather than wondering where the button went. */
+.domain-action-btn--success[data-has-phone="0"] {
+    color: #94a3b8;
+    background: rgba(148, 163, 184, 0.1);
+    border-color: rgba(148, 163, 184, 0.18);
+}
+
 .domain-action-btn--muted {
     color: #64748b;
     background: rgba(100, 116, 139, 0.1);

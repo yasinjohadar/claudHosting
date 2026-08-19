@@ -42,6 +42,7 @@ use App\Http\Controllers\Admin\Coolify\CoolifyWordpressSiteController;
 use App\Http\Controllers\Admin\Coolify\CoolifyWordpressSiteFilesController;
 use App\Http\Controllers\Admin\CustomerServiceController;
 use App\Http\Controllers\Admin\CustomerController;
+use App\Http\Controllers\Admin\CustomerWhatsAppController;
 use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\Domain\DomainHubController;
 use App\Http\Controllers\Admin\Domain\DomainSearchController;
@@ -270,6 +271,14 @@ Route::middleware(['auth', 'admin.panel'])->group(function () {
             Route::post('/{id}/products/{serviceId}/suspend', [CustomerController::class, 'productSuspend'])->name('productSuspend');
             Route::post('/{id}/products/{serviceId}/unsuspend', [CustomerController::class, 'productUnsuspend'])->name('productUnsuspend');
             Route::post('/{id}/products/{serviceId}/terminate', [CustomerController::class, 'productTerminate'])->name('productTerminate');
+
+            // إرسال رسالة واتساب لعميل واحد بقالب من قوالب النظام
+            Route::get('/whatsapp/templates', [CustomerWhatsAppController::class, 'templates'])
+                ->name('whatsapp.templates');
+            Route::post('/{user}/whatsapp/preview', [CustomerWhatsAppController::class, 'preview'])
+                ->name('whatsapp.preview');
+            Route::post('/{user}/whatsapp/send', [CustomerWhatsAppController::class, 'send'])
+                ->middleware('throttle:20,1')->name('whatsapp.send');
         });
 
         // كتالوج الخدمات (غير باقات الاستضافة)

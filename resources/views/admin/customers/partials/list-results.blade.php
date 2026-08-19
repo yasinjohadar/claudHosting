@@ -30,6 +30,10 @@
                     };
                     $canDelete = (int) $client->id !== (int) auth()->id()
                         && ($client->whm_active_accounts_count ?? 0) === 0;
+                    // Through forUser() rather than the raw column: `phone` holds the national
+                    // number and the dial code lives in country_code, so a row can look like it
+                    // has a phone while holding nothing dialable.
+                    $waDigits = \App\Support\InternationalPhoneDigits::forUser($client);
                 @endphp
                 <tr>
                     <td class="domain-list-table__domain">
@@ -85,6 +89,15 @@
                             <a href="{{ route('admin.customers.show', $client->id) }}" class="domain-action-btn" title="ملف العميل">
                                 <i class="fe fe-user"></i>
                             </a>
+                            <button type="button"
+                                class="domain-action-btn domain-action-btn--success js-send-whatsapp"
+                                data-user-id="{{ $client->id }}"
+                                data-name="{{ $client->name }}"
+                                data-phone="{{ $waDigits ? \App\Support\InternationalPhoneDigits::toDisplay($waDigits) : '' }}"
+                                data-has-phone="{{ $waDigits ? '1' : '0' }}"
+                                title="{{ $waDigits ? 'إرسال رسالة واتساب' : 'لا يوجد رقم صالح — أضف رمز الدولة والرقم' }}">
+                                <i class="fe fe-message-circle"></i>
+                            </button>
                             <a href="{{ route('users.edit', $client->id) }}" class="domain-action-btn domain-action-btn--info" title="تعديل">
                                 <i class="fe fe-edit-2"></i>
                             </a>
