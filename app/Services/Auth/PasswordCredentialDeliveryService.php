@@ -6,13 +6,12 @@ use App\Mail\PasswordCredentialsMail;
 use App\Models\EmailSetting;
 use App\Models\EvolutionInstance;
 use App\Models\User;
-use App\Models\WhatsAppMessage;
-use App\Support\InternationalPhoneDigits;
 use App\Services\WhatsApp\Evolution\EvolutionInstanceRotator;
 use App\Services\WhatsApp\Evolution\EvolutionWhatsAppNumberResolver;
 use App\Services\WhatsApp\SendWhatsAppMessage;
 use App\Services\WhatsApp\WhatsAppDeliveryAcceptance;
 use App\Services\WhatsApp\WhatsAppSettingsService;
+use App\Support\InternationalPhoneDigits;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Str;
@@ -41,6 +40,8 @@ class PasswordCredentialDeliveryService
     }
 
     /**
+     * @param  bool  $viaEmail  false to skip the email channel entirely
+     * @param  bool  $viaWhatsApp  false to skip the WhatsApp channel entirely
      * @return array{
      *     email_sent: bool,
      *     whatsapp_sent: bool,
@@ -48,9 +49,6 @@ class PasswordCredentialDeliveryService
      *     email_error: ?string,
      *     whatsapp_error: ?string
      * }
-     *
-     * @param  bool  $viaEmail  false to skip the email channel entirely
-     * @param  bool  $viaWhatsApp  false to skip the WhatsApp channel entirely
      */
     public function deliver(
         User $user,

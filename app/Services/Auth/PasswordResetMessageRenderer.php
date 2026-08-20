@@ -283,6 +283,7 @@ TEXT;
 </div>
 HTML;
     }
+
     /**
      * The managed credentials template, or null.
      *
