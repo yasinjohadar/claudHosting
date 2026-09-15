@@ -30,13 +30,11 @@ class WordpressSiteProvisioningService
 
     public function provision(CoolifyWordpressSite $site): void
     {
-        $metadata = $site->metadata ?? [];
-        unset($metadata['last_api']);
+        $site->mergeMetadata([], ['last_api']);
 
         $site->update([
             'status' => 'provisioning',
             'error_message' => null,
-            'metadata' => $metadata,
         ]);
 
         $this->appendProvisionLog($site, 'start', 'بدء إنشاء الموقع على Coolify');
@@ -89,20 +87,24 @@ class WordpressSiteProvisioningService
             $adminUrl = $this->resolveSiteAdminUrl($primaryPublic, $coolifyUrls, $service, $envs);
             $dbEnv = $this->coolify->extractDatabaseEnvFromServiceEnvs($envs);
 
-            $metadata = array_merge($site->metadata ?? [], [
+            $patch = array_merge([
                 'service' => Arr::only($service, ['uuid', 'name', 'status', 'type', 'fqdn', 'domains']),
                 'database_env' => $dbEnv,
                 'provisioned_at' => now()->toIso8601String(),
             ], $coolifyUrls);
 
             if ($this->settings->getWordpressFilebrowserEnabled()) {
-                $metadata = array_merge($metadata, $this->buildFilebrowserMetadata($site, $service));
-                $this->syncFilebrowserCredentials($site);
-                $metadata = array_merge($metadata, $site->fresh()->metadata ?? []);
+                $patch = array_merge($patch, $this->buildFilebrowserMetadata($site, $service));
             }
 
             if ($domainWarning !== null) {
-                $metadata['domain_warning'] = $domainWarning;
+                $patch['domain_warning'] = $domainWarning;
+            }
+
+            $site->mergeMetadata($patch);
+
+            if ($this->settings->getWordpressFilebrowserEnabled()) {
+                $this->syncFilebrowserCredentials($site);
             }
 
             $this->appendProvisionLog($site, 'done', 'اكتمل الإنشاء — الموقع يعمل');
@@ -111,7 +113,6 @@ class WordpressSiteProvisioningService
                 'status' => 'running',
                 'public_url' => $primaryPublic,
                 'admin_url' => $adminUrl,
-                'metadata' => $metadata,
                 'error_message' => null,
             ]);
         } catch (\Throwable $e) {
@@ -166,17 +167,17 @@ class WordpressSiteProvisioningService
 
     protected function appendProvisionLog(CoolifyWordpressSite $site, string $step, string $message): void
     {
-        $site->refresh();
-        $metadata = $site->metadata ?? [];
-        $log = $metadata['provision_log'] ?? [];
+        $log = $site->metadata['provision_log'] ?? [];
         $log[] = [
             'at' => now()->toIso8601String(),
             'step' => $step,
             'message' => $message,
         ];
-        $metadata['provision_log'] = array_slice($log, -50);
-        $metadata['provisioning_step'] = $step;
-        $site->update(['metadata' => $metadata]);
+
+        $site->mergeMetadata([
+            'provision_log' => array_slice($log, -50),
+            'provisioning_step' => $step,
+        ]);
     }
 
     /**
@@ -283,9 +284,7 @@ class WordpressSiteProvisioningService
             'environment_name' => $resolved['environment_name'],
         ]);
 
-        $metadata = $site->metadata ?? [];
-        $metadata['environment_uuid'] = $resolved['environment_uuid'];
-        $site->update(['metadata' => $metadata]);
+        $site->mergeMetadata(['environment_uuid' => $resolved['environment_uuid']]);
     }
 
     protected function coolifyProjectName(CoolifyWordpressSite $site): string
@@ -362,12 +361,11 @@ class WordpressSiteProvisioningService
             throw new \RuntimeException('لم يُرجع Coolify معرف الخدمة');
         }
 
-        $metadata = $site->metadata ?? [];
-        $metadata['service_type'] = $serviceType;
+        $patch = ['service_type' => $serviceType];
         if ($this->settings->getWordpressFilebrowserEnabled()) {
-            $metadata['filebrowser_enabled'] = true;
+            $patch['filebrowser_enabled'] = true;
         }
-        $site->update(['metadata' => $metadata]);
+        $site->mergeMetadata($patch);
 
         $this->applyWordpressDockerEnv($site, $uuid);
 
@@ -458,11 +456,9 @@ class WordpressSiteProvisioningService
                 ->map(fn (array $c) => ($c['name'] ?? '?').':'.($c['status'] ?? '?'))
                 ->implode(', ');
 
-            $site->update([
-                'metadata' => array_merge($site->metadata ?? [], [
-                    'coolify_service_status' => $status,
-                    'coolify_components' => $components,
-                ]),
+            $site->mergeMetadata([
+                'coolify_service_status' => $status,
+                'coolify_components' => $components,
             ]);
 
             if ($componentSummary !== $lastLoggedSummary && ($i % 2 === 0 || $i < 3)) {
@@ -536,12 +532,10 @@ class WordpressSiteProvisioningService
         }
         $hint .= ' جرّب «إعادة تشغيل على Coolify» من هذه الصفحة.';
 
-        $site->update([
-            'metadata' => array_merge($site->metadata ?? [], [
-                'coolify_service_status' => $status,
-                'coolify_components' => $components,
-                'last_service_snapshot' => Arr::only($service, ['uuid', 'name', 'status', 'type', 'fqdn']),
-            ]),
+        $site->mergeMetadata([
+            'coolify_service_status' => $status,
+            'coolify_components' => $components,
+            'last_service_snapshot' => Arr::only($service, ['uuid', 'name', 'status', 'type', 'fqdn']),
         ]);
 
         throw new \RuntimeException('فشل نشر الخدمة على Coolify (الحالة: '.$status.'). '.$hint);
@@ -571,17 +565,18 @@ class WordpressSiteProvisioningService
         $message = (string) ($response['message'] ?? 'فشل طلب Coolify');
         $status = (int) ($response['status'] ?? 0);
 
+        $site->mergeMetadata([
+            'last_api' => [
+                'step' => $step,
+                'payload' => $payload,
+                'http_status' => $status,
+                'body' => $response['data'] ?? $response,
+            ],
+        ]);
+
         $site->update([
             'status' => 'failed',
             'error_message' => $message,
-            'metadata' => array_merge($site->metadata ?? [], [
-                'last_api' => [
-                    'step' => $step,
-                    'payload' => $payload,
-                    'http_status' => $status,
-                    'body' => $response['data'] ?? $response,
-                ],
-            ]),
         ]);
 
         throw new \RuntimeException($message);
@@ -606,7 +601,7 @@ class WordpressSiteProvisioningService
             $siteStatus = 'running';
         }
 
-        $metadata = array_merge($site->metadata ?? [], [
+        $patch = array_merge([
             'service' => Arr::only($service, ['uuid', 'name', 'status', 'type', 'fqdn', 'domains']),
             'database_env' => $this->coolify->extractDatabaseEnvFromServiceEnvs($envs),
             'coolify_service_status' => $status,
@@ -616,18 +611,19 @@ class WordpressSiteProvisioningService
         ], $coolifyUrls);
 
         if ($stackHealthy && in_array($site->status, ['provisioning', 'pending'], true)) {
-            $metadata['provisioning_step'] = 'done';
+            $patch['provisioning_step'] = 'done';
         }
 
-        if ($this->settings->getWordpressFilebrowserEnabled() && ($metadata['filebrowser_enabled'] ?? false)) {
-            $metadata = array_merge($metadata, $this->buildFilebrowserMetadata($site, $service));
+        if ($this->settings->getWordpressFilebrowserEnabled() && ($site->metadata['filebrowser_enabled'] ?? false)) {
+            $patch = array_merge($patch, $this->buildFilebrowserMetadata($site, $service));
         }
+
+        $site->mergeMetadata($patch);
 
         $updates = [
             'status' => $siteStatus,
             'public_url' => $public,
             'admin_url' => $this->resolveSiteAdminUrl($public, $coolifyUrls, $service, $envs),
-            'metadata' => $metadata,
         ];
 
         if ($stackHealthy) {
@@ -663,17 +659,15 @@ class WordpressSiteProvisioningService
             throw new \RuntimeException($response['message'] ?? 'فشل تحديث النطاق على Coolify');
         }
 
-        $metadata = $site->metadata ?? [];
-        unset($metadata['domain_warning']);
-
+        $patch = [];
         if ($filebrowserUrl !== null && $filebrowserUrl !== '') {
-            $metadata = array_merge($metadata, $this->buildFilebrowserMetadata($site, $service));
+            $patch = $this->buildFilebrowserMetadata($site, $service);
         }
+        $site->mergeMetadata($patch, ['domain_warning']);
 
         $site->update([
             'public_url' => $publicUrl,
             'admin_url' => rtrim($publicUrl, '/').'/wp-admin',
-            'metadata' => $metadata,
         ]);
 
         $this->triggerServiceDeploy($site->service_uuid);
@@ -741,10 +735,10 @@ class WordpressSiteProvisioningService
                 throw new \RuntimeException($patch['message'] ?? 'فشل تحديث compose على Coolify');
             }
 
-            $metadata = $site->metadata ?? [];
-            $metadata['filebrowser_enabled'] = true;
-            $metadata['service_type'] = $serviceType;
-            $site->update(['metadata' => $metadata]);
+            $site->mergeMetadata([
+                'filebrowser_enabled' => true,
+                'service_type' => $serviceType,
+            ]);
 
             $this->appendProvisionLog($site, 'filebrowser_deploy', 'إعادة نشر الخدمة بعد إضافة FileBrowser...');
             $this->triggerServiceDeploy($site->service_uuid);
@@ -767,14 +761,14 @@ class WordpressSiteProvisioningService
             $this->finalizeFilebrowserForSite($site, $service);
 
             if ($domainWarning !== null || $cloudflareWarning !== null) {
-                $metadata = $site->fresh()->metadata ?? [];
+                $patch = [];
                 if ($domainWarning !== null) {
-                    $metadata['domain_warning'] = $domainWarning;
+                    $patch['domain_warning'] = $domainWarning;
                 }
                 if ($cloudflareWarning !== null) {
-                    $metadata['filebrowser_dns_warning'] = $cloudflareWarning;
+                    $patch['filebrowser_dns_warning'] = $cloudflareWarning;
                 }
-                $site->update(['metadata' => $metadata]);
+                $site->mergeMetadata($patch);
             }
 
             $this->appendProvisionLog($site, 'filebrowser_done', 'اكتمل إرفاق FileBrowser');
@@ -798,9 +792,7 @@ class WordpressSiteProvisioningService
      */
     protected function finalizeFilebrowserForSite(CoolifyWordpressSite $site, array $service): void
     {
-        $metadata = array_merge($site->metadata ?? [], $this->buildFilebrowserMetadata($site, $service));
-
-        $site->update(['metadata' => $metadata]);
+        $site->mergeMetadata($this->buildFilebrowserMetadata($site, $service));
         $this->syncFilebrowserCredentials($site);
     }
 

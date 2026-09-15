@@ -17,6 +17,14 @@
                     @if($site->status === 'running')<span class="site-pulse" aria-hidden="true"></span>@endif
                     {{ \App\Models\CoolifyWordpressSite::STATUSES[$site->status] ?? $site->status }}
                 </span>
+                @if(!($terminalBridge['enabled'] ?? false))
+                <span class="badge bg-secondary-transparent text-secondary" title="Terminal Bridge غير مفعّل">
+                    <i class="fe fe-terminal me-1"></i>Terminal معطّل
+                </span>
+                @endif
+                <span id="siteCoolifyApiHealthBadge" class="badge bg-danger-transparent text-danger d-none" title="قد تكون البيانات المعروضة غير محدثة">
+                    <i class="fe fe-alert-triangle me-1"></i>Coolify API متعثر
+                </span>
                 <span id="siteStatusHint" class="small text-muted"></span>
             </div>
             <nav>
@@ -52,20 +60,49 @@
             <a href="{{ $site->admin_url }}" target="_blank" rel="noopener" class="btn btn-outline-success btn-sm" id="btnOpenCustomAdmin">لوحة WP</a>
             @endif
             @if(empty($isClientPanel))
-            <a href="{{ route('admin.coolify.wordpress-sites.edit', $uuid) }}" class="btn btn-outline-primary btn-sm"><i class="fe fe-edit-2"></i> تعديل</a>
-            @if($site->service_uuid)
-            <a href="{{ route('admin.coolify.services.show', $site->service_uuid) }}" class="btn btn-outline-secondary btn-sm">خدمة Coolify</a>
+            <div class="dropdown">
+                <button type="button"
+                    class="wp-site-actions__btn wp-site-actions__btn--manage dropdown-toggle"
+                    data-bs-toggle="dropdown"
+                    data-bs-auto-close="outside"
+                    aria-expanded="false"
+                    title="قائمة الإدارة">
+                    <i class="fe fe-more-vertical"></i>
+                    <span>إدارة</span>
+                </button>
+                <div class="dropdown-menu dropdown-menu-end wp-site-actions-menu">
+                    <h6 class="dropdown-header">إدارة الموقع</h6>
+                    <a class="dropdown-item" href="{{ route('admin.coolify.wordpress-sites.edit', $uuid) }}">
+                        <i class="fe fe-edit-2 text-primary"></i> تعديل
+                    </a>
+                    @if($site->service_uuid)
+                    <a class="dropdown-item" href="{{ route('admin.coolify.services.show', $site->service_uuid) }}">
+                        <i class="fe fe-cloud"></i> خدمة Coolify
+                    </a>
+                    @endif
+                    @if($site->project_uuid)
+                    <a class="dropdown-item" href="{{ route('admin.coolify.projects.show', $site->project_uuid) }}">
+                        <i class="fe fe-folder"></i> المشروع
+                    </a>
+                    @endif
+                    @if(($site->service_uuid && in_array($site->status, ['running', 'failed'], true)) || ($cfEnabled && ($site->status === 'running' || empty($cf))))
+                    <div class="wp-site-actions-menu__panel">
+                        @if($site->service_uuid && in_array($site->status, ['running', 'failed'], true))
+                        @include('admin.coolify.wordpress-sites.partials.attach-filebrowser-form')
+                        @include('admin.coolify.wordpress-sites.partials.apply-coolify-domain-form')
+                        @endif
+                        @if($cfEnabled && ($site->status === 'running' || empty($cf)))
+                        @include('admin.coolify.wordpress-sites.partials.sync-cloudflare-form')
+                        @endif
+                    </div>
+                    @endif
+                    <div class="wp-site-actions-menu__panel">
+                        @include('admin.coolify.partials.delete-form', ['action' => route('admin.coolify.wordpress-sites.destroy', $uuid)])
+                    </div>
+                </div>
+            </div>
             @endif
-            @if($site->project_uuid)
-            <a href="{{ route('admin.coolify.projects.show', $site->project_uuid) }}" class="btn btn-outline-secondary btn-sm">المشروع</a>
-            @endif
-            @if($site->service_uuid && in_array($site->status, ['running', 'failed'], true))
-            @include('admin.coolify.wordpress-sites.partials.attach-filebrowser-form')
-            @include('admin.coolify.wordpress-sites.partials.apply-coolify-domain-form')
-            @endif
-            @if($cfEnabled && ($site->status === 'running' || empty($cf)))
-            @include('admin.coolify.wordpress-sites.partials.sync-cloudflare-form')
-            @endif
+            @if(empty($isClientPanel))
             @if($site->status === 'failed')
             <form method="POST" action="{{ route('admin.coolify.wordpress-sites.retry', $uuid) }}" class="d-inline">
                 @csrf
@@ -78,7 +115,6 @@
             </form>
             @endif
             @endif
-            @include('admin.coolify.partials.delete-form', ['action' => route('admin.coolify.wordpress-sites.destroy', $uuid)])
             @endif
         </div>
     </div>

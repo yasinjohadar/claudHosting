@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="1920" height="1080" viewBox="0 0 1920 1080" role="img" aria-label="CloudSoft Blog">
+  <defs>
+    <linearGradient id="bp-bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#0B1B3A"/>
+      <stop offset="55%" stop-color="#003F88"/>
+      <stop offset="100%" stop-color="#0057B8"/>
+    </linearGradient>
+    <linearGradient id="bp-shade" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="35%" stop-color="#000000" stop-opacity="0"/>
+      <stop offset="100%" stop-color="#000000" stop-opacity="0.45"/>
+    </linearGradient>
+    <radialGradient id="bp-glow" cx="0.78" cy="0.22" r="0.62">
+      <stop offset="0%" stop-color="#2E9AD0" stop-opacity="0.55"/>
+      <stop offset="100%" stop-color="#2E9AD0" stop-opacity="0"/>
+    </radialGradient>
+    <pattern id="bp-grid" width="80" height="80" patternUnits="userSpaceOnUse">
+      <path d="M80 0H0V80" fill="none" stroke="#FFFFFF" stroke-opacity="0.06" stroke-width="1.5"/>
+    </pattern>
+  </defs>
+
+  <rect width="1920" height="1080" fill="url(#bp-bg)"/>
+  <rect width="1920" height="1080" fill="url(#bp-grid)"/>
+  <rect width="1920" height="1080" fill="url(#bp-glow)"/>
+
+  <g fill="none" stroke="#2E9AD0" stroke-opacity="0.35" stroke-width="2">
+    <circle cx="1560" cy="250" r="180"/>
+    <circle cx="1560" cy="250" r="280"/>
+    <circle cx="300" cy="880" r="150"/>
+  </g>
+
+  <g transform="translate(760 330)">
+    <path d="M300 150a108 108 0 0 0-104-108 148 148 0 0 0-282 44A96 96 0 0 0 -70 276h352a96 96 0 0 0 18-190 108 108 0 0 0 0-2z"
+          fill="#FFFFFF" fill-opacity="0.12" stroke="#FFFFFF" stroke-opacity="0.45" stroke-width="6" stroke-linejoin="round"/>
+    <g stroke="#2E9AD0" stroke-width="10" stroke-linecap="round" stroke-linejoin="round" fill="none">
+      <path d="M74 150 24 190l50 40"/>
+      <path d="M206 150l50 40-50 40"/>
+      <path d="M160 128l-40 124"/>
+    </g>
+  </g>
+
+  <text x="960" y="760" text-anchor="middle"
+        font-family="Cairo, 'Segoe UI', Tahoma, 'Noto Sans Arabic', Arial, sans-serif"
+        font-size="96" font-weight="700" fill="#FFFFFF" direction="rtl">مدونة كلاود سوفت</text>
+  <text x="960" y="850" text-anchor="middle"
+        font-family="Cairo, 'Segoe UI', Tahoma, 'Noto Sans Arabic', Arial, sans-serif"
+        font-size="44" font-weight="400" fill="#BBD6F2" direction="rtl">مقالات تقنية في الاستضافة والسيرفرات والتكنولوجيا</text>
+
+  <rect y="1064" width="1920" height="16" fill="#0057B8"/>
+  <rect width="1920" height="1080" fill="url(#bp-shade)"/>
+</svg>

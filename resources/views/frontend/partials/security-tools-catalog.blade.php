@@ -7,7 +7,7 @@
             'tools' => [
                 [
                     'name' => 'Cloudflare',
-                    'icon' => 'https://cdn.simpleicons.org/cloudflare/F38020',
+                    'icon' => asset('frontend/assets/images/tech/cloudflare.svg'),
                     'type' => 'img',
                     'task' => 'WAF، حماية DDoS، CDN، وإدارة DNS مع قواعد أمان على مستوى الحافة.',
                 ],
@@ -38,13 +38,13 @@
             'tools' => [
                 [
                     'name' => "Let's Encrypt",
-                    'icon' => 'https://cdn.simpleicons.org/letsencrypt/003A70',
+                    'icon' => asset('frontend/assets/images/tech/letsencrypt.svg'),
                     'type' => 'img',
                     'task' => 'إصدار وتجديد شهادات SSL مجانية تلقائياً عبر Certbot.',
                 ],
                 [
                     'name' => 'OpenSSL',
-                    'icon' => 'https://cdn.simpleicons.org/openssl/721412',
+                    'icon' => asset('frontend/assets/images/tech/openssl.svg'),
                     'type' => 'img',
                     'task' => 'توليد المفاتيح، إدارة الشهادات، وضبط بروتوكولات TLS الآمنة.',
                 ],
@@ -69,7 +69,7 @@
             'tools' => [
                 [
                     'name' => 'OWASP ZAP',
-                    'icon' => 'https://cdn.simpleicons.org/owasp/0052A5',
+                    'icon' => asset('frontend/assets/images/tech/owasp.svg'),
                     'type' => 'img',
                     'task' => 'فحص ديناميكي (DAST) للتطبيقات والواجهات لاكتشاف XSS و SQLi وغيرها.',
                 ],
@@ -106,7 +106,7 @@
                 ],
                 [
                     'name' => 'Grafana',
-                    'icon' => 'devicon-grafana-original',
+                    'icon' => 'devicon-grafana-plain',
                     'type' => 'devicon',
                     'task' => 'لوحات مراقبة وتنبيهات فورية عند تجاوز عتبات مشبوهة.',
                 ],
@@ -143,7 +143,7 @@
                 ],
                 [
                     'name' => 'Snyk / Dependabot',
-                    'icon' => 'https://cdn.simpleicons.org/snyk/4C4A73',
+                    'icon' => asset('frontend/assets/images/tech/snyk.svg'),
                     'type' => 'img',
                     'task' => 'فحص تبعيات المشروع (dependencies) لاكتشاف مكتبات بثغرات معروفة.',
                 ],
@@ -174,7 +174,7 @@
                 ],
                 [
                     'name' => 'HashiCorp Vault',
-                    'icon' => 'https://cdn.simpleicons.org/hashicorp/844FBA',
+                    'icon' => asset('frontend/assets/images/tech/hashicorp.svg'),
                     'type' => 'img',
                     'task' => 'تخزين آمن للأسرار ومفاتيح API وشهادات دون تضمينها في الكود.',
                 ],
@@ -193,7 +193,7 @@
             'tools' => [
                 [
                     'name' => 'Trivy',
-                    'icon' => 'https://cdn.simpleicons.org/aquasecurity/1904DA',
+                    'icon' => asset('frontend/assets/images/tech/aqua.svg'),
                     'type' => 'img',
                     'task' => 'فحص صور الحاويات لثغرات OS والحزم قبل النشر.',
                 ],
@@ -230,7 +230,7 @@
                 ],
                 [
                     'name' => 'Backblaze B2 / S3',
-                    'icon' => 'https://cdn.simpleicons.org/backblaze/EE8034',
+                    'icon' => asset('frontend/assets/images/tech/backblaze.svg'),
                     'type' => 'img',
                     'task' => 'تخزين النسخ خارج الموقع (off-site) بعيد عن الخادم الأساسي.',
                 ],

@@ -34,7 +34,7 @@
     $featureLimit = $featureLimit ?? 10;
 @endphp
 <a href="{{ route('frontend.package-detail', $product->id) }}" class="pricing-card-link animate-on-scroll animate-delay-{{ ($index % 3) + 1 }}">
-    <article class="pricing-card glass-panel {{ $isFeatured ? 'pricing-card--featured' : '' }}">
+    <article class="pricing-card {{ $isFeatured ? 'pricing-card--featured' : '' }}">
         <span class="pricing-card-glow" aria-hidden="true"></span>
         @if($isFeatured)
         <span class="pricing-card-ribbon"><i class="fas fa-star"></i> الأكثر طلباً</span>

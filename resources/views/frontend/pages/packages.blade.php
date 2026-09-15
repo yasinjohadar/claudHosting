@@ -1,3 +1,9 @@
+@php
+    // نص النشرة البريدية الخاص بهذه الصفحة (يقرأه كمبوننت newsletter-section)
+    $nlTitle = 'تابع عروض الاستضافة أولاً بأول';
+    $nlDesc = 'نرسل لك العروض الموسمية وتحديثات الباقات والموارد الجديدة قبل الجميع.';
+@endphp
+
 @extends('frontend.layouts.master')
 
 @section('content')
@@ -20,7 +26,7 @@
     </section>
 
     <!-- ============ HOSTING PACKAGES ============ -->
-    <section class="section-padding" id="packages" style="background: var(--clr-bg-secondary);">
+    <section class="section-padding packages-section" id="packages">
         <div class="container">
             @if(isset($products) && $products->isNotEmpty())
             <div class="row g-4 align-items-stretch">
@@ -30,6 +36,36 @@
                 </div>
                 @endforeach
             </div>
+            <ul class="packages-assurance animate-on-scroll">
+                <li>
+                    <i class="fas fa-shield-halved" aria-hidden="true"></i>
+                    <div>
+                        <strong>شهادة SSL مجانية</strong>
+                        <span>تشفير كامل لكل نطاق</span>
+                    </div>
+                </li>
+                <li>
+                    <i class="fas fa-rotate" aria-hidden="true"></i>
+                    <div>
+                        <strong>نسخ احتياطي دوري</strong>
+                        <span>استعادة سريعة عند الحاجة</span>
+                    </div>
+                </li>
+                <li>
+                    <i class="fas fa-headset" aria-hidden="true"></i>
+                    <div>
+                        <strong>دعم فني 24/7</strong>
+                        <span>فريق عربي على مدار الساعة</span>
+                    </div>
+                </li>
+                <li>
+                    <i class="fas fa-bolt" aria-hidden="true"></i>
+                    <div>
+                        <strong>تفعيل فوري</strong>
+                        <span>موقعك يعمل خلال دقائق</span>
+                    </div>
+                </li>
+            </ul>
             <div class="text-center mt-5 animate-on-scroll">
                 <a href="{{ url('/') }}#packages" class="btn-primary-custom">
                     <i class="fas fa-home"></i> العودة للرئيسية

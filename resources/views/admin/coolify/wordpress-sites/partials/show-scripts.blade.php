@@ -249,6 +249,25 @@
         renderProvisionLog(d.provision_log);
         renderProvisionProgress(d);
         renderContainerLogs(d.container_logs);
+        updateTabBadges(d);
+        setApiHealthBadge(true);
+    }
+
+    function toggleTabBadge(id, needsAttention) {
+        const el = document.getElementById(id);
+        if (el) el.classList.toggle('d-none', !needsAttention);
+    }
+
+    function updateTabBadges(d) {
+        const cf = d.cloudflare || {};
+        const cfNeedsAttention = d.cloudflare_enabled && (!d.cloudflare || !cf.proxied || !!d.domain_warning);
+        toggleTabBadge('site-tab-cf-badge', cfNeedsAttention);
+        toggleTabBadge('site-tab-tech-badge', !!d.last_api);
+    }
+
+    function setApiHealthBadge(healthy) {
+        const badge = document.getElementById('siteCoolifyApiHealthBadge');
+        if (badge) badge.classList.toggle('d-none', healthy);
     }
 
     const pollIntervalMs = 2000;
@@ -256,7 +275,7 @@
     const poll = () => fetch(statusUrl, { headers: { 'Accept': 'application/json' }, cache: 'no-store' })
         .then(r => r.json())
         .then(d => {
-            if (!d.success) return;
+            if (!d.success) { setApiHealthBadge(false); if (pollActive) setTimeout(poll, pollIntervalMs); return; }
             const badge = document.getElementById('siteStatusBadge');
             const hint = document.getElementById('siteStatusHint');
             setSiteStatusPill(badge, d.status);
@@ -276,7 +295,7 @@
             if (hint) hint.textContent = 'مباشر كل ' + (pollIntervalMs / 1000) + ' ث' + qLabel;
             setTimeout(poll, pollIntervalMs);
         })
-        .catch(() => setTimeout(poll, pollIntervalMs));
+        .catch(() => { setApiHealthBadge(false); setTimeout(poll, pollIntervalMs); });
 
     document.getElementById('btnJumpInfraTab')?.addEventListener('click', () => {
         activateTab('site-tab-infra-btn');

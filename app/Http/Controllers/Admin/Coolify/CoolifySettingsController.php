@@ -16,10 +16,10 @@ use App\Services\Coolify\CoolifySettingsService;
 use App\Services\Coolify\CoolifySnapshotStorageService;
 use App\Services\Coolify\CoolifySshExecutor;
 use App\Services\Coolify\TerminalBridgeRuntimeService;
+use App\Services\Coolify\TerminalSessionService;
 use App\Services\CoolifyApiService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Http;
 
 class CoolifySettingsController extends Controller
 {
@@ -32,7 +32,8 @@ class CoolifySettingsController extends Controller
         protected CoolifySshExecutor $ssh,
         protected CoolifySnapshotStorageService $snapshotStorage,
         protected CoolifyCatalogService $catalog,
-        protected TerminalBridgeRuntimeService $terminalRuntime
+        protected TerminalBridgeRuntimeService $terminalRuntime,
+        protected TerminalSessionService $terminalSession
     ) {
         $this->middleware('auth');
     }
@@ -486,34 +487,22 @@ class CoolifySettingsController extends Controller
         $inlineSecret = trim((string) $request->input('terminal_bridge_secret', ''));
         $secretReady = ($bridge['secret_configured'] ?? false) || $inlineSecret !== '';
 
-        try {
-            $response = Http::timeout(8)->get($url.'/health');
-            if ($response->successful() && ($response->json('ok') === true || $response->json('ok') === 1)) {
-                $message = 'الجسر يعمل: '.$url.'/health';
-                if (! ($bridge['enabled'] ?? false)) {
-                    $message .= ' — لم يُحفظ التفعيل بعد: اضغط «حفظ الإعدادات».';
-                } elseif (! ($bridge['secret_configured'] ?? false)) {
-                    $message .= $secretReady
-                        ? ' — احفظ الإعدادات لتثبيت السر.'
-                        : ' — أضف سر JWT واحفظ لتشغيل Terminal في المواقع.';
-                }
+        $health = $this->terminalSession->checkBridgeHealth($url);
 
-                return response()->json([
-                    'success' => true,
-                    'message' => $message,
-                ]);
+        if ($health['success']) {
+            $message = $health['message'];
+            if (! ($bridge['enabled'] ?? false)) {
+                $message .= ' — لم يُحفظ التفعيل بعد: اضغط «حفظ الإعدادات».';
+            } elseif (! ($bridge['secret_configured'] ?? false)) {
+                $message .= $secretReady
+                    ? ' — احفظ الإعدادات لتثبيت السر.'
+                    : ' — أضف سر JWT واحفظ لتشغيل Terminal في المواقع.';
             }
 
-            return response()->json([
-                'success' => false,
-                'message' => 'استجابة غير متوقعة من الجسر (HTTP '.$response->status().').',
-            ]);
-        } catch (\Throwable $e) {
-            return response()->json([
-                'success' => false,
-                'message' => 'تعذّر الاتصال بـ '.$url.' — '.$e->getMessage().' تأكد أن خدمة terminal-bridge تعمل (مثال: cd services/terminal-bridge && npm start).',
-            ]);
+            return response()->json(['success' => true, 'message' => $message]);
         }
+
+        return response()->json($health);
     }
 
     public function discoverS3(): JsonResponse

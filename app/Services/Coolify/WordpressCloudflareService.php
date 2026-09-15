@@ -126,30 +126,21 @@ class WordpressCloudflareService
             ],
         ];
 
-        $mergedMeta = array_merge($site->metadata ?? [], $metadata);
-
-        $site->update([
-            'metadata' => $mergedMeta,
-        ]);
-        $site->refresh();
+        $mergedMeta = $site->mergeMetadata($metadata);
 
         $fbWarning = null;
         if ($this->settings->getWordpressFilebrowserEnabled()) {
-            $withFb = array_merge($mergedMeta, ['filebrowser_enabled' => true]);
-            $site->update(['metadata' => $withFb]);
-            $site->refresh();
+            $mergedMeta = $site->mergeMetadata(['filebrowser_enabled' => true]);
             $wrongHint = $this->detectWrongFilebrowserDnsHint($site, $zoneId);
             $fbWarning = $this->applyFilebrowserDns($site, $proxied, $zoneId, $log);
             if ($wrongHint !== null) {
                 $fbWarning = trim(($fbWarning ?? '').' '.$wrongHint);
             }
-            $mergedMeta = $site->fresh()->metadata ?? [];
             if ($fbWarning !== null && $fbWarning !== '') {
-                $mergedMeta['filebrowser_dns_warning'] = $fbWarning;
+                $mergedMeta = $site->mergeMetadata(['filebrowser_dns_warning' => $fbWarning]);
             } else {
-                unset($mergedMeta['filebrowser_dns_warning']);
+                $mergedMeta = $site->mergeMetadata([], ['filebrowser_dns_warning']);
             }
-            $site->update(['metadata' => $mergedMeta]);
         }
 
         $this->log($log, 'cloudflare_done', 'اكتمل ربط Cloudflare ('.$preset.')');
@@ -205,19 +196,16 @@ class WordpressCloudflareService
         $recordData = $response['data']['result'] ?? $response['data'] ?? [];
         $recordId = is_array($recordData) ? (string) ($recordData['id'] ?? '') : '';
 
-        $site->refresh();
-        $site->update([
-            'metadata' => array_merge($site->metadata ?? [], [
-                'cloudflare_filebrowser' => [
-                    'zone_id' => $zoneId,
-                    'dns_record_id' => $recordId,
-                    'record_name' => $recordName,
-                    'fqdn' => $fqdn,
-                    'proxied' => $proxied,
-                    'record_type' => $target['type'],
-                    'origin' => $target['content'],
-                ],
-            ]),
+        $site->mergeMetadata([
+            'cloudflare_filebrowser' => [
+                'zone_id' => $zoneId,
+                'dns_record_id' => $recordId,
+                'record_name' => $recordName,
+                'fqdn' => $fqdn,
+                'proxied' => $proxied,
+                'record_type' => $target['type'],
+                'origin' => $target['content'],
+            ],
         ]);
 
         return null;
@@ -383,13 +371,7 @@ class WordpressCloudflareService
             'sync_source' => 'dns_lookup',
         ];
 
-        $merged = array_merge($site->metadata ?? [], [
-            'cloudflare' => $cloudflareMeta,
-        ]);
-        unset($merged['domain_warning']);
-
-        $site->update(['metadata' => $merged]);
-        $site->refresh();
+        $site->mergeMetadata(['cloudflare' => $cloudflareMeta], ['domain_warning']);
 
         return $this->finalizeSyncWithFilebrowserDns($site, $zoneId, $cloudflareMeta);
     }
@@ -415,39 +397,31 @@ class WordpressCloudflareService
             ];
         }
 
-        $merged = $site->metadata ?? [];
-        $merged['filebrowser_enabled'] = true;
-        $site->update(['metadata' => $merged]);
-        $site->refresh();
+        $site->mergeMetadata(['filebrowser_enabled' => true]);
 
         $proxied = (bool) ($mainCloudflareMeta['proxied'] ?? $this->settings->getWordpressCloudflareProxied());
         $wrongRecordHint = $this->detectWrongFilebrowserDnsHint($site, $zoneId);
         $fbWarning = $this->applyFilebrowserDns($site, $proxied, $zoneId, null);
 
-        $site->refresh();
-        $merged = $site->metadata ?? [];
-        if ($fbWarning === null) {
-            unset($merged['filebrowser_dns_warning']);
-        } else {
-            $merged['filebrowser_dns_warning'] = $fbWarning;
-        }
+        $finalWarning = $fbWarning;
         if ($wrongRecordHint !== null) {
-            $merged['filebrowser_dns_warning'] = trim(
-                ($merged['filebrowser_dns_warning'] ?? '').' '.$wrongRecordHint
-            );
+            $finalWarning = trim(($finalWarning ?? '').' '.$wrongRecordHint);
         }
-        $site->update(['metadata' => $merged]);
 
-        $fbMeta = ($site->fresh()->metadata ?? [])['cloudflare_filebrowser'] ?? [];
+        if ($finalWarning !== null && $finalWarning !== '') {
+            $merged = $site->mergeMetadata(['filebrowser_dns_warning' => $finalWarning]);
+        } else {
+            $merged = $site->mergeMetadata([], ['filebrowser_dns_warning']);
+        }
+
+        $fbMeta = $merged['cloudflare_filebrowser'] ?? [];
         $fbFqdn = (string) ($fbMeta['fqdn'] ?? $this->settings->buildWordpressFilebrowserPublicUrl($site->slug));
         $fbFqdn = preg_replace('#^https?://#', '', $fbFqdn);
-
-        $finalWarning = $merged['filebrowser_dns_warning'] ?? null;
 
         return [
             'ok' => $fbWarning === null && $wrongRecordHint === null,
             'message' => $finalWarning,
-            'metadata' => $site->fresh()->metadata ?? [],
+            'metadata' => $merged,
             'main_fqdn' => $mainFqdn,
             'filebrowser_fqdn' => $fbFqdn,
             'filebrowser_warning' => $finalWarning,

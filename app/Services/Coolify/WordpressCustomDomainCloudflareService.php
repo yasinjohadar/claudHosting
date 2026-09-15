@@ -107,7 +107,7 @@ class WordpressCustomDomainCloudflareService
 
         $this->applyPreset($zoneId, $preset, $log);
 
-        $metadata = array_merge($site->metadata ?? [], [
+        $site->mergeMetadata([
             'dns_provisioning' => 'cloudflare',
             'cloudflare_zone_id' => $zoneId,
             'cloudflare' => [
@@ -121,12 +121,7 @@ class WordpressCustomDomainCloudflareService
                 'ssl_mode' => $this->settings->getWordpressCloudflareSslMode(),
                 'domain_type' => 'custom',
             ],
-        ]);
-
-        unset($metadata['dns_manual_instructions']);
-
-        $site->update(['metadata' => $metadata]);
-        $site->refresh();
+        ], ['dns_manual_instructions']);
 
         $fbWarning = null;
         if ($this->settings->getWordpressFilebrowserEnabled()) {
@@ -136,9 +131,7 @@ class WordpressCustomDomainCloudflareService
         $this->log($log, 'cloudflare_done', 'اكتمل ربط Cloudflare للدومين المستقل');
 
         if ($fbWarning !== null && $fbWarning !== '') {
-            $merged = $site->fresh()->metadata ?? [];
-            $merged['filebrowser_dns_warning'] = $fbWarning;
-            $site->update(['metadata' => $merged]);
+            $site->mergeMetadata(['filebrowser_dns_warning' => $fbWarning]);
         }
 
         return ['ok' => true];
@@ -184,15 +177,13 @@ class WordpressCustomDomainCloudflareService
             $includeFb
         );
 
-        $site->update([
-            'metadata' => array_merge($site->metadata ?? [], [
-                'dns_provisioning' => 'manual',
-                'dns_manual_instructions' => $instructions,
-                'dns_manual_note' => $reason,
-                'filebrowser_hostname' => $includeFb
-                    ? WordpressDomainHelper::filebrowserHostname($apex)
-                    : null,
-            ]),
+        $site->mergeMetadata([
+            'dns_provisioning' => 'manual',
+            'dns_manual_instructions' => $instructions,
+            'dns_manual_note' => $reason,
+            'filebrowser_hostname' => $includeFb
+                ? WordpressDomainHelper::filebrowserHostname($apex)
+                : null,
         ]);
 
         return [
@@ -261,19 +252,17 @@ class WordpressCustomDomainCloudflareService
         $recordData = $response['data']['result'] ?? $response['data'] ?? [];
         $recordId = is_array($recordData) ? (string) ($recordData['id'] ?? '') : '';
 
-        $site->update([
-            'metadata' => array_merge($site->metadata ?? [], [
-                'filebrowser_hostname' => $fqdn,
-                'cloudflare_filebrowser' => [
-                    'zone_id' => $zoneId,
-                    'dns_record_id' => $recordId,
-                    'record_name' => $recordName,
-                    'fqdn' => $fqdn,
-                    'proxied' => $proxied,
-                    'record_type' => $target['type'],
-                    'origin' => $target['content'],
-                ],
-            ]),
+        $site->mergeMetadata([
+            'filebrowser_hostname' => $fqdn,
+            'cloudflare_filebrowser' => [
+                'zone_id' => $zoneId,
+                'dns_record_id' => $recordId,
+                'record_name' => $recordName,
+                'fqdn' => $fqdn,
+                'proxied' => $proxied,
+                'record_type' => $target['type'],
+                'origin' => $target['content'],
+            ],
         ]);
 
         return null;

@@ -14,6 +14,8 @@
     const wpOperationDownloadTemplate = @json($wpSiteRoutes['wpOperationDownload'] ?? '');
     const csrf = @json(csrf_token());
     const quickCommands = @json(config('wordpress_cli.quick_commands', []));
+    const isClientPanel = @json($isClientPanel ?? false);
+    const clientAllowedActions = @json(array_keys(array_filter(config('coolify.client_portal.wordpress_management_actions', []))));
 
     const dangerousPatterns = [/delete/i, /drop/i, /search-replace/i, /uninstall/i, /remove/i, /flush/i];
 
@@ -489,6 +491,7 @@
     }
 
     async function runAction(action, params = {}, confirmMsg = '') {
+        if (isClientPanel && !clientAllowedActions.includes(action)) { alert('هذا الإجراء غير متاح من بوابة العميل'); return; }
         if (action !== 'diagnose' && !wpExec) { alert('اضبط مفتاح SSH في إعدادات Coolify أولاً'); return; }
         if (confirmMsg) {
             if (!confirm(confirmMsg)) return;
@@ -570,6 +573,13 @@
     document.querySelectorAll('.wp-action').forEach(btn => btn.addEventListener('click', () => {
         runAction(btn.dataset.action, {}, btn.dataset.confirm || '');
     }));
+    if (isClientPanel) {
+        document.querySelectorAll('.wp-action[data-action]').forEach(btn => {
+            if (!clientAllowedActions.includes(btn.dataset.action)) {
+                btn.classList.add('d-none');
+            }
+        });
+    }
     const wpPassSymbols = '!@#$%^&*-_+=?';
 
     function randomChar(pool) {

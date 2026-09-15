@@ -1,7 +1,7 @@
 @php
     $technologies = [
-        ['icon' => 'https://cdn.simpleicons.org/cpanel/FF6C2C', 'type' => 'img', 'name' => 'cPanel', 'tag' => 'لوحة تحكم'],
-        ['icon' => 'devicon-docker-original', 'type' => 'devicon', 'name' => 'Docker', 'tag' => 'حاويات'],
+        ['icon' => asset('frontend/assets/images/tech/cpanel.svg'), 'type' => 'img', 'name' => 'cPanel', 'tag' => 'لوحة تحكم'],
+        ['icon' => 'devicon-docker-plain', 'type' => 'devicon', 'name' => 'Docker', 'tag' => 'حاويات'],
         ['icon' => 'devicon-kubernetes-plain', 'type' => 'devicon', 'name' => 'Kubernetes', 'tag' => 'تنسيق'],
         ['icon' => 'devicon-nodejs-plain-wordmark', 'type' => 'devicon', 'name' => 'Node.js', 'tag' => 'Backend'],
         ['icon' => 'devicon-python-plain', 'type' => 'devicon', 'name' => 'Python', 'tag' => 'تطبيقات'],
@@ -12,25 +12,25 @@
         ['icon' => 'devicon-react-original', 'type' => 'devicon', 'name' => 'React', 'tag' => 'Frontend'],
         ['icon' => 'devicon-vuejs-plain', 'type' => 'devicon', 'name' => 'Vue.js', 'tag' => 'Frontend'],
         ['icon' => 'devicon-angular-plain', 'type' => 'devicon', 'name' => 'Angular', 'tag' => 'Frontend'],
-        ['icon' => 'devicon-nextjs-original', 'type' => 'devicon', 'name' => 'Next.js', 'tag' => 'Full-stack'],
+        ['icon' => 'devicon-nextjs-plain', 'type' => 'devicon', 'name' => 'Next.js', 'tag' => 'Full-stack'],
         ['icon' => 'devicon-typescript-plain', 'type' => 'devicon', 'name' => 'TypeScript', 'tag' => 'لغة'],
         ['icon' => 'devicon-mysql-original', 'type' => 'devicon', 'name' => 'MySQL', 'tag' => 'قواعد بيانات'],
-        ['icon' => 'devicon-postgresql-original', 'type' => 'devicon', 'name' => 'PostgreSQL', 'tag' => 'قواعد بيانات'],
+        ['icon' => 'devicon-postgresql-plain', 'type' => 'devicon', 'name' => 'PostgreSQL', 'tag' => 'قواعد بيانات'],
         ['icon' => 'devicon-mongodb-plain', 'type' => 'devicon', 'name' => 'MongoDB', 'tag' => 'NoSQL'],
         ['icon' => 'devicon-redis-plain', 'type' => 'devicon', 'name' => 'Redis', 'tag' => 'كاش'],
         ['icon' => 'devicon-nginx-original', 'type' => 'devicon', 'name' => 'Nginx', 'tag' => 'خادم ويب'],
-        ['icon' => 'https://cdn.simpleicons.org/n8n/EA4B71', 'type' => 'img', 'name' => 'n8n', 'tag' => 'أتمتة'],
+        ['icon' => asset('frontend/assets/images/tech/n8n.svg'), 'type' => 'img', 'name' => 'n8n', 'tag' => 'أتمتة'],
         ['icon' => 'devicon-go-plain-wordmark', 'type' => 'devicon', 'name' => 'Go', 'tag' => 'أداء عالٍ'],
-        ['icon' => 'https://cdn.simpleicons.org/openapi/6BA539', 'type' => 'img', 'name' => 'REST / API', 'tag' => 'تكامل'],
-        ['icon' => 'https://cdn.simpleicons.org/git/F05032', 'type' => 'img', 'name' => 'Git', 'tag' => 'نشر'],
-        ['icon' => 'https://cdn.simpleicons.org/letsencrypt/003A70', 'type' => 'img', 'name' => 'SSL / HTTPS', 'tag' => 'أمان'],
+        ['icon' => 'devicon-openapi-plain', 'type' => 'devicon', 'name' => 'REST / API', 'tag' => 'تكامل'],
+        ['icon' => asset('frontend/assets/images/tech/git.svg'), 'type' => 'img', 'name' => 'Git', 'tag' => 'نشر'],
+        ['icon' => asset('frontend/assets/images/tech/letsencrypt.svg'), 'type' => 'img', 'name' => 'SSL / HTTPS', 'tag' => 'أمان'],
     ];
 
     $highlights = [
         [
             'title' => 'حاويات وسحابة',
             'desc' => 'Docker وبيئات معزولة للنشر السريع والآمن مع إمكانية التوسع.',
-            'icons' => ['devicon-docker-original', 'devicon-kubernetes-plain', 'devicon-nginx-original'],
+            'icons' => ['devicon-docker-plain', 'devicon-kubernetes-plain', 'devicon-nginx-original'],
             'accent' => '#2496ed',
         ],
         [
@@ -42,14 +42,14 @@
         [
             'title' => 'واجهات وتجارب',
             'desc' => 'React وVue وAngular وNext.js لمواقع سريعة وتفاعلية.',
-            'icons' => ['devicon-react-original', 'devicon-vuejs-plain', 'devicon-nextjs-original'],
+            'icons' => ['devicon-react-original', 'devicon-vuejs-plain', 'devicon-nextjs-plain'],
             'accent' => '#61dafb',
         ],
         [
             'title' => 'أتمتة وذكاء تشغيلي',
             'desc' => 'n8n وتدفقات العمل والربط مع APIs وخدمات الطرف الثالث.',
             'icons' => [
-                ['icon' => 'https://cdn.simpleicons.org/n8n/EA4B71', 'type' => 'img'],
+                ['icon' => asset('frontend/assets/images/tech/n8n.svg'), 'type' => 'img'],
                 ['icon' => 'devicon-typescript-plain', 'type' => 'devicon'],
             ],
             'accent' => '#ea4b71',
@@ -66,7 +66,6 @@
 
     <div class="container position-relative">
         <div class="section-header animate-on-scroll tech-stack-header">
-            <span class="section-badge section-badge--light">بنية تقنية مرنة</span>
             <h2 id="tech-stack-title">التقنيات التي ندعمها في الاستضافة</h2>
             <p>من لوحات التحكم الكلاسيكية إلى الحاويات والأطر الحديثة — بيئة جاهزة لمشاريعك دون قيود تقنية</p>
             <div class="tech-stack-stats animate-on-scroll">

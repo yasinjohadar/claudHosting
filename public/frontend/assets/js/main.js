@@ -255,29 +255,32 @@ document.addEventListener('DOMContentLoaded', () => {
   // ===========================
   // 10. Newsletter Form
   // ===========================
-  const newsletterForm = document.getElementById('newsletterForm');
-  newsletterForm?.addEventListener('submit', (e) => {
-    e.preventDefault();
-    const emailInput = document.getElementById('newsletterEmail');
-    const btn = newsletterForm.querySelector('button[type="submit"]');
-    if (!emailInput?.value.trim()) {
-      emailInput?.focus();
-      return;
-    }
-    const originalText = btn.innerHTML;
-    btn.disabled = true;
-    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> جاري الاشتراك...';
-    // محاكاة إرسال (يمكن ربطه بخدمة مثل Formspree أو Mailchimp لاحقاً)
-    setTimeout(() => {
-      btn.innerHTML = '<i class="fas fa-check-circle"></i> تم الاشتراك بنجاح!';
-      btn.style.background = '#28a745';
-      newsletterForm.reset();
+  // كمبوننت النشرة قد يتكرر في الصفحة الواحدة — نربط كل نموذج على حدة
+  document.querySelectorAll('.newsletter-form').forEach((form) => {
+    form.addEventListener('submit', (e) => {
+      e.preventDefault();
+      const emailInput = form.querySelector('input[type="email"]');
+      const btn = form.querySelector('button[type="submit"]');
+      if (!emailInput?.value.trim() || !emailInput.checkValidity()) {
+        emailInput?.focus();
+        emailInput?.reportValidity?.();
+        return;
+      }
+      const originalText = btn.innerHTML;
+      btn.disabled = true;
+      btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> جاري الاشتراك...';
+      // محاكاة إرسال (يمكن ربطه بخدمة مثل Formspree أو Mailchimp لاحقاً)
       setTimeout(() => {
-        btn.innerHTML = originalText;
-        btn.disabled = false;
-        btn.style.background = '';
-      }, 3000);
-    }, 800);
+        btn.innerHTML = '<i class="fas fa-check-circle"></i> تم الاشتراك بنجاح!';
+        btn.classList.add('is-success');
+        form.reset();
+        setTimeout(() => {
+          btn.innerHTML = originalText;
+          btn.disabled = false;
+          btn.classList.remove('is-success');
+        }, 3000);
+      }, 800);
+    });
   });
 
   // ===========================

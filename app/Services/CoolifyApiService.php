@@ -69,6 +69,11 @@ class CoolifyApiService
                 ->acceptJson()
                 ->timeout($this->timeout);
 
+            if (strtoupper($method) === 'GET') {
+                // Idempotent reads only — retry transient connection failures, never mutating requests.
+                $pending = $pending->retry(2, 200, throw: false);
+            }
+
             if (! empty($query)) {
                 $pending = $pending->withQueryParameters($query);
             }

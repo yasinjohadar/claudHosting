@@ -135,15 +135,14 @@ class DockerHostService
 
         Storage::disk('local')->put($localPath, $binary);
 
-        $meta = $site->metadata ?? [];
-        $backups = $meta['db_backups'] ?? [];
+        $backups = $site->metadata['db_backups'] ?? [];
         $backups[] = [
             'path' => $localPath,
             'filename' => $filename,
             'size_bytes' => strlen($binary),
             'created_at' => now()->toIso8601String(),
         ];
-        $site->update(['metadata' => array_merge($meta, ['db_backups' => array_slice($backups, -20)])]);
+        $site->mergeMetadata(['db_backups' => array_slice($backups, -20)]);
 
         return [
             'success' => true,

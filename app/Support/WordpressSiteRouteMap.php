@@ -38,6 +38,7 @@ class WordpressSiteRouteMap
             'dockerDbBackup' => route("{$prefix}.docker.db-backup", $uuid),
             'dockerDbRestore' => $panel === 'admin' ? route('admin.coolify.wordpress-sites.docker.db-restore', $uuid) : '',
             'terminalSession' => route("{$prefix}.terminal.session", $uuid),
+            'terminalHealth' => route("{$prefix}.terminal.health", $uuid),
             'terminalCommands' => route("{$prefix}.terminal.commands"),
             'syncCloudflare' => route("{$prefix}.sync-cloudflare", $uuid),
             'filebrowser' => route("{$prefix}.filebrowser", $uuid),

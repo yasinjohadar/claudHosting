@@ -220,6 +220,7 @@
                                 @error('featured_image')
                                 <div class="invalid-feedback">{{ $message }}</div>
                                 @enderror
+                                <div class="form-text">المقاس الموصى به: 1920 × 1080 بكسل (HD ـ 16:9)</div>
                             </div>
 
                             <div id="imagePreview" class="mb-3" style="display: none;">

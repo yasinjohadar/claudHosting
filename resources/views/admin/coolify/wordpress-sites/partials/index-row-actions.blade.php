@@ -8,6 +8,16 @@
         <span class="d-none d-xl-inline">عرض</span>
     </a>
 
+    @if ($site->status === 'failed')
+        <form method="POST" action="{{ route('admin.coolify.wordpress-sites.retry', $site->uuid) }}" class="d-inline">
+            @csrf
+            <button type="submit" class="wp-site-actions__btn wp-site-actions__btn--external" title="إعادة المحاولة">
+                <i class="fe fe-refresh-cw"></i>
+                <span class="d-none d-xl-inline">إعادة المحاولة</span>
+            </button>
+        </form>
+    @endif
+
     @if ($site->public_url)
         <a href="{{ $site->public_url }}" target="_blank" rel="noopener noreferrer"
             class="wp-site-actions__btn wp-site-actions__btn--external" title="فتح الموقع في تبويب جديد">

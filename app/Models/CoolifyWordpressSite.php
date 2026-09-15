@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 
 class CoolifyWordpressSite extends Model
@@ -128,5 +129,35 @@ class CoolifyWordpressSite extends Model
         }
 
         return $slug;
+    }
+
+    /**
+     * Merge a patch into the metadata column under a row lock, avoiding
+     * lost updates from concurrent writers (status polling, background jobs,
+     * Cloudflare sync). Keeps this instance's attributes in sync afterwards.
+     *
+     * @param  array<string, mixed>  $patch
+     * @param  array<int, string>  $unset  top-level metadata keys to remove
+     * @return array<string, mixed> the merged metadata
+     */
+    public function mergeMetadata(array $patch, array $unset = []): array
+    {
+        return DB::transaction(function () use ($patch, $unset) {
+            $fresh = static::query()->whereKey($this->getKey())->lockForUpdate()->first();
+
+            if (! $fresh) {
+                return $patch;
+            }
+
+            $merged = array_merge($fresh->metadata ?? [], $patch);
+            foreach ($unset as $key) {
+                unset($merged[$key]);
+            }
+            $fresh->update(['metadata' => $merged]);
+
+            $this->setRawAttributes($fresh->getAttributes(), true);
+
+            return $merged;
+        });
     }
 }

@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Client;
 
 use App\Http\Controllers\Admin\Coolify\CoolifyWordpressSiteController;
 use App\Services\Client\ClientAssetService;
+use Illuminate\Http\Request;
 use Illuminate\View\View;
 
 class ClientWordpressSiteController extends CoolifyWordpressSiteController
@@ -22,7 +23,7 @@ class ClientWordpressSiteController extends CoolifyWordpressSiteController
         $this->middleware('auth');
     }
 
-    public function index(): View
+    public function index(Request $request): View
     {
         $user = auth()->user();
         $sites = $this->clientAssets->wordpressSitesForUser($user->id);

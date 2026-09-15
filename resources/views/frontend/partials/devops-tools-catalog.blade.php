@@ -7,10 +7,10 @@
             'tools' => [
                 ['name' => 'Jenkins', 'icon' => 'devicon-jenkins-line', 'type' => 'devicon', 'task' => 'تشغيل Pipelines مرنة مع مراحل build/test/deploy.'],
                 ['name' => 'GitLab CI/CD', 'icon' => 'devicon-gitlab-plain', 'type' => 'devicon', 'task' => 'إدارة CI/CD داخل GitLab مع runners و environments.'],
-                ['name' => 'GitHub Actions', 'icon' => 'https://cdn.simpleicons.org/githubactions/2088FF', 'type' => 'img', 'task' => 'Workflows تلقائية للبناء والنشر داخل GitHub.'],
-                ['name' => 'CircleCI', 'icon' => 'https://cdn.simpleicons.org/circleci/343434', 'type' => 'img', 'task' => 'أنابيب سريعة مع caching وإدارة jobs متوازية.'],
-                ['name' => 'Azure DevOps', 'icon' => 'https://cdn.simpleicons.org/azuredevops/0078D7', 'type' => 'img', 'task' => 'Boards + Repos + Pipelines لمنصات Microsoft.'],
-                ['name' => 'Argo CD / Flux', 'icon' => 'https://cdn.simpleicons.org/argo/EF7B4D', 'type' => 'img', 'task' => 'GitOps للنشر التلقائي على Kubernetes.'],
+                ['name' => 'GitHub Actions', 'icon' => asset('frontend/assets/images/tech/githubactions.svg'), 'type' => 'img', 'task' => 'Workflows تلقائية للبناء والنشر داخل GitHub.'],
+                ['name' => 'CircleCI', 'icon' => asset('frontend/assets/images/tech/circleci.svg'), 'type' => 'img', 'task' => 'أنابيب سريعة مع caching وإدارة jobs متوازية.'],
+                ['name' => 'Azure DevOps', 'icon' => 'devicon-azuredevops-plain', 'type' => 'devicon', 'task' => 'Boards + Repos + Pipelines لمنصات Microsoft.'],
+                ['name' => 'Argo CD / Flux', 'icon' => asset('frontend/assets/images/tech/argo.svg'), 'type' => 'img', 'task' => 'GitOps للنشر التلقائي على Kubernetes.'],
             ],
         ],
         [
@@ -18,12 +18,12 @@
             'icon' => 'fab fa-docker',
             'desc' => 'تشغيل التطبيقات داخل حاويات مع إدارة clusters قابلة للتوسع.',
             'tools' => [
-                ['name' => 'Docker', 'icon' => 'devicon-docker-original', 'type' => 'devicon', 'task' => 'Containerization موحد للتطوير والإنتاج.'],
+                ['name' => 'Docker', 'icon' => 'devicon-docker-plain', 'type' => 'devicon', 'task' => 'Containerization موحد للتطوير والإنتاج.'],
                 ['name' => 'Kubernetes', 'icon' => 'devicon-kubernetes-plain', 'type' => 'devicon', 'task' => 'إدارة Pods وServices وAuto-scaling.'],
-                ['name' => 'Helm', 'icon' => 'https://cdn.simpleicons.org/helm/0F1689', 'type' => 'img', 'task' => 'قوالب Charts لنشر الخدمات بسرعة.'],
-                ['name' => 'Kustomize', 'icon' => 'https://cdn.simpleicons.org/kubernetes/326CE5', 'type' => 'img', 'task' => 'تخصيص manifests حسب كل بيئة.'],
+                ['name' => 'Helm', 'icon' => asset('frontend/assets/images/tech/helm.svg'), 'type' => 'img', 'task' => 'قوالب Charts لنشر الخدمات بسرعة.'],
+                ['name' => 'Kustomize', 'icon' => asset('frontend/assets/images/tech/kubernetes.svg'), 'type' => 'img', 'task' => 'تخصيص manifests حسب كل بيئة.'],
                 ['name' => 'Docker Compose', 'icon' => 'fab fa-docker', 'type' => 'fa', 'task' => 'تشغيل بيئات متعددة الخدمات محلياً وعلى الخادم.'],
-                ['name' => 'Rancher / Podman', 'icon' => 'https://cdn.simpleicons.org/rancher/0075A8', 'type' => 'img', 'task' => 'إدارة clusters وحاويات بدائل تشغيل.'],
+                ['name' => 'Rancher / Podman', 'icon' => asset('frontend/assets/images/tech/rancher.svg'), 'type' => 'img', 'task' => 'إدارة clusters وحاويات بدائل تشغيل.'],
             ],
         ],
         [
@@ -36,7 +36,7 @@
                 ['name' => 'Google Cloud', 'icon' => 'devicon-googlecloud-plain', 'type' => 'devicon', 'task' => 'GCE/GKE وخدمات managed للبنى الحديثة.'],
                 ['name' => 'DigitalOcean', 'icon' => 'devicon-digitalocean-plain', 'type' => 'devicon', 'task' => 'Droplets وManaged DB للبنى الرشيقة.'],
                 ['name' => 'EKS / AKS / GKE', 'icon' => 'fas fa-network-wired', 'type' => 'fa', 'task' => 'Kubernetes مُدار على AWS/Azure/GCP.'],
-                ['name' => 'Lambda / Serverless', 'icon' => 'https://cdn.simpleicons.org/awslambda/FF9900', 'type' => 'img', 'task' => 'وظائف بلا خوادم لتقليل التكلفة والتشغيل.'],
+                ['name' => 'Lambda / Serverless', 'icon' => 'devicon-amazonwebservices-plain', 'type' => 'devicon', 'task' => 'وظائف بلا خوادم لتقليل التكلفة والتشغيل.'],
             ],
         ],
         [
@@ -46,8 +46,8 @@
             'tools' => [
                 ['name' => 'Terraform', 'icon' => 'devicon-terraform-plain', 'type' => 'devicon', 'task' => 'تعريف البنية كوداً مع state وإعادة استخدام modules.'],
                 ['name' => 'Ansible', 'icon' => 'devicon-ansible-plain', 'type' => 'devicon', 'task' => 'Provisioning وconfiguration بدون agents.'],
-                ['name' => 'Pulumi', 'icon' => 'https://cdn.simpleicons.org/pulumi/8A3391', 'type' => 'img', 'task' => 'IaC بلغات برمجة عامة للمشاريع المعقدة.'],
-                ['name' => 'CloudFormation', 'icon' => 'https://cdn.simpleicons.org/amazonaws/FF9900', 'type' => 'img', 'task' => 'قوالب بنية AWS الأصلية ككود.'],
+                ['name' => 'Pulumi', 'icon' => asset('frontend/assets/images/tech/pulumi.svg'), 'type' => 'img', 'task' => 'IaC بلغات برمجة عامة للمشاريع المعقدة.'],
+                ['name' => 'CloudFormation', 'icon' => 'devicon-amazonwebservices-plain', 'type' => 'devicon', 'task' => 'قوالب بنية AWS الأصلية ككود.'],
                 ['name' => 'Puppet / Chef', 'icon' => 'fas fa-gears', 'type' => 'fa', 'task' => 'إدارة التكوين المؤسسية على نطاق كبير.'],
                 ['name' => 'Bash / Python', 'icon' => 'devicon-python-plain', 'type' => 'devicon', 'task' => 'أتمتة مهام التشغيل اليومية والنسخ والصيانة.'],
             ],
@@ -58,11 +58,11 @@
             'desc' => 'رؤية شاملة للأداء والتنبيهات والأحداث التشغيلية والأمنية.',
             'tools' => [
                 ['name' => 'Prometheus', 'icon' => 'devicon-prometheus-original', 'type' => 'devicon', 'task' => 'جمع metrics وتنبيهات عبر قواعد دقيقة.'],
-                ['name' => 'Grafana', 'icon' => 'devicon-grafana-original', 'type' => 'devicon', 'task' => 'لوحات متابعة لحظية ومرئية للخدمات.'],
-                ['name' => 'ELK Stack', 'icon' => 'https://cdn.simpleicons.org/elastic/005571', 'type' => 'img', 'task' => 'تجميع وتحليل logs وبحث سريع في الأحداث.'],
-                ['name' => 'Datadog', 'icon' => 'https://cdn.simpleicons.org/datadog/632CA6', 'type' => 'img', 'task' => 'APM ومراقبة بنية cloud-native متقدمة.'],
-                ['name' => 'Vault', 'icon' => 'https://cdn.simpleicons.org/hashicorp/844FBA', 'type' => 'img', 'task' => 'إدارة أسرار ومفاتيح في بيئات CI/CD.'],
-                ['name' => 'Jaeger / OpenTelemetry', 'icon' => 'https://cdn.simpleicons.org/opentelemetry/000000', 'type' => 'img', 'task' => 'Tracing لتتبّع الطلبات بين الخدمات.'],
+                ['name' => 'Grafana', 'icon' => 'devicon-grafana-plain', 'type' => 'devicon', 'task' => 'لوحات متابعة لحظية ومرئية للخدمات.'],
+                ['name' => 'ELK Stack', 'icon' => asset('frontend/assets/images/tech/elastic.svg'), 'type' => 'img', 'task' => 'تجميع وتحليل logs وبحث سريع في الأحداث.'],
+                ['name' => 'Datadog', 'icon' => asset('frontend/assets/images/tech/datadog.svg'), 'type' => 'img', 'task' => 'APM ومراقبة بنية cloud-native متقدمة.'],
+                ['name' => 'Vault', 'icon' => asset('frontend/assets/images/tech/hashicorp.svg'), 'type' => 'img', 'task' => 'إدارة أسرار ومفاتيح في بيئات CI/CD.'],
+                ['name' => 'Jaeger / OpenTelemetry', 'icon' => asset('frontend/assets/images/tech/opentelemetry.svg'), 'type' => 'img', 'task' => 'Tracing لتتبّع الطلبات بين الخدمات.'],
             ],
         ],
     ];

@@ -147,6 +147,67 @@ return [
             'db_backup' => env('COOLIFY_CLIENT_DB_BACKUP', true),
             'docker_stats' => env('COOLIFY_CLIENT_DOCKER_STATS', true),
         ],
+
+        /**
+         * قائمة مسموحات إجراءات إدارة WordPress (WP-CLI) لبوابة العميل.
+         * الإجراءات الخطرة (raw_cli، إعادة تثبيت النواة، حذف مستخدم/محتوى، إلخ)
+         * افتراضها false — يجب تفعيلها صراحة إن رغبت الإدارة بذلك.
+         */
+        'wordpress_management_actions' => [
+            'refresh_info' => true,
+            'diagnose' => true,
+            'bootstrap_mcp' => false,
+            'redis_apply_env' => false,
+            'docker_compose_pull' => false,
+
+            'core_check_update' => true,
+            'core_update_db' => false,
+            'core_update' => false,
+            'core_reinstall' => false,
+
+            'cache_flush' => true,
+            'rewrite_flush' => true,
+            'maintenance_activate' => true,
+            'maintenance_deactivate' => true,
+
+            'plugin_update_all' => true,
+            'plugin_update' => true,
+            'plugin_install' => true,
+            'plugin_activate' => true,
+            'plugin_deactivate' => true,
+            'plugin_delete' => false,
+
+            'theme_update_all' => true,
+            'theme_update' => true,
+            'theme_install' => true,
+            'theme_activate' => true,
+            'theme_delete' => false,
+
+            'user_reset_password' => false,
+            'user_create' => false,
+            'user_update_role' => false,
+            'user_delete' => false,
+
+            'db_export' => false,
+            'db_check' => true,
+            'db_repair' => false,
+            'search_replace' => false,
+
+            'post_list' => true,
+            'post_create' => true,
+            'post_delete' => false,
+            'option_get' => false,
+            'option_update' => false,
+            'cron_list' => true,
+            'cron_run' => false,
+            'transient_delete_all' => true,
+
+            'docker_compose_stop' => false,
+            'docker_compose_start' => false,
+            'docker_compose_restart' => false,
+
+            'raw_cli' => false,
+        ],
     ],
 
     'ops_notifications' => [

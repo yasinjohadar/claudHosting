@@ -286,6 +286,7 @@
                             <div class="mb-3">
                                 <label class="form-label">{{ $post->featured_image ? 'تغيير الصورة' : 'رفع صورة' }}</label>
                                 <input type="file" name="featured_image" class="form-control" accept="image/*" id="featuredImage">
+                                <div class="form-text">المقاس الموصى به: 1920 × 1080 بكسل (HD ـ 16:9)</div>
                             </div>
 
                             <div id="imagePreview" class="mb-3" style="display: none;">

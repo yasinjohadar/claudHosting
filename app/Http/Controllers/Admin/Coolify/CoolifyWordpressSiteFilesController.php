@@ -160,6 +160,15 @@ class CoolifyWordpressSiteFilesController extends Controller
         return response()->json($result, ($result['success'] ?? false) ? 200 : 422);
     }
 
+    public function terminalHealth(string $uuid): JsonResponse
+    {
+        // $uuid resolves/authorizes the site; the bridge health check itself is site-agnostic.
+        $this->site($uuid);
+        $result = $this->terminal->checkBridgeHealth();
+
+        return response()->json($result, ($result['success'] ?? false) ? 200 : 422);
+    }
+
     public function terminalCommands(): JsonResponse
     {
         return response()->json([

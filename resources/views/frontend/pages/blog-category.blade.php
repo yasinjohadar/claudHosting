@@ -1,3 +1,9 @@
+@php
+    // نص النشرة البريدية الخاص بهذه الصفحة (يقرأه كمبوننت newsletter-section)
+    $nlTitle = 'لا تفوتك أي تدوينة جديدة';
+    $nlDesc = 'اشترك لتصلك المقالات التقنية الجديدة عن الاستضافة والسيرفرات فور نشرها.';
+@endphp
+
 @extends('frontend.layouts.master')
 
 @section('content')

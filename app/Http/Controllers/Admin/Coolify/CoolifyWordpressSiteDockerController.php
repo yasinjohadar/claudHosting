@@ -6,6 +6,7 @@ use App\Http\Controllers\Admin\Coolify\Concerns\HandlesCoolifyResponses;
 use App\Http\Controllers\Concerns\ResolvesAuthorizedWordpressSite;
 use App\Http\Controllers\Controller;
 use App\Jobs\WordpressSiteDatabaseBackupJob;
+use App\Jobs\WordpressSiteDatabaseRestoreJob;
 use App\Services\Coolify\DockerHostService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
@@ -62,14 +63,15 @@ class CoolifyWordpressSiteDockerController extends Controller
             return back()->with('error', 'مسار النسخة غير صالح لهذا الموقع.');
         }
 
-        $result = $this->dockerHost->restoreDatabaseBackup($site, $path);
+        $queue = config('coolify.defaults.wordpress_management_queue', 'default');
+        WordpressSiteDatabaseRestoreJob::dispatch($site, $path)->onQueue($queue);
+
+        $message = 'تم إرسال طلب الاستعادة، ستُطبَّق في الخلفية';
 
         if (request()->wantsJson() || request()->ajax()) {
-            return response()->json($result, ($result['success'] ?? false) ? 200 : 422);
+            return response()->json(['success' => true, 'message' => $message]);
         }
 
-        return ($result['success'] ?? false)
-            ? back()->with('success', $result['message'] ?? 'تمت الاستعادة')
-            : back()->with('error', $result['message'] ?? 'فشلت الاستعادة');
+        return back()->with('success', $message);
     }
 }

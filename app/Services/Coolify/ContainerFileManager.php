@@ -7,6 +7,7 @@ use App\Models\CoolifyWordpressSite;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\File;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 
 class ContainerFileManager
@@ -440,8 +441,13 @@ class ContainerFileManager
                 'detail' => Str::limit($detail, 2000, ''),
                 'created_at' => now(),
             ]);
-        } catch (\Throwable) {
-            // audits optional until migration runs
+        } catch (\Throwable $e) {
+            Log::error('Container file audit write failed', [
+                'site_id' => $site->id,
+                'action' => $action,
+                'path' => $path,
+                'message' => $e->getMessage(),
+            ]);
         }
     }
 }

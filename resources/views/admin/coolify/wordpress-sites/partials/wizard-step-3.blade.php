@@ -36,7 +36,7 @@
     <div class="wp-wizard-tech-strip" aria-hidden="true">
         <span>الحزمة:</span>
         <i class="fab fa-wordpress" title="WordPress" style="color:#21759b;font-size:1.35rem"></i>
-        <img src="https://cdn.simpleicons.org/mariadb/003545" alt="" width="22" height="22" title="MariaDB">
+        <img src="{{ asset('frontend/assets/images/tech/mariadb.svg') }}" alt="" width="22" height="22" title="MariaDB">
         <i class="devicon-docker-plain colored" title="Docker"></i>
         <i class="devicon-nginx-original colored" title="Nginx"></i>
     </div>
@@ -75,7 +75,7 @@
 
     <div class="wp-wizard-cf-card mb-3">
         <div class="wp-wizard-cf-card__head">
-            <img src="https://cdn.simpleicons.org/cloudflare/F38020" alt="">
+            <img src="{{ asset('frontend/assets/images/tech/cloudflare.svg') }}" alt="">
             <div>
                 <h6>حزمة Cloudflare</h6>
                 <span class="small text-muted">حماية DDoS + تسريع + SSL</span>

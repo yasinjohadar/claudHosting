@@ -1,4 +1,7 @@
 <div class="tab-pane fade" id="siteTabTechnical" role="tabpanel">
+@if(! empty($isClientPanel ?? false))
+    <div class="alert alert-info small border-0 shadow-sm mb-0">هذا التبويب متاح فقط للإدارة.</div>
+@else
     @php $dbEnv = $site->metadata['database_env'] ?? []; @endphp
 
     <div class="row g-3 site-show-tab-grid">
@@ -43,9 +46,20 @@
                         </thead>
                         <tbody>
                         @foreach($dbEnv as $key => $val)
+                        @php $isSecret = (bool) preg_match('/PASSWORD|SECRET|KEY/i', (string) $key); @endphp
                         <tr>
                             <td><code>{{ $key }}</code></td>
-                            <td class="env-val">{{ $val }}</td>
+                            <td class="env-val">
+                                @if($isSecret)
+                                <span class="env-val__masked">••••••••</span>
+                                <span class="env-val__real d-none" dir="ltr">{{ $val }}</span>
+                                <button type="button" class="btn btn-link btn-sm p-0 ms-1 env-val__toggle" title="إظهار/إخفاء">
+                                    <i class="fe fe-eye"></i>
+                                </button>
+                                @else
+                                {{ $val }}
+                                @endif
+                            </td>
                         </tr>
                         @endforeach
                         </tbody>
@@ -72,4 +86,14 @@
             ])
         </div>
     </div>
+    <script>
+        document.querySelectorAll('.env-val__toggle').forEach(function (btn) {
+            btn.addEventListener('click', function () {
+                var cell = btn.closest('.env-val');
+                cell.querySelector('.env-val__masked').classList.toggle('d-none');
+                cell.querySelector('.env-val__real').classList.toggle('d-none');
+            });
+        });
+    </script>
+@endif
 </div>

@@ -2,103 +2,115 @@
     $cards = [
         [
             'href' => route('client.services').'#domains',
-            'color' => 'purple',
-            'icon' => 'fe fe-globe',
+            'theme' => 'purple',
+            'icon' => 'ri-global-line',
             'label' => 'النطاقات',
             'value' => (int) ($summary['domains'] ?? 0),
             'sub' => 'نطاق مرتبط',
-            'i' => 0,
         ],
         [
             'href' => ! empty($summary['first_coolify_project_uuid'])
                 ? route('client.coolify.projects.show', $summary['first_coolify_project_uuid'])
                 : route('client.services'),
-            'color' => 'blue',
-            'icon' => 'fe fe-layers',
+            'theme' => 'blue',
+            'icon' => 'ri-cloud-line',
             'label' => 'Coolify',
             'value' => (int) ($summary['projects'] ?? 0),
             'sub' => 'مشروع نشط',
-            'i' => 1,
         ],
         [
             'href' => ! empty($summary['first_wordpress_site_uuid'])
                 ? route('client.wordpress-sites.show', $summary['first_wordpress_site_uuid'])
                 : route('client.services'),
-            'color' => 'teal',
-            'icon' => 'fe fe-layout',
+            'theme' => 'teal',
+            'icon' => 'ri-wordpress-line',
             'label' => 'WordPress',
             'value' => (int) ($summary['wordpress_sites'] ?? 0),
             'sub' => 'موقع مُدار',
-            'i' => 2,
         ],
         [
             'href' => route('client.services').'#hosting',
-            'color' => 'orange',
-            'icon' => 'fe fe-server',
+            'theme' => 'orange',
+            'icon' => 'ri-server-line',
             'label' => 'الاستضافة',
             'value' => (int) ($summary['hosting'] ?? 0),
             'sub' => 'حساب cPanel',
-            'i' => 3,
         ],
         [
             'href' => route('client.invoices.index'),
-            'color' => 'green',
-            'icon' => 'fe fe-file-text',
+            'theme' => 'green',
+            'icon' => 'ri-file-text-line',
             'label' => 'الفواتير',
             'value' => null,
             'sub' => 'عرض فواتيري والدفع',
-            'i' => 4,
         ],
+    ];
+
+    $quickLinks = [
+        ['href' => route('client.services'), 'theme' => 'blue', 'icon' => 'ri-grid-line', 'title' => 'كل خدماتي', 'desc' => 'نطاقات، استضافة، WordPress، ومشاريع Coolify.'],
+        ['href' => route('client.payments.index'), 'theme' => 'teal', 'icon' => 'ri-bank-card-line', 'title' => 'سجل المدفوعات', 'desc' => 'متابعة الدفعات والمعاملات السابقة.'],
+        ['href' => route('client.wordpress-sites.index'), 'theme' => 'cyan', 'icon' => 'ri-wordpress-line', 'title' => 'إدارة WordPress', 'desc' => 'فتح لوحة المواقع والتحكم السريع.'],
     ];
 @endphp
 
-<div class="client-kpi-grid" id="clientKpiGrid">
-    @foreach($cards as $card)
-    <a href="{{ $card['href'] }}" class="admin-kpi-link" style="--kpi-i: {{ $card['i'] }}">
-        <div class="admin-kpi-card admin-kpi-card--{{ $card['color'] }}">
-            <span class="admin-kpi-card__shine" aria-hidden="true"></span>
-            <span class="admin-kpi-card__orb admin-kpi-card__orb--1" aria-hidden="true"></span>
-            <span class="admin-kpi-card__orb admin-kpi-card__orb--2" aria-hidden="true"></span>
-            <div class="admin-kpi-card-inner">
-                <div class="admin-kpi-card__body">
-                    <div class="admin-kpi-label">{{ $card['label'] }}</div>
-                    @if($card['value'] !== null)
-                    <div class="admin-kpi-value" data-kpi-count="{{ $card['value'] }}">0</div>
-                    @else
-                    <div class="admin-kpi-value" style="font-size:1.15rem">فواتيري</div>
-                    @endif
-                    <div class="admin-kpi-sub">{{ $card['sub'] }}</div>
+<div class="row g-3 mb-4" id="clientKpiGrid">
+    @foreach($cards as $index => $card)
+        <div class="col-xl col-lg-4 col-md-6">
+            <a href="{{ $card['href'] }}" class="dashboard-stat-link" style="--card-delay: {{ $index * 0.1 }}s">
+                <div class="dashboard-stat-card dashboard-stat-{{ $card['theme'] }}">
+                    <div class="stat-card-shine"></div>
+                    <div class="stat-card-mesh"></div>
+                    <div class="stat-card-bubble stat-card-bubble-1"></div>
+                    <div class="stat-card-bubble stat-card-bubble-2"></div>
+                    <div class="stat-card-bubble stat-card-bubble-3"></div>
+                    <div class="stat-card-glow"></div>
+                    <div class="stat-card-body">
+                        <div class="stat-card-content">
+                            <span class="stat-label">{{ $card['label'] }}</span>
+                            @if($card['value'] !== null)
+                                <span class="stat-value" data-kpi-count="{{ $card['value'] }}">0</span>
+                            @else
+                                <span class="stat-value" style="font-size:1.15rem">فواتيري</span>
+                            @endif
+                            <span class="stat-subtext">{{ $card['sub'] }}</span>
+                        </div>
+                        <div class="stat-icon-wrap">
+                            <span class="stat-icon-ring"></span>
+                            <span class="stat-icon-circle">
+                                <i class="{{ $card['icon'] }}"></i>
+                            </span>
+                        </div>
+                    </div>
                 </div>
-                <div class="admin-kpi-icon"><i class="{{ $card['icon'] }}"></i></div>
-            </div>
-            <span class="admin-kpi-card__cta" aria-hidden="true"><i class="fe fe-arrow-left"></i> عرض</span>
+            </a>
         </div>
-    </a>
     @endforeach
 </div>
 
-<div class="client-quick-links mb-4">
-    <a href="{{ route('client.services') }}" class="client-quick-link">
-        <span class="client-quick-link__icon"><i class="fe fe-grid"></i></span>
-        <span>
-            <p class="client-quick-link__title">كل خدماتي</p>
-            <p class="client-quick-link__sub">نطاقات، استضافة، WordPress، ومشاريع Coolify في مكان واحد.</p>
-        </span>
-    </a>
-    <a href="{{ route('client.payments.index') }}" class="client-quick-link">
-        <span class="client-quick-link__icon" style="background:rgba(20,184,166,0.12);color:#0d9488"><i class="fe fe-credit-card"></i></span>
-        <span>
-            <p class="client-quick-link__title">سجل المدفوعات</p>
-            <p class="client-quick-link__sub">متابعة الدفعات والمعاملات السابقة.</p>
-        </span>
-    </a>
-    <a href="{{ route('client.wordpress-sites.index') }}" class="client-quick-link">
-        <span class="client-quick-link__icon" style="background:rgba(14,165,233,0.12);color:#0284c7"><i class="fe fe-globe"></i></span>
-        <span>
-            <p class="client-quick-link__title">إدارة WordPress</p>
-            <p class="client-quick-link__sub">فتح لوحة المواقع والتحكم السريع.</p>
-        </span>
-    </a>
+<div class="shortcuts-section mb-4">
+    <div class="shortcuts-section-header">
+        <span class="shortcuts-section-icon"><i class="ri-flashlight-line"></i></span>
+        <h5 class="dashboard-section-title mb-0">اختصارات سريعة</h5>
+    </div>
+    <div class="row g-3 shortcuts-grid">
+        @foreach($quickLinks as $i => $link)
+            <div class="col-xl-4 col-md-4 col-sm-6 col-12">
+                <a href="{{ $link['href'] }}" class="shortcut-card shortcut-theme-{{ $link['theme'] }}" style="--shortcut-delay: {{ $i * 0.05 }}s">
+                    <span class="shortcut-shine"></span>
+                    <span class="shortcut-accent"></span>
+                    <span class="shortcut-icon-wrap">
+                        <span class="shortcut-icon-ring"></span>
+                        <span class="shortcut-icon">
+                            <i class="{{ $link['icon'] }}"></i>
+                        </span>
+                    </span>
+                    <span class="shortcut-title">{{ $link['title'] }}</span>
+                    <span class="shortcut-desc">{{ $link['desc'] }}</span>
+                    <span class="shortcut-arrow"><i class="ri-arrow-left-s-line"></i></span>
+                </a>
+            </div>
+        @endforeach
+    </div>
 </div>
 
 @push('scripts')
@@ -122,6 +134,7 @@
             const eased = 1 - Math.pow(1 - p, 3);
             el.textContent = Math.round(target * eased).toLocaleString('ar-EG');
             if (p < 1) requestAnimationFrame(tick);
+            else el.classList.add('stat-value-done');
         }
         requestAnimationFrame(tick);
     }
@@ -137,13 +150,12 @@
     const observer = new IntersectionObserver(function(entries) {
         entries.forEach(function(entry) {
             if (!entry.isIntersecting) return;
-            entry.target.classList.add('is-visible');
             entry.target.querySelectorAll('[data-kpi-count]').forEach(animateCount);
             observer.unobserve(entry.target);
         });
     }, { threshold: 0.35 });
 
-    grid.querySelectorAll('.admin-kpi-link').forEach(function(link) {
+    grid.querySelectorAll('.dashboard-stat-link').forEach(function(link) {
         observer.observe(link);
     });
 })();

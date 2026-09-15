@@ -228,6 +228,7 @@ Route::middleware(['auth'])->group(function () {
             Route::get('/{uuid}/docker/health', [\App\Http\Controllers\Client\ClientWordpressSiteDockerController::class, 'health'])->name('docker.health');
             Route::post('/{uuid}/docker/db-backup', [\App\Http\Controllers\Client\ClientWordpressSiteDockerController::class, 'dbBackup'])->name('docker.db-backup');
             Route::post('/{uuid}/terminal/session', [CoolifyWordpressSiteFilesController::class, 'terminalSession'])->name('terminal.session');
+            Route::get('/{uuid}/terminal/health', [CoolifyWordpressSiteFilesController::class, 'terminalHealth'])->name('terminal.health');
             Route::get('/terminal/commands', [CoolifyWordpressSiteFilesController::class, 'terminalCommands'])->name('terminal.commands');
             Route::get('/{uuid}/filebrowser', [\App\Http\Controllers\Admin\Coolify\CoolifyWordpressSiteFilebrowserController::class, 'show'])->name('filebrowser');
             Route::any('/{uuid}/filebrowser/proxy/{path?}', [\App\Http\Controllers\Admin\Coolify\CoolifyWordpressSiteFilebrowserController::class, 'proxy'])
@@ -561,6 +562,7 @@ Route::middleware(['auth', 'admin.panel'])->group(function () {
                 Route::post('/{uuid}/docker/db-backup', [\App\Http\Controllers\Admin\Coolify\CoolifyWordpressSiteDockerController::class, 'dbBackup'])->name('docker.db-backup');
                 Route::post('/{uuid}/docker/db-restore', [\App\Http\Controllers\Admin\Coolify\CoolifyWordpressSiteDockerController::class, 'dbRestore'])->name('docker.db-restore');
                 Route::post('/{uuid}/terminal/session', [CoolifyWordpressSiteFilesController::class, 'terminalSession'])->name('terminal.session');
+                Route::get('/{uuid}/terminal/health', [CoolifyWordpressSiteFilesController::class, 'terminalHealth'])->name('terminal.health');
                 Route::get('/terminal/commands', [CoolifyWordpressSiteFilesController::class, 'terminalCommands'])->name('terminal.commands');
                 Route::get('/{uuid}/filebrowser', [\App\Http\Controllers\Admin\Coolify\CoolifyWordpressSiteFilebrowserController::class, 'show'])->name('filebrowser');
                 Route::any('/{uuid}/filebrowser/proxy/{path?}', [\App\Http\Controllers\Admin\Coolify\CoolifyWordpressSiteFilebrowserController::class, 'proxy'])

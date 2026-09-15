@@ -34,7 +34,104 @@
             </div>
         @endif
 
-        <div class="card custom-card border-0 shadow-sm">
+        <div class="row g-3 mb-3">
+            <div class="col-6 col-lg-3">
+                @include('admin.coolify.partials.stat-widget', [
+                    'accent' => 'primary',
+                    'icon' => 'fab fa-wordpress',
+                    'label' => 'كل المواقع',
+                    'count' => $stats['total'] ?? 0,
+                    'url' => route('admin.coolify.wordpress-sites.index'),
+                ])
+            </div>
+            <div class="col-6 col-lg-3">
+                @include('admin.coolify.partials.stat-widget', [
+                    'accent' => 'success',
+                    'icon' => 'fe fe-check-circle',
+                    'label' => 'يعمل',
+                    'count' => $stats['running'] ?? 0,
+                    'url' => route('admin.coolify.wordpress-sites.index', ['status' => 'running']),
+                ])
+            </div>
+            <div class="col-6 col-lg-3">
+                @include('admin.coolify.partials.stat-widget', [
+                    'accent' => 'warning',
+                    'icon' => 'fe fe-loader',
+                    'label' => 'قيد الإنشاء',
+                    'count' => $stats['provisioning'] ?? 0,
+                    'url' => route('admin.coolify.wordpress-sites.index', ['status' => 'provisioning']),
+                ])
+            </div>
+            <div class="col-6 col-lg-3">
+                @include('admin.coolify.partials.stat-widget', [
+                    'accent' => 'danger',
+                    'icon' => 'fe fe-alert-triangle',
+                    'label' => 'فاشل',
+                    'count' => $stats['failed'] ?? 0,
+                    'url' => route('admin.coolify.wordpress-sites.index', ['status' => 'failed']),
+                ])
+            </div>
+        </div>
+
+        <div class="card custom-card mb-3">
+            <div class="card-body row g-2 align-items-end" id="wp-sites-filters">
+                <div class="col-md-4">
+                    <label class="form-label">بحث</label>
+                    <input type="search" id="wp-filter-q" class="form-control" value="{{ request('q') }}"
+                        placeholder="اسم، معرّف، أو نطاق" autocomplete="off">
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label">الحالة</label>
+                    <select id="wp-filter-status" class="form-select">
+                        <option value="">الكل</option>
+                        @foreach (\App\Models\CoolifyWordpressSite::STATUSES as $key => $label)
+                            <option value="{{ $key }}" @selected(request('status') === $key)>{{ $label }}</option>
+                        @endforeach
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label">نوع النطاق</label>
+                    <select id="wp-filter-domain-type" class="form-select">
+                        <option value="">الكل</option>
+                        @foreach (\App\Models\CoolifyWordpressSite::DOMAIN_TYPES as $key => $label)
+                            <option value="{{ $key }}" @selected(request('domain_type') === $key)>{{ $label }}</option>
+                        @endforeach
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label">المشروع</label>
+                    <select id="wp-filter-project" class="form-select">
+                        <option value="">الكل</option>
+                        @foreach ($projects ?? [] as $project)
+                            <option value="{{ $project->project_uuid }}" @selected(request('project_uuid') === $project->project_uuid)>
+                                {{ $project->project_name ?: \Illuminate\Support\Str::limit($project->project_uuid, 14) }}
+                            </option>
+                        @endforeach
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label">العميل</label>
+                    <select id="wp-filter-user" class="form-select">
+                        <option value="">الكل</option>
+                        @foreach ($clientUsers ?? [] as $u)
+                            <option value="{{ $u->id }}" @selected(request('user_id') == $u->id)>{{ $u->name }}</option>
+                        @endforeach
+                    </select>
+                </div>
+                <div class="col-12 text-end">
+                    <button type="button" id="wp-filter-reset" class="btn btn-light btn-sm">إعادة تعيين الفلاتر</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="card custom-card border-0 shadow-sm position-relative" id="wp-sites-card">
+            <div id="wp-sites-loading" class="position-absolute top-0 start-0 w-100 h-100 d-none align-items-center justify-content-center bg-dark bg-opacity-25 rounded" style="z-index:5;">
+                <div class="spinner-border text-primary" role="status"></div>
+            </div>
+            <div class="card-header border-bottom py-3 d-flex justify-content-between align-items-center flex-wrap gap-2">
+                <span class="fw-semibold">قائمة المواقع</span>
+                <span class="badge bg-secondary-transparent text-secondary" id="wp-sites-count">{{ $sites->total() }} موقع</span>
+            </div>
             <div class="card-body p-0">
                 <div class="table-responsive">
                     <table class="table table-hover mb-0 wp-sites-table align-middle">
@@ -49,97 +146,125 @@
                                 <th class="wp-sites-table__col-actions text-end">إجراءات</th>
                             </tr>
                         </thead>
-                        <tbody>
-                        @forelse ($sites as $site)
-                            @php
-                                $st = $site->status;
-                                $statusKey = match ($st) {
-                                    'running' => 'running',
-                                    'provisioning' => 'provisioning',
-                                    'failed' => 'failed',
-                                    default => 'default',
-                                };
-                                $projectLabel = $site->project_name;
-                                $projectUuid = $site->project_uuid;
-                            @endphp
-                            <tr>
-                                <td>
-                                    <div class="wp-site-name">
-                                        <span class="wp-site-name__icon" aria-hidden="true">
-                                            <i class="fab fa-wordpress"></i>
-                                        </span>
-                                        <div class="min-w-0">
-                                            <div class="wp-site-name__title text-truncate">{{ $site->display_name }}</div>
-                                            <div class="wp-site-name__slug">
-                                                @if ($site->isCustomDomain())
-                                                    <span class="badge bg-info-subtle text-info me-1" style="font-size:0.65rem">مستقل</span>
-                                                @endif
-                                                {{ $site->slug }}
-                                            </div>
-                                        </div>
-                                    </div>
-                                </td>
-                                <td>
-                                    @if ($site->public_url)
-                                        <a href="{{ $site->public_url }}" target="_blank" rel="noopener noreferrer"
-                                            class="wp-site-url text-primary text-decoration-none"
-                                            title="{{ $site->public_url }}">
-                                            <i class="fe fe-link"></i>
-                                            {{ parse_url($site->public_url, PHP_URL_HOST) ?: $site->slug }}
-                                        </a>
-                                    @else
-                                        <span class="text-muted small">—</span>
-                                    @endif
-                                </td>
-                                <td>
-                                    <span class="wp-site-status wp-site-status--{{ $statusKey }}">
-                                        {{ \App\Models\CoolifyWordpressSite::STATUSES[$st] ?? $st }}
-                                    </span>
-                                </td>
-                                <td class="wp-site-client" id="wp-site-client-{{ $site->uuid }}">
-                                    @include('admin.coolify.wordpress-sites.partials.client-cell', [
-                                        'client' => $site->client,
-                                        'customer' => $site->client?->customer,
-                                    ])
-                                </td>
-                                <td>
-                                    @if ($projectLabel)
-                                        <span class="wp-site-project" title="{{ $projectLabel }}">{{ $projectLabel }}</span>
-                                    @elseif ($projectUuid)
-                                        <code class="wp-site-project-uuid" title="{{ $projectUuid }}">{{ Str::limit($projectUuid, 14) }}</code>
-                                    @else
-                                        <span class="text-muted small">—</span>
-                                    @endif
-                                </td>
-                                <td class="wp-site-date">{{ $site->created_at?->format('Y-m-d H:i') }}</td>
-                                <td class="text-end">
-                                    @include('admin.coolify.wordpress-sites.partials.index-row-actions', [
-                                        'site' => $site,
-                                        'clientUsers' => $clientUsers ?? [],
-                                    ])
-                                </td>
-                            </tr>
-                        @empty
-                            <tr class="wp-sites-empty">
-                                <td colspan="7" class="text-center text-muted">
-                                    <i class="fab fa-wordpress fa-2x mb-2 d-block opacity-25"></i>
-                                    لا توجد مواقع بعد
-                                </td>
-                            </tr>
-                        @endforelse
+                        <tbody id="wp-sites-tbody">
+                            @include('admin.coolify.wordpress-sites.partials.index-table-body', ['sites' => $sites, 'clientUsers' => $clientUsers ?? []])
                         </tbody>
                     </table>
                 </div>
             </div>
-            @if ($sites->hasPages())
-                <div class="card-footer border-top-0 bg-transparent">{{ $sites->links() }}</div>
-            @endif
+            <div class="card-footer border-top-0 bg-transparent" id="wp-sites-pagination">
+                @include('admin.coolify.wordpress-sites.partials.index-pagination', ['sites' => $sites])
+            </div>
         </div>
     </div>
 </div>
 @endsection
 
 @push('scripts')
-    @include('admin.whm.accounts.partials.whm-toast')
-    @include('admin.partials.asset-client-assign-script')
+@include('admin.whm.accounts.partials.whm-toast')
+@include('admin.partials.asset-client-assign-script')
+<script>
+(function () {
+    const indexUrl = @json(route('admin.coolify.wordpress-sites.index'));
+    const qEl = document.getElementById('wp-filter-q');
+    const statusEl = document.getElementById('wp-filter-status');
+    const domainTypeEl = document.getElementById('wp-filter-domain-type');
+    const projectEl = document.getElementById('wp-filter-project');
+    const userEl = document.getElementById('wp-filter-user');
+    const resetEl = document.getElementById('wp-filter-reset');
+    const tbody = document.getElementById('wp-sites-tbody');
+    const pagination = document.getElementById('wp-sites-pagination');
+    const loading = document.getElementById('wp-sites-loading');
+    let debounceTimer = null;
+    let abortController = null;
+
+    function params(page) {
+        const p = new URLSearchParams();
+        const q = (qEl?.value || '').trim();
+        if (q) p.set('q', q);
+        if (statusEl?.value) p.set('status', statusEl.value);
+        if (domainTypeEl?.value) p.set('domain_type', domainTypeEl.value);
+        if (projectEl?.value) p.set('project_uuid', projectEl.value);
+        if (userEl?.value) p.set('user_id', userEl.value);
+        if (page) p.set('page', page);
+        return p;
+    }
+
+    function setLoading(on) {
+        if (!loading) return;
+        loading.classList.toggle('d-none', !on);
+        loading.classList.toggle('d-flex', on);
+    }
+
+    function bindPaginationLinks() {
+        pagination?.querySelectorAll('a.page-link, .pagination a').forEach(a => {
+            a.addEventListener('click', function (e) {
+                const href = this.getAttribute('href');
+                if (!href || href === '#') return;
+                e.preventDefault();
+                const page = new URL(href, window.location.origin).searchParams.get('page');
+                load(page || 1);
+            });
+        });
+    }
+
+    function bindResetEmptyState() {
+        document.getElementById('wp-filter-reset-empty')?.addEventListener('click', () => resetEl?.click());
+    }
+
+    function load(page) {
+        if (abortController) abortController.abort();
+        abortController = new AbortController();
+        setLoading(true);
+
+        const url = indexUrl + '?' + params(page).toString();
+        history.replaceState(null, '', url);
+
+        fetch(url, {
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest',
+                'Accept': 'application/json',
+            },
+            signal: abortController.signal,
+        })
+            .then(r => r.json())
+            .then(data => {
+                if (tbody) tbody.innerHTML = data.html || '';
+                if (pagination) pagination.innerHTML = data.pagination || '';
+                const countEl = document.getElementById('wp-sites-count');
+                if (countEl && typeof data.total === 'number') {
+                    countEl.textContent = data.total + ' موقع';
+                }
+                bindPaginationLinks();
+                bindResetEmptyState();
+            })
+            .catch(err => {
+                if (err.name !== 'AbortError') console.error(err);
+            })
+            .finally(() => setLoading(false));
+    }
+
+    function scheduleLoad() {
+        clearTimeout(debounceTimer);
+        debounceTimer = setTimeout(() => load(1), 350);
+    }
+
+    qEl?.addEventListener('input', scheduleLoad);
+    statusEl?.addEventListener('change', () => load(1));
+    domainTypeEl?.addEventListener('change', () => load(1));
+    projectEl?.addEventListener('change', () => load(1));
+    userEl?.addEventListener('change', () => load(1));
+    resetEl?.addEventListener('click', () => {
+        if (qEl) qEl.value = '';
+        if (statusEl) statusEl.value = '';
+        if (domainTypeEl) domainTypeEl.value = '';
+        if (projectEl) projectEl.value = '';
+        if (userEl) userEl.value = '';
+        load(1);
+    });
+
+    bindPaginationLinks();
+    bindResetEmptyState();
+})();
+</script>
 @endpush

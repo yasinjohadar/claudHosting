@@ -1,45 +1,7 @@
-    <!-- ============ NEWSLETTER SECTION ============ -->
-    <section class="section-padding newsletter-section" id="newsletter">
-        <div class="container">
-            <div class="newsletter-card animate-on-scroll">
-                <div class="newsletter-benefits">
-                    <div class="newsletter-benefit-item">
-                        <div class="newsletter-benefit-icon"><i class="fas fa-lightbulb"></i></div>
-                        <span>نصائح الاستضافة</span>
-                    </div>
-                    <div class="newsletter-benefit-item">
-                        <div class="newsletter-benefit-icon"><i class="fas fa-gift"></i></div>
-                        <span>عروض خاصة</span>
-                    </div>
-                    <div class="newsletter-benefit-item">
-                        <div class="newsletter-benefit-icon"><i class="fas fa-bell"></i></div>
-                        <span>أخبار فورية</span>
-                    </div>
-                    <div class="newsletter-benefit-item">
-                        <div class="newsletter-benefit-icon"><i class="fas fa-envelope"></i></div>
-                        <span>رسائل حصرية</span>
-                    </div>
-                </div>
-                <h2 class="newsletter-title">
-                    <i class="fas fa-paper-plane newsletter-title-icon"></i>
-                    اشترك في نشرتنا البريدية
-                </h2>
-                <p class="newsletter-desc">احصل على آخر أخبار الاستضافة، النصائح التقنية، العروض الحصرية والمقالات مباشرةً في بريدك.</p>
-                <form class="newsletter-form" id="newsletterForm" novalidate>
-                    <div class="newsletter-input-group">
-                        <button type="submit" class="newsletter-btn">
-                            <i class="fas fa-paper-plane"></i> اشترك الآن
-                        </button>
-                        <div class="newsletter-input-wrap">
-                            <i class="fas fa-envelope newsletter-input-icon"></i>
-                            <input type="email" name="email" id="newsletterEmail" class="newsletter-input" placeholder="أدخل بريدك الإلكتروني" required aria-label="البريد الإلكتروني">
-                        </div>
-                    </div>
-                    <p class="newsletter-hint"><i class="fas fa-shield-alt"></i> تحترم خصوصيتك ولا نشارك بريدك مع أي جهة</p>
-                </form>
-            </div>
-        </div>
-    </section>
+    <!-- ============ NEWSLETTER (كمبوننت — يقبل nlTitle / nlDesc / nlBenefits) ============ -->
+    @unless (isset($hideNewsletter) && $hideNewsletter)
+        @include('frontend.partials.newsletter-section')
+    @endunless
 
     <!-- ============ CTA SECTION ============ -->
     <section class="cta-section">

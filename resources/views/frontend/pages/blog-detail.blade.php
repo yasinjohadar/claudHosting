@@ -1,91 +1,198 @@
+@php
+    // نص النشرة البريدية الخاص بهذه الصفحة (يقرأه كمبوننت newsletter-section)
+    $nlTitle = 'أعجبك المقال؟';
+    $nlDesc = 'اشترك لتصلك مقالات مثله في الاستضافة وإدارة السيرفرات مباشرة في بريدك.';
+@endphp
+
 @extends('frontend.layouts.master')
 
-@section('content')
-    <section class="blog-detail-hero">
-        <div class="blog-detail-hero-img">
-            @if($post->featured_image && function_exists('blog_image_url'))
-                <img src="{{ blog_image_url($post->featured_image) }}" alt="{{ $post->featured_image_alt ?? $post->title }}" width="1200" height="400" loading="eager" style="object-fit:cover;width:100%;height:100%;">
-            @else
-                <img src="{{ asset('frontend/assets/images/course-webdev.svg') }}" alt="{{ $post->title }}" width="1200" height="400" loading="eager" style="object-fit:cover;width:100%;height:100%;">
-            @endif
-            <div class="blog-detail-hero-overlay"></div>
-        </div>
-    </section>
+@php
+    $heroImage =
+        $post->featured_image && function_exists('blog_image_url')
+            ? blog_image_url($post->featured_image)
+            : asset('frontend/assets/images/blog-hero-bg.svg');
+    $heroAlt = $post->featured_image_alt ?? $post->title;
+    $postDate = $post->published_at ?? $post->created_at;
+    $shareUrl = urlencode(url()->current());
+    $shareTitle = urlencode($post->title);
+@endphp
 
-    <section class="section-padding" style="padding-top: 0; margin-top: -80px; position: relative; z-index: 10;">
+@section('content')
+    <div class="bd-progress" aria-hidden="true"><span class="bd-progress__bar" id="bdProgressBar"></span></div>
+
+    <header class="bd-hero">
+        <div class="bd-hero__media">
+            <img src="{{ $heroImage }}" alt="{{ $heroAlt }}" width="1920" height="1080" loading="eager" fetchpriority="high">
+        </div>
+        <span class="bd-hero__scrim" aria-hidden="true"></span>
+
+        <div class="container bd-hero__inner">
+            <nav class="bd-hero__crumbs" aria-label="مسار التصفح">
+                <a href="{{ url('/') }}">الرئيسية</a>
+                <i class="fas fa-chevron-left" aria-hidden="true"></i>
+                <a href="{{ route('frontend.blog') }}">المدونة</a>
+                @if ($post->category)
+                    <i class="fas fa-chevron-left" aria-hidden="true"></i>
+                    <a href="{{ $post->category->url }}">{{ $post->category->name }}</a>
+                @endif
+            </nav>
+
+            @if ($post->category)
+                <a href="{{ $post->category->url }}" class="bd-hero__category">
+                    <i class="fas fa-folder-open" aria-hidden="true"></i> {{ $post->category->name }}
+                </a>
+            @endif
+
+            <h1 class="bd-hero__title">{{ $post->title }}</h1>
+
+            @if ($post->excerpt)
+                <p class="bd-hero__excerpt">{{ Str::limit(strip_tags($post->excerpt), 160) }}</p>
+            @endif
+
+            <div class="bd-hero__meta">
+                @if ($post->author)
+                    <span class="bd-hero__author">
+                        <img src="{{ asset('frontend/assets/images/brand-avatar.svg') }}" alt="" width="36" height="36" loading="lazy">
+                        {{ $post->author->name }}
+                    </span>
+                    <span class="bd-hero__dot" aria-hidden="true"></span>
+                @endif
+                <span class="bd-hero__meta-item">
+                    <i class="far fa-calendar-alt" aria-hidden="true"></i>
+                    <time datetime="{{ $postDate?->toDateString() }}">{{ $postDate?->translatedFormat('d F Y') }}</time>
+                </span>
+                @if ($post->reading_time)
+                    <span class="bd-hero__dot" aria-hidden="true"></span>
+                    <span class="bd-hero__meta-item">
+                        <i class="far fa-clock" aria-hidden="true"></i> {{ $post->reading_time }} دقيقة قراءة
+                    </span>
+                @endif
+            </div>
+        </div>
+    </header>
+
+    <section class="bd-main">
         <div class="container">
             <div class="row g-4">
                 <div class="col-lg-8">
-                    <div class="glass-panel blog-detail-content">
-                        <div class="breadcrumb-custom" style="justify-content: flex-start; margin-bottom: 20px;">
-                            <a href="{{ url('/') }}">الرئيسية</a><span>/</span><a href="{{ route('frontend.blog') }}">المدونة</a><span>/</span><span>{{ $post->category?->name ?? 'مقال' }}</span>
-                        </div>
-                        <div style="display:flex; gap:10px; flex-wrap:wrap; margin-bottom:15px;">
-                            @if($post->category)
-                            <a href="{{ $post->category->url }}" class="bd-category"><i class="fas fa-folder"></i> {{ $post->category->name }}</a>
-                            @endif
-                            <span class="bd-date"><i class="fas fa-calendar-alt"></i> {{ $post->published_at?->translatedFormat('d F Y') ?? $post->created_at->format('Y-m-d') }}</span>
-                            @if($post->reading_time)
-                            <span class="bd-date"><i class="fas fa-clock"></i> {{ $post->reading_time }} دقيقة قراءة</span>
-                            @endif
-                        </div>
-                        <h1 class="bd-title">{{ $post->title }}</h1>
-                        @if($post->author)
-                        <div class="bd-author-bar">
-                            <div class="bd-author-info">
-                                <img src="{{ asset('frontend/assets/images/logo.png') }}" alt="{{ $post->author->name }}" width="45" height="45" loading="lazy">
-                                <div><strong>{{ $post->author->name }}</strong><span>{{ $post->author->email }}</span></div>
-                            </div>
-                        </div>
-                        @endif
+                    <article class="glass-panel blog-detail-content">
                         <div class="bd-article">
-                            @if($post->excerpt)
-                            <p class="bd-intro">{{ $post->excerpt }}</p>
-                            @endif
                             <div class="bd-content-html">
                                 {!! $post->content !!}
                             </div>
                         </div>
-                        @if($post->tags->count() > 0)
-                        <div class="bd-tags">
-                            <span class="bd-tag-label"><i class="fas fa-tags"></i> الوسوم:</span>
-                            @foreach($post->tags as $tag)
-                            <a href="{{ $tag->url }}" class="bd-tag">{{ $tag->name }}</a>
-                            @endforeach
-                        </div>
-                        @endif
-                        <div class="text-center mt-4">
-                            <a href="{{ route('frontend.blog') }}" class="btn-primary-custom"><i class="fas fa-arrow-right"></i> العودة للمدونة</a>
-                        </div>
-                    </div>
-                </div>
-                <div class="col-lg-4">
-                    <div class="glass-panel animate-on-scroll" style="padding:25px; text-align:center; margin-bottom:20px;">
-                        <img src="{{ asset('frontend/assets/images/trainer.svg') }}" alt="استضافة كلاودسوفت" style="width:90px;height:90px;border-radius:50%;border:3px solid var(--clr-primary);object-fit:cover;margin-bottom:12px;">
-                        <h5 style="font-weight:700;margin-bottom:3px;">فريق استضافة كلاودسوفت</h5>
-                        <p style="font-size:0.82rem;color:var(--clr-primary);font-weight:600;margin-bottom:10px;">دعم فني واستضافة سحابية</p>
-                        <a href="{{ route('frontend.about') }}" class="btn-outline-custom" style="width:100%;justify-content:center;padding:8px;font-size:0.88rem;"><i class="fas fa-building"></i> حول الشركة</a>
-                    </div>
-                    @if($recentPosts->count() > 0)
-                    <div class="glass-panel animate-on-scroll" style="padding:20px; margin-bottom:20px;">
-                        <h6 style="font-weight:700;margin-bottom:15px;"><i class="fas fa-fire" style="color:var(--clr-primary);"></i> مقالات حديثة</h6>
-                        @foreach($recentPosts as $recent)
-                        <a href="{{ route('frontend.blog.show', $recent->slug) }}" class="bd-recent-post" style="{{ $loop->last ? 'margin-bottom:0;' : '' }}">
-                            @if($recent->featured_image && function_exists('blog_image_url'))
-                                <img src="{{ blog_image_url($recent->featured_image) }}" alt="{{ $recent->title }}">
-                            @else
-                                <img src="{{ asset('frontend/assets/images/course-python.svg') }}" alt="{{ $recent->title }}">
-                            @endif
-                            <div>
-                                <h6 style="font-weight:700;font-size:0.85rem;">{{ Str::limit($recent->title, 40) }}</h6>
-                                <span style="font-size:0.75rem;color:var(--clr-text-muted);"><i class="fas fa-calendar-alt"></i> {{ $recent->published_at?->translatedFormat('d F Y') ?? $recent->created_at->format('Y-m-d') }}</span>
+
+                        @if ($post->tags->count() > 0)
+                            <div class="bd-tags">
+                                <span class="bd-tag-label"><i class="fas fa-tags" aria-hidden="true"></i> الوسوم:</span>
+                                @foreach ($post->tags as $tag)
+                                    <a href="{{ $tag->url }}" class="bd-tag">{{ $tag->name }}</a>
+                                @endforeach
                             </div>
-                        </a>
-                        @endforeach
-                    </div>
-                    @endif
+                        @endif
+
+                        <div class="bd-share">
+                            <span><i class="fas fa-share-alt" aria-hidden="true"></i> شارك المقال:</span>
+                            <div class="bd-share-icons">
+                                <a class="bd-share-btn bd-share-btn--wa" href="https://wa.me/?text={{ $shareTitle }}%20{{ $shareUrl }}"
+                                    target="_blank" rel="noopener noreferrer" aria-label="مشاركة عبر واتساب"><i class="fab fa-whatsapp" aria-hidden="true"></i></a>
+                                <a class="bd-share-btn bd-share-btn--tw" href="https://twitter.com/intent/tweet?url={{ $shareUrl }}&text={{ $shareTitle }}"
+                                    target="_blank" rel="noopener noreferrer" aria-label="مشاركة عبر تويتر"><i class="fab fa-twitter" aria-hidden="true"></i></a>
+                                <a class="bd-share-btn bd-share-btn--fb" href="https://www.facebook.com/sharer/sharer.php?u={{ $shareUrl }}"
+                                    target="_blank" rel="noopener noreferrer" aria-label="مشاركة عبر فيسبوك"><i class="fab fa-facebook-f" aria-hidden="true"></i></a>
+                                <a class="bd-share-btn bd-share-btn--li" href="https://www.linkedin.com/sharing/share-offsite/?url={{ $shareUrl }}"
+                                    target="_blank" rel="noopener noreferrer" aria-label="مشاركة عبر لينكدإن"><i class="fab fa-linkedin-in" aria-hidden="true"></i></a>
+                                <button type="button" class="bd-share-btn bd-share-btn--copy" id="bdCopyLink" aria-label="نسخ رابط المقال"><i class="fas fa-link" aria-hidden="true"></i></button>
+                            </div>
+                        </div>
+
+                        <div class="bd-back">
+                            <a href="{{ route('frontend.blog') }}" class="btn-outline-custom">
+                                <i class="fas fa-arrow-right" aria-hidden="true"></i> العودة للمدونة
+                            </a>
+                        </div>
+                    </article>
                 </div>
+
+                <aside class="col-lg-4">
+                    <div class="bd-sidebar">
+                        <div class="glass-panel bd-side-card bd-side-card--brand animate-on-scroll">
+                            <img class="bd-side-avatar" src="{{ asset('frontend/assets/images/brand-avatar.svg') }}"
+                                alt="استضافة كلاودسوفت" width="90" height="90" loading="lazy">
+                            <h5 class="bd-side-brand-name">فريق استضافة كلاودسوفت</h5>
+                            <p class="bd-side-brand-role">دعم فني واستضافة سحابية</p>
+                            <a href="{{ route('frontend.about') }}" class="btn-outline-custom bd-side-btn">
+                                <i class="fas fa-building" aria-hidden="true"></i> حول الشركة
+                            </a>
+                        </div>
+
+                        @if ($recentPosts->count() > 0)
+                            <div class="glass-panel bd-side-card animate-on-scroll">
+                                <h6 class="bd-side-title"><i class="fas fa-fire" aria-hidden="true"></i> مقالات حديثة</h6>
+                                @foreach ($recentPosts as $recent)
+                                    <a href="{{ route('frontend.blog.show', $recent->slug) }}" class="bd-recent-post">
+                                        @if ($recent->featured_image && function_exists('blog_image_url'))
+                                            <img src="{{ blog_image_url($recent->featured_image) }}" alt="" width="70" height="50" loading="lazy">
+                                        @else
+                                            <img src="{{ asset('frontend/assets/images/blog-hero-bg.svg') }}" alt="" width="70" height="50" loading="lazy">
+                                        @endif
+                                        <div>
+                                            <h6 class="bd-recent-title">{{ Str::limit($recent->title, 46) }}</h6>
+                                            <span class="bd-recent-date">
+                                                <i class="far fa-calendar-alt" aria-hidden="true"></i>
+                                                {{ $recent->published_at?->translatedFormat('d F Y') ?? $recent->created_at->format('Y-m-d') }}
+                                            </span>
+                                        </div>
+                                    </a>
+                                @endforeach
+                            </div>
+                        @endif
+
+                        <div class="glass-panel bd-side-card bd-side-cta animate-on-scroll">
+                            <i class="fas fa-server bd-side-cta__icon" aria-hidden="true"></i>
+                            <h6 class="bd-side-cta__title">جاهز لإطلاق موقعك؟</h6>
+                            <p class="bd-side-cta__text">باقات استضافة سحابية سريعة وآمنة مع دعم فني عربي على مدار الساعة.</p>
+                            <a href="{{ route('frontend.packages') }}" class="btn-primary-custom bd-side-btn">
+                                <i class="fas fa-rocket" aria-hidden="true"></i> تصفح الباقات
+                            </a>
+                        </div>
+                    </div>
+                </aside>
             </div>
         </div>
     </section>
+@endsection
+
+@section('scripts')
+    <script>
+        (function () {
+            var bar = document.getElementById('bdProgressBar');
+            var article = document.querySelector('.bd-article');
+            if (bar && article) {
+                var update = function () {
+                    var start = article.offsetTop;
+                    var total = article.offsetHeight - window.innerHeight;
+                    var done = total > 0 ? (window.scrollY - start) / total : 1;
+                    bar.style.width = Math.min(100, Math.max(0, done * 100)) + '%';
+                };
+                window.addEventListener('scroll', update, { passive: true });
+                window.addEventListener('resize', update);
+                update();
+            }
+
+            var copyBtn = document.getElementById('bdCopyLink');
+            if (copyBtn && navigator.clipboard) {
+                copyBtn.addEventListener('click', function () {
+                    navigator.clipboard.writeText(window.location.href).then(function () {
+                        copyBtn.classList.add('is-copied');
+                        copyBtn.innerHTML = '<i class="fas fa-check"></i>';
+                        setTimeout(function () {
+                            copyBtn.classList.remove('is-copied');
+                            copyBtn.innerHTML = '<i class="fas fa-link"></i>';
+                        }, 1800);
+                    });
+                });
+            }
+        })();
+    </script>
 @endsection

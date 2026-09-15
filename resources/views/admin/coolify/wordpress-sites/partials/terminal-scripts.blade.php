@@ -5,6 +5,7 @@
 <script>
 (function() {
     const sessionUrl = @json($wpSiteRoutes['terminalSession']);
+    const healthUrl = @json($wpSiteRoutes['terminalHealth'] ?? '');
     const commandsUrl = @json($wpSiteRoutes['terminalCommands']);
     const csrf = @json(csrf_token());
 
@@ -107,8 +108,29 @@
         showAlert('تم قطع الاتصال', 'info');
     });
 
+    async function checkBridgeHealth() {
+        const badge = document.getElementById('siteTerminalBridgeHealth');
+        if (!badge || !healthUrl) return;
+        try {
+            const r = await fetch(healthUrl, { headers: { 'Accept': 'application/json' } });
+            const d = await r.json();
+            if (d.success) {
+                badge.textContent = 'الجسر متصل';
+                badge.className = 'badge bg-success-transparent text-success';
+            } else {
+                badge.textContent = 'الجسر غير متاح';
+                badge.className = 'badge bg-danger-transparent text-danger';
+                badge.title = d.message || '';
+            }
+        } catch (_) {
+            badge.textContent = 'تعذّر فحص الجسر';
+            badge.className = 'badge bg-danger-transparent text-danger';
+        }
+    }
+
     const tabBtn = document.getElementById('site-tab-terminal-btn');
-    if (tabBtn) tabBtn.addEventListener('shown.bs.tab', () => { initTerm(); loadCommands(); });
+    if (tabBtn) tabBtn.addEventListener('shown.bs.tab', () => { initTerm(); loadCommands(); checkBridgeHealth(); });
+    checkBridgeHealth();
 
     window.addEventListener('resize', () => { if (fitAddon) fitAddon.fit(); });
 })();

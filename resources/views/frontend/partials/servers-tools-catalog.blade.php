@@ -7,7 +7,7 @@
             'tools' => [
                 ['name' => 'Linux', 'icon' => 'devicon-linux-plain', 'type' => 'devicon', 'task' => 'أساس تشغيل الخوادم مع مرونة واستقرار عالٍ.'],
                 ['name' => 'Ubuntu Server', 'icon' => 'devicon-ubuntu-plain', 'type' => 'devicon', 'task' => 'توزيعة LTS شائعة للاستضافة والتطبيقات.'],
-                ['name' => 'Debian / AlmaLinux', 'icon' => 'https://cdn.simpleicons.org/redhat/EE0000', 'type' => 'img', 'task' => 'بدائل enterprise مع دعم طويل الأمد.'],
+                ['name' => 'Debian / AlmaLinux', 'icon' => asset('frontend/assets/images/tech/redhat.svg'), 'type' => 'img', 'task' => 'بدائل enterprise مع دعم طويل الأمد.'],
                 ['name' => 'systemd', 'icon' => 'fas fa-cogs', 'type' => 'fa', 'task' => 'إدارة الخدمات والتشغيل التلقائي عند الإقلاع.'],
                 ['name' => 'SSH / SFTP', 'icon' => 'fas fa-terminal', 'type' => 'fa', 'task' => 'وصول آمن للإدارة ونقل الملفات.'],
                 ['name' => 'Cron Jobs', 'icon' => 'fas fa-clock', 'type' => 'fa', 'task' => 'مهام مجدولة للنسخ الاحتياطي والصيانة.'],
@@ -36,7 +36,7 @@
                 ['name' => 'MongoDB', 'icon' => 'devicon-mongodb-plain', 'type' => 'devicon', 'task' => 'مستندات مرنة للتطبيقات الحديثة.'],
                 ['name' => 'Redis', 'icon' => 'devicon-redis-plain', 'type' => 'devicon', 'task' => 'Cache وجلسات وصفوف مهام سريعة.'],
                 ['name' => 'Backup / rsync', 'icon' => 'fas fa-hdd', 'type' => 'fa', 'task' => 'نسخ احتياطي مجدول واستعادة عند الحاجة.'],
-                ['name' => 'Object Storage', 'icon' => 'https://cdn.simpleicons.org/amazons3/569A31', 'type' => 'img', 'task' => 'تخزين ملفات ونسخ خارج السيرفر.'],
+                ['name' => 'Object Storage', 'icon' => 'fas fa-boxes-stacked', 'type' => 'fa', 'task' => 'تخزين ملفات ونسخ خارج السيرفر.'],
             ],
         ],
         [
@@ -44,11 +44,11 @@
             'icon' => 'fas fa-shield-alt',
             'desc' => 'حماية الخادم، SSL، DNS، ومراقبة الأداء والتوفر.',
             'tools' => [
-                ['name' => 'Let\'s Encrypt / SSL', 'icon' => 'https://cdn.simpleicons.org/letsencrypt/003A70', 'type' => 'img', 'task' => 'شهادات HTTPS مجانية وتجديد تلقائي.'],
+                ['name' => 'Let\'s Encrypt / SSL', 'icon' => asset('frontend/assets/images/tech/letsencrypt.svg'), 'type' => 'img', 'task' => 'شهادات HTTPS مجانية وتجديد تلقائي.'],
                 ['name' => 'UFW / Firewall', 'icon' => 'fas fa-fire-alt', 'type' => 'fa', 'task' => 'تقييد المنافذ وحماية الوصول للخادم.'],
                 ['name' => 'Docker', 'icon' => 'devicon-docker-plain', 'type' => 'devicon', 'task' => 'عزل الخدمات وتشغيل حاويات على VPS.'],
                 ['name' => 'Git / Deploy', 'icon' => 'devicon-git-plain', 'type' => 'devicon', 'task' => 'نشر آمن من المستودع إلى الإنتاج.'],
-                ['name' => 'DNS / Cloudflare', 'icon' => 'https://cdn.simpleicons.org/cloudflare/F38020', 'type' => 'img', 'task' => 'ربط النطاقات مع CDN وحماية DNS.'],
+                ['name' => 'DNS / Cloudflare', 'icon' => asset('frontend/assets/images/tech/cloudflare.svg'), 'type' => 'img', 'task' => 'ربط النطاقات مع CDN وحماية DNS.'],
                 ['name' => 'Monitoring', 'icon' => 'fas fa-chart-line', 'type' => 'fa', 'task' => 'مراقبة CPU/RAM/Uptime وتنبيهات الأعطال.'],
             ],
         ],

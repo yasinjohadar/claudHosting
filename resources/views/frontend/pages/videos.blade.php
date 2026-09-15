@@ -1,3 +1,9 @@
+@php
+    // نص النشرة البريدية الخاص بهذه الصفحة (يقرأه كمبوننت newsletter-section)
+    $nlTitle = 'جديد الفيديوهات في بريدك';
+    $nlDesc = 'اشترك ليصلك إشعار بكل فيديو تعليمي جديد عن الاستضافة وإدارة الخوادم.';
+@endphp
+
 @extends('frontend.layouts.master')
 
 @section('content')

@@ -72,8 +72,7 @@ class RunWordpressManagementJob implements ShouldQueue
         }
 
         $site->refresh();
-        $metadata = $site->metadata ?? [];
-        $wpJob = $metadata['wp_job'] ?? [];
+        $wpJob = $site->metadata['wp_job'] ?? [];
         $wpJob['status'] = $status;
         $wpJob['output'] = $output;
         $wpJob['progress_label'] = $status === 'completed'
@@ -93,6 +92,6 @@ class RunWordpressManagementJob implements ShouldQueue
             $wpJob['operation_id'] = $result['operation_id'];
         }
 
-        $site->update(['metadata' => array_merge($metadata, ['wp_job' => $wpJob])]);
+        $site->mergeMetadata(['wp_job' => $wpJob]);
     }
 }

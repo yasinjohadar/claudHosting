@@ -9,11 +9,11 @@
         @if ($post->featured_image && function_exists('blog_image_url'))
             <img src="{{ blog_image_url($post->featured_image) }}"
                 alt="{{ $post->featured_image_alt ?? $post->title }}"
-                width="400" height="200" loading="lazy" decoding="async">
+                width="1920" height="1080" loading="lazy" decoding="async">
         @else
-            <img src="{{ asset('frontend/assets/images/course-webdev.svg') }}"
+            <img src="{{ asset('frontend/assets/images/blog-placeholder.svg') }}"
                 alt="{{ $post->title }}"
-                width="400" height="200" loading="lazy" decoding="async">
+                width="1920" height="1080" loading="lazy" decoding="async">
         @endif
         <span class="blog-card__media-shade" aria-hidden="true"></span>
         @if ($post->category)

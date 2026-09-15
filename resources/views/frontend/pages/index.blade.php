@@ -1,7 +1,7 @@
 @extends('frontend.layouts.master')
 
 @push('styles')
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/devicon@2.15.1/devicon.min.css" crossorigin="anonymous">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/devicon@2.17.0/devicon.min.css" crossorigin="anonymous">
 @endpush
 
 @section('content')
@@ -19,7 +19,6 @@
     <section class="section-padding" id="skills">
         <div class="container">
             <div class="section-header animate-on-scroll">
-                <span class="section-badge">مجالات الخدمة</span>
                 <h2>التخصصات والخدمات</h2>
                 <p>خبرة في مجالات تقنية متعددة من تطوير واستضافة المواقع إلى إدارة الخوادم والأمن والاستشارات</p>
             </div>
@@ -87,10 +86,9 @@
     @include('frontend.partials.tech-stack-section')
 
     <!-- ============ HOSTING PACKAGES ============ -->
-    <section class="section-padding" id="packages" style="background: var(--clr-bg-secondary);">
+    <section class="section-padding packages-section" id="packages">
         <div class="container">
             <div class="section-header animate-on-scroll">
-                <span class="section-badge">باقات الاستضافة</span>
                 <h2>اختر الباقة المناسبة لموقعك</h2>
                 <p>خطط استضافة مرنة وآمنة تناسب المواقع الشخصية والمتاجر الإلكترونية والشركات</p>
             </div>
@@ -102,6 +100,36 @@
                 </div>
                 @endforeach
             </div>
+            <ul class="packages-assurance animate-on-scroll">
+                <li>
+                    <i class="fas fa-shield-halved" aria-hidden="true"></i>
+                    <div>
+                        <strong>شهادة SSL مجانية</strong>
+                        <span>تشفير كامل لكل نطاق</span>
+                    </div>
+                </li>
+                <li>
+                    <i class="fas fa-rotate" aria-hidden="true"></i>
+                    <div>
+                        <strong>نسخ احتياطي دوري</strong>
+                        <span>استعادة سريعة عند الحاجة</span>
+                    </div>
+                </li>
+                <li>
+                    <i class="fas fa-headset" aria-hidden="true"></i>
+                    <div>
+                        <strong>دعم فني 24/7</strong>
+                        <span>فريق عربي على مدار الساعة</span>
+                    </div>
+                </li>
+                <li>
+                    <i class="fas fa-bolt" aria-hidden="true"></i>
+                    <div>
+                        <strong>تفعيل فوري</strong>
+                        <span>موقعك يعمل خلال دقائق</span>
+                    </div>
+                </li>
+            </ul>
             <div class="text-center mt-5 animate-on-scroll">
                 <a href="{{ route('frontend.packages') }}" class="btn-primary-custom">
                     <i class="fas fa-list"></i> عرض جميع الباقات
@@ -173,6 +201,36 @@
                     </a>
                 </div>
             </div>
+            <ul class="packages-assurance animate-on-scroll">
+                <li>
+                    <i class="fas fa-shield-halved" aria-hidden="true"></i>
+                    <div>
+                        <strong>شهادة SSL مجانية</strong>
+                        <span>تشفير كامل لكل نطاق</span>
+                    </div>
+                </li>
+                <li>
+                    <i class="fas fa-rotate" aria-hidden="true"></i>
+                    <div>
+                        <strong>نسخ احتياطي دوري</strong>
+                        <span>استعادة سريعة عند الحاجة</span>
+                    </div>
+                </li>
+                <li>
+                    <i class="fas fa-headset" aria-hidden="true"></i>
+                    <div>
+                        <strong>دعم فني 24/7</strong>
+                        <span>فريق عربي على مدار الساعة</span>
+                    </div>
+                </li>
+                <li>
+                    <i class="fas fa-bolt" aria-hidden="true"></i>
+                    <div>
+                        <strong>تفعيل فوري</strong>
+                        <span>موقعك يعمل خلال دقائق</span>
+                    </div>
+                </li>
+            </ul>
             <div class="text-center mt-5 animate-on-scroll">
                 <a href="{{ route('frontend.packages') }}" class="btn-primary-custom">
                     <i class="fas fa-list"></i> عرض جميع الباقات
@@ -186,7 +244,6 @@
     <section class="section-padding" id="testimonials">
         <div class="container">
             <div class="section-header animate-on-scroll">
-                <span class="section-badge">آراء عملائنا</span>
                 <h2>ماذا يقول عملاؤنا</h2>
                 <p>آراء وتجارب بعض العملاء الذين اختاروا استضافة كلاودسوفت لمواقعهم ومشاريعهم</p>
             </div>
@@ -203,7 +260,6 @@
     <section class="section-padding" id="videos">
         <div class="container">
             <div class="section-header animate-on-scroll">
-                <span class="section-badge">فيديوهات تعليمية</span>
                 <h2>فيديوهات عن استضافة المواقع</h2>
                 <p>شروحات مرئية حول أساسيات الاستضافة، إدارة الخوادم، وتأمين مواقعك على استضافة كلاودسوفت</p>
             </div>
@@ -272,7 +328,6 @@
     <section class="section-padding" id="blog">
         <div class="container">
             <div class="section-header animate-on-scroll">
-                <span class="section-badge">المدونة</span>
                 <h2>آخر التدوينات</h2>
                 <p>مقالات تقنية وتعليمية في عالم الاستضافة والسيرفرات والتكنولوجيا</p>
             </div>
@@ -301,7 +356,6 @@
     <section class="section-padding" id="clients-preview" style="background: var(--clr-bg-secondary);">
         <div class="container">
             <div class="section-header animate-on-scroll">
-                <span class="section-badge">ثقة غالية</span>
                 <h2>شركاؤنا والعملاء</h2>
                 <p>شكراً لكل من وثق بي — تعرف على بعض الشركات والعملاء الذين تعاملت معهم</p>
             </div>

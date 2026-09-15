@@ -39,35 +39,8 @@
         $overviewCoolifyUrl = $site->metadata['coolify_default_url'] ?? null;
         $overviewCustomUrl = $site->public_url;
     @endphp
-    <h6 class="site-show-section-title">روابط الوصول</h6>
-    <div class="row g-3 mb-3 site-show-tab-grid">
-        <div class="col-md-6">
-            @include('admin.coolify.partials.info-widget', [
-                'accent' => 'success',
-                'icon' => 'fe fe-server',
-                'label' => 'رابط Coolify الافتراضي',
-                'desc' => 'يعمل فوراً (sslip.io)',
-                'highlight' => $overviewCoolifyUrl ?: '—',
-                'copyText' => $overviewCoolifyUrl,
-                'footerUrl' => $overviewCoolifyUrl,
-                'footerLabel' => $overviewCoolifyUrl ? 'فتح الرابط' : null,
-            ])
-        </div>
-        <div class="col-md-6">
-            @include('admin.coolify.partials.info-widget', [
-                'accent' => 'primary',
-                'icon' => 'fe fe-globe',
-                'label' => 'النطاق المخصص',
-                'desc' => 'Cloudflare / DNS',
-                'highlight' => $overviewCustomUrl ?: '—',
-                'copyText' => $overviewCustomUrl,
-                'footerUrl' => $overviewCustomUrl,
-                'footerLabel' => $overviewCustomUrl ? 'فتح النطاق' : null,
-            ])
-        </div>
-    </div>
-
     <h6 class="site-show-section-title">تفاصيل التشغيل</h6>
+    <p class="small text-muted mb-2">روابط الوصول السريعة (الموقع/لوحة WP) متاحة أيضاً أعلى الصفحة.</p>
     <div class="row g-3 mb-3 site-show-tab-grid">
         <div class="col-lg-6">
             @include('admin.coolify.partials.info-widget', [
@@ -76,6 +49,8 @@
                 'label' => 'معلومات الموقع',
                 'desc' => 'إعدادات التوفير والوصول',
                 'rows' => array_filter([
+                    ['label' => 'النطاق المخصص', 'value' => $overviewCustomUrl ?: '—', 'mono' => true],
+                    ['label' => 'رابط Coolify', 'value' => $overviewCoolifyUrl ?: '—', 'mono' => true],
                     ['label' => 'نمط المشروع', 'value' => \App\Models\CoolifyWordpressSite::PROJECT_MODES[$site->project_mode] ?? $site->project_mode],
                     ['label' => 'نوع الخدمة', 'value' => $site->metadata['service_type'] ?? app(\App\Services\Coolify\CoolifySettingsService::class)->getWordpressServiceType(), 'mono' => true],
                     ['label' => 'لوحة WP (مخصص)', 'value' => $site->admin_url ?: '—', 'mono' => true],

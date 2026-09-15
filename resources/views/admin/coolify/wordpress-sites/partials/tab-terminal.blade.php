@@ -15,9 +15,10 @@
         @else
         <p class="text-muted small mb-2">Shell داخل حاوية WordPress عبر WebSocket (xterm.js). الأوامر تُنفَّذ على السيرفر — احذر الأوامر المدمرة.</p>
         <div id="siteTerminalAlert" class="alert py-2 small d-none mb-2"></div>
-        <div class="d-flex flex-wrap gap-2 mb-2">
+        <div class="d-flex flex-wrap gap-2 mb-2 align-items-center">
             <button type="button" class="btn btn-primary btn-sm" id="siteTerminalConnect">اتصال</button>
             <button type="button" class="btn btn-outline-danger btn-sm" id="siteTerminalDisconnect" disabled>قطع</button>
+            <span id="siteTerminalBridgeHealth" class="badge bg-secondary-transparent text-secondary">جارٍ فحص الجسر…</span>
         </div>
         <div class="row g-2 mb-2">
             <div class="col-md-8">

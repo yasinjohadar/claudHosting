@@ -232,11 +232,9 @@ class WordpressManagementService
             'fetched_at' => now()->toIso8601String(),
         ];
 
-        $site->update([
-            'metadata' => array_merge($metadata, [
-                'wp_info' => $info,
-                'wp_info_fetched_at' => now()->toIso8601String(),
-            ]),
+        $site->mergeMetadata([
+            'wp_info' => $info,
+            'wp_info_fetched_at' => now()->toIso8601String(),
         ]);
 
         return ['success' => true, 'data' => $info];
@@ -246,10 +244,14 @@ class WordpressManagementService
      * @param  array<string, mixed>  $params
      * @return array{success: bool, message?: string, output?: string, job_id?: string, async?: bool, data?: array<string, mixed>}
      */
-    public function executeAction(CoolifyWordpressSite $site, string $action, array $params = [], ?int $userId = null): array
+    public function executeAction(CoolifyWordpressSite $site, string $action, array $params = [], ?int $userId = null, bool $isClientPanel = false): array
     {
         if (! $this->actionRunner->isAllowed($action)) {
             return ['success' => false, 'message' => 'إجراء غير مسموح'];
+        }
+
+        if ($isClientPanel && ! config("coolify.client_portal.wordpress_management_actions.{$action}", false)) {
+            return ['success' => false, 'message' => 'هذا الإجراء غير متاح من بوابة العميل'];
         }
 
         if ($action === 'raw_cli') {
@@ -717,11 +719,9 @@ class WordpressManagementService
         $info['themes_updates_count'] = $this->countAvailableUpdates($themeList);
         $info['fetched_at'] = now()->toIso8601String();
 
-        $site->update([
-            'metadata' => array_merge($metadata, [
-                'wp_info' => $info,
-                'wp_info_fetched_at' => now()->toIso8601String(),
-            ]),
+        $site->mergeMetadata([
+            'wp_info' => $info,
+            'wp_info_fetched_at' => now()->toIso8601String(),
         ]);
 
         return $info;
@@ -739,20 +739,18 @@ class WordpressManagementService
         }
 
         $jobId = (string) Str::uuid();
-        $site->update([
-            'metadata' => array_merge($metadata, [
-                'wp_job' => [
-                    'id' => $jobId,
-                    'action' => $action,
-                    'params' => $params,
-                    'status' => 'running',
-                    'output' => '',
-                    'progress_label' => $this->actionProgressLabel($action, $params),
-                    'user_id' => $userId,
-                    'started_at' => now()->toIso8601String(),
-                    'finished_at' => null,
-                ],
-            ]),
+        $site->mergeMetadata([
+            'wp_job' => [
+                'id' => $jobId,
+                'action' => $action,
+                'params' => $params,
+                'status' => 'running',
+                'output' => '',
+                'progress_label' => $this->actionProgressLabel($action, $params),
+                'user_id' => $userId,
+                'started_at' => now()->toIso8601String(),
+                'finished_at' => null,
+            ],
         ]);
 
         CoolifyWordpressOperation::create([
@@ -873,9 +871,7 @@ class WordpressManagementService
 
     public function appendLog(CoolifyWordpressSite $site, string $action, string $status, string $output = ''): void
     {
-        $site->refresh();
-        $metadata = $site->metadata ?? [];
-        $log = $metadata['wp_management_log'] ?? [];
+        $log = $site->metadata['wp_management_log'] ?? [];
         $log[] = [
             'at' => now()->toIso8601String(),
             'action' => $action,
@@ -885,7 +881,7 @@ class WordpressManagementService
         if (count($log) > 100) {
             $log = array_slice($log, -100);
         }
-        $site->update(['metadata' => array_merge($metadata, ['wp_management_log' => $log])]);
+        $site->mergeMetadata(['wp_management_log' => $log]);
     }
 
     protected function recordActivity(CoolifyWordpressSite $site, string $action, bool $success, ?int $userId): void
@@ -994,13 +990,10 @@ class WordpressManagementService
 
     public function clearWpJobRecord(CoolifyWordpressSite $site): void
     {
-        $site->refresh();
-        $metadata = $site->metadata ?? [];
-        if (! isset($metadata['wp_job'])) {
+        if (! isset($site->metadata['wp_job'])) {
             return;
         }
-        unset($metadata['wp_job']);
-        $site->update(['metadata' => $metadata]);
+        $site->mergeMetadata([], ['wp_job']);
     }
 
     /**
@@ -1022,9 +1015,7 @@ class WordpressManagementService
 
     public function clearStuckWpJob(CoolifyWordpressSite $site, int $maxMinutes = 10): void
     {
-        $site->refresh();
-        $metadata = $site->metadata ?? [];
-        $job = $metadata['wp_job'] ?? null;
+        $job = $site->metadata['wp_job'] ?? null;
         if (! is_array($job) || ($job['status'] ?? '') !== 'running') {
             return;
         }
@@ -1036,7 +1027,7 @@ class WordpressManagementService
         $job['status'] = 'failed';
         $job['progress_label'] = 'أُلغيت مهمة عالقة — سيتم الجلب مباشرة من السيرفر';
         $job['finished_at'] = now()->toIso8601String();
-        $site->update(['metadata' => array_merge($metadata, ['wp_job' => $job])]);
+        $site->mergeMetadata(['wp_job' => $job]);
     }
 
     /**

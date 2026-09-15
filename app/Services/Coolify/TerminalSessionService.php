@@ -3,6 +3,8 @@
 namespace App\Services\Coolify;
 
 use App\Models\CoolifyWordpressSite;
+use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Str;
 
 class TerminalSessionService
@@ -11,6 +13,56 @@ class TerminalSessionService
         protected ContainerContextFactory $contextFactory,
         protected CoolifySettingsService $settings
     ) {}
+
+    /**
+     * Pings the terminal-bridge microservice's /health endpoint, cached briefly
+     * to avoid hammering it on every tab open / poll.
+     *
+     * @return array{success: bool, message: string}
+     */
+    public function checkBridgeHealth(?string $urlOverride = null): array
+    {
+        $bridge = $this->settings->getTerminalBridgeConfig();
+        $enabled = $urlOverride !== null ? true : (bool) ($bridge['enabled'] ?? false);
+
+        if (! $enabled) {
+            return ['success' => false, 'message' => 'خدمة Terminal غير مفعّلة'];
+        }
+
+        $url = $urlOverride !== null
+            ? rtrim($urlOverride, '/')
+            : rtrim((string) ($bridge['url'] ?? ''), '/');
+
+        if ($url === '') {
+            return ['success' => false, 'message' => 'أدخل عنوان HTTP للجسر (مثال: http://127.0.0.1:3099).'];
+        }
+
+        $cacheKey = 'terminal-bridge:health:'.md5($url);
+        if ($urlOverride === null) {
+            $cached = Cache::get($cacheKey);
+            if (is_array($cached)) {
+                return $cached;
+            }
+        }
+
+        try {
+            $response = Http::timeout(8)->get($url.'/health');
+            $result = ($response->successful() && ($response->json('ok') === true || $response->json('ok') === 1))
+                ? ['success' => true, 'message' => 'الجسر يعمل: '.$url.'/health']
+                : ['success' => false, 'message' => 'استجابة غير متوقعة من الجسر (HTTP '.$response->status().').'];
+        } catch (\Throwable $e) {
+            $result = [
+                'success' => false,
+                'message' => 'تعذّر الاتصال بـ '.$url.' — '.$e->getMessage().' تأكد أن خدمة terminal-bridge تعمل (مثال: cd services/terminal-bridge && npm start).',
+            ];
+        }
+
+        if ($urlOverride === null) {
+            Cache::put($cacheKey, $result, now()->addSeconds(15));
+        }
+
+        return $result;
+    }
 
     /**
      * @return array{success: bool, token?: string, ws_url?: string, expires_at?: string, message?: string}

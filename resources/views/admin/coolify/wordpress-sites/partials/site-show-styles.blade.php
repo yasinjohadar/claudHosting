@@ -1,4 +1,14 @@
+@include('admin.coolify.wordpress-sites.partials.action-menu-styles')
 <style>
+.site-tab-badge {
+    display: inline-block;
+    width: 0.5rem;
+    height: 0.5rem;
+    border-radius: 50%;
+    background: #dc3545;
+    margin-inline-start: 0.35rem;
+    vertical-align: middle;
+}
 .site-files-table-wrap { max-height: 480px; overflow: auto; }
 .site-files-monaco { min-height: 320px; }
 .site-terminal-xterm { height: 420px; background: #1e1e1e; padding: 4px; }
