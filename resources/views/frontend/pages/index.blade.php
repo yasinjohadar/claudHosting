@@ -240,6 +240,9 @@
         </div>
     </section>
 
+    <!-- ============ AUTOMATION (n8n + AI) ============ -->
+    @include('frontend.partials.automation-section')
+
     <!-- ============ TESTIMONIALS ============ -->
     <section class="section-padding" id="testimonials">
         <div class="container">

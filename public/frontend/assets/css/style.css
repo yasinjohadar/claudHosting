@@ -2166,6 +2166,178 @@ ul {
 }
 
 /* ===========================
+   قسم الأتمتة (n8n + الذكاء الاصطناعي)
+   =========================== */
+.automation-section {
+    position: relative;
+    overflow: hidden;
+    background: var(--clr-bg);
+}
+
+.automation-section__glow {
+    position: absolute;
+    top: -160px;
+    inset-inline-start: -140px;
+    width: 520px;
+    height: 520px;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(124, 58, 237, 0.14) 0%, transparent 68%);
+    pointer-events: none;
+}
+
+[data-theme="dark"] .automation-section__glow {
+    background: radial-gradient(circle, rgba(124, 58, 237, 0.22) 0%, transparent 68%);
+}
+
+/* ——— الصورة ——— */
+.automation-visual {
+    position: relative;
+}
+
+.automation-visual__halo {
+    position: absolute;
+    inset: 8% 6%;
+    border-radius: 30px;
+    background: radial-gradient(circle at 30% 30%, rgba(var(--clr-primary-rgb), 0.28), transparent 70%);
+    filter: blur(38px);
+    pointer-events: none;
+}
+
+.automation-visual img {
+    position: relative;
+    display: block;
+    width: 100%;
+    height: auto;
+    border-radius: 18px;
+    box-shadow: 0 26px 60px rgba(15, 23, 42, 0.18);
+}
+
+[data-theme="dark"] .automation-visual img {
+    box-shadow: 0 26px 60px rgba(0, 0, 0, 0.5);
+}
+
+/* ——— النص ——— */
+.automation-eyebrow {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 16px;
+    padding: 6px 16px;
+    border-radius: 2rem;
+    background: rgba(124, 58, 237, 0.1);
+    border: 1px solid rgba(124, 58, 237, 0.22);
+    color: #7c3aed;
+    font-size: 0.78rem;
+    font-weight: 700;
+}
+
+[data-theme="dark"] .automation-eyebrow {
+    color: #a78bfa;
+    background: rgba(124, 58, 237, 0.16);
+}
+
+.automation-title {
+    margin-bottom: 14px;
+    font-family: var(--font-heading);
+    font-size: clamp(1.5rem, 2.7vw, 2.15rem);
+    font-weight: 800;
+    line-height: 1.6;
+    color: var(--clr-text);
+}
+
+.automation-title__brand {
+    background: linear-gradient(135deg, #ea4b71, #7c3aed);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+}
+
+.automation-lead {
+    max-width: 540px;
+    margin-bottom: 26px;
+    font-size: 1rem;
+    line-height: 2.05;
+    color: var(--clr-text-secondary);
+}
+
+/* ——— المزايا ——— */
+.automation-features {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 18px;
+    margin: 0 0 28px;
+    padding: 0;
+    list-style: none;
+}
+
+.automation-feature {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+}
+
+.automation-feature__icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    width: 42px;
+    height: 42px;
+    border-radius: 12px;
+    font-size: 1rem;
+    color: var(--clr-primary);
+    background: rgba(var(--clr-primary-rgb), 0.1);
+    border: 1px solid rgba(var(--clr-primary-rgb), 0.16);
+}
+
+.automation-feature:nth-child(1) .automation-feature__icon {
+    color: #7c3aed;
+    background: rgba(124, 58, 237, 0.1);
+    border-color: rgba(124, 58, 237, 0.18);
+}
+
+.automation-feature__title {
+    margin: 0 0 4px;
+    font-size: 0.97rem;
+    font-weight: 700;
+    line-height: 1.6;
+    color: var(--clr-text);
+}
+
+.automation-feature__desc {
+    margin: 0;
+    font-size: 0.83rem;
+    line-height: 1.8;
+    color: var(--clr-text-secondary);
+}
+
+/* ——— الأزرار ——— */
+.automation-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+}
+
+@media (max-width: 991.98px) {
+    .automation-features {
+        grid-template-columns: 1fr;
+        gap: 16px;
+    }
+
+    .automation-lead {
+        max-width: none;
+    }
+}
+
+@media (max-width: 575.98px) {
+    .automation-actions .btn-primary-custom,
+    .automation-actions .btn-outline-custom {
+        width: 100%;
+        justify-content: center;
+    }
+}
+
+/* ===========================
    TESTIMONIALS SECTION
    =========================== */
 .testimonial-card {
