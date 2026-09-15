@@ -2397,7 +2397,7 @@ ul {
 .blog-card__media {
     position: relative;
     flex-shrink: 0;
-    height: 200px;
+    aspect-ratio: 16 / 9;
     overflow: hidden;
     background: var(--clr-surface);
 }
@@ -2556,7 +2556,7 @@ ul {
 /* توافق مع markup قديم */
 .blog-card .blog-img-wrapper {
     position: relative;
-    height: 200px;
+    aspect-ratio: 16 / 9;
     overflow: hidden;
 }
 
@@ -2596,11 +2596,6 @@ ul {
 }
 
 @media (max-width: 767.98px) {
-    .blog-card__media,
-    .blog-card .blog-img-wrapper {
-        height: 180px;
-    }
-
     .blog-card__body,
     .blog-card .blog-body {
         padding: 1.15rem 1rem;
